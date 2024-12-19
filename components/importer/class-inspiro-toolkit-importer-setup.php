@@ -141,7 +141,7 @@ class Inspiro_Toolkit_Importer_Setup {
 	public function premium_demos() {
 		return array(
 			'inspiro-premium' => array(
-				'name'     => 'Inspiro Premium Demos',
+				'name'     => 'Inspiro Premium',
 				'desc'     => 'Below you can view demos available in the Inspiro Premium theme. You can get access to all of them by purchasing the Premium version of the theme.',
 				'purchase' => 'https://www.wpzoom.com/themes/inspiro/',
 				'demos' => array(
@@ -158,7 +158,7 @@ class Inspiro_Toolkit_Importer_Setup {
 				)
 			),
 			'ispiro-pro' => array(
-				'name'     => 'Inspiro PRO Demos',
+				'name'     => 'Inspiro PRO',
 				'desc'     => 'Inspiro PRO is a newer version of the Inspiro theme, which can be purchased separately.',
 				'purchase' => 'https://www.wpzoom.com/themes/inspiro-pro/',
 				'demos' => array(
