@@ -6,7 +6,7 @@ $premium_demos = apply_filters( 'inspiro_toolkit_premium_demos', array() );
 
 <?php foreach ( $premium_demos as $index => $demo_section ) : ?>
 	<div class="theme-info-wrap">
-		<h3 class="wpz-onboard_content-main-title"><?php echo esc_html( $demo_section['name'] ); ?> <?php echo esc_html__( 'Demos', 'inspiro-toolkit' ); ?> <?php echo count( $demo_section['demos'] )?></h3>
+		<h3 class="wpz-onboard_content-main-title"><?php echo esc_html( $demo_section['name'] ); ?> <?php echo esc_html__( 'Demos', 'inspiro-toolkit' ); ?> <?php echo '(' . count( $demo_section['demos'] ) . ')' ?></h3>
 		<p class="wpz-onboard_content-main-intro"><?php echo wp_kses_post( $demo_section['desc'] ); ?></p>
 		<ol class="wpz-onboard_content-main-steps">
 			<li id="step-choose-design" class="wpz-onboard_content-main-step step-1 step-choose-design">
