@@ -37,6 +37,9 @@ class Inspiro_Toolkit_Admin_Menu {
 		add_action( 'admin_head', array( $this, 'add_css_go_pro_menu' ) );
 		add_action( 'admin_footer', array( $this, 'add_target_blank_go_pro_menu' ) );
 
+		// Remove Inspiro Lite Demo menu item
+		add_action( 'admin_menu', array( $this, 'remove_inspiro_demo_page' ), 999 );
+
 	}
 
 	/**
@@ -56,17 +59,6 @@ class Inspiro_Toolkit_Admin_Menu {
 			'dashicons-admin-tools',
 			78
 		);
-
-		// //Demo content menu item
-		// add_submenu_page(
-		// 	INSPIRO_TOOLKIT_SETTINGS_PAGE,
-		// 	esc_html__( 'Demo Content', 'inspiro-toolkit'),
-		// 	esc_html__( 'Demo Content', 'inspiro-toolkit'),
-		// 	'manage_options',
-		// 	INSPIRO_TOOLKIT_SETTINGS_PAGE,
-		// 	array( $this, 'demo_content_page' ),
-		// 	5
-		// );
 
 		//About the plugin menu item
 		add_submenu_page(
@@ -107,6 +99,37 @@ class Inspiro_Toolkit_Admin_Menu {
 	public function about_the_plugin_page() {
 		do_action( 'inspiro_toolkit_about_page' );
 	}
+
+	/**
+	 * Remove Inspiro Lite Demo page.
+	 *
+	 * @since 1.0.0
+	 */
+	public function remove_inspiro_demo_page() {
+		global $menu, $submenu;
+	
+		$custom_page_slug = 'inspiro-demo';
+	
+		// Check and remove top-level menu
+		foreach ( $menu as $key => $menu_item ) {
+			if (isset($menu_item[2]) && $menu_item[2] === "admin.php?page=$custom_page_slug") {
+				unset($menu[$key]); // Remove the menu
+				error_log("Custom admin page '$custom_page_slug' removed.");
+				return;
+			}
+		}
+		// Check and remove submenu if it exists
+		foreach ($submenu as $parent_slug => $submenu_items) {
+			foreach ($submenu_items as $key => $submenu_item) {
+				if (isset($submenu_item[2]) && $submenu_item[2] === $custom_page_slug) {
+					unset($submenu[$parent_slug][$key]); // Remove the submenu item
+					return;
+				}
+			}
+		}
+	
+	}
+	
 
 	/**
 	 * Add settings and go PRO link to plugin page.
