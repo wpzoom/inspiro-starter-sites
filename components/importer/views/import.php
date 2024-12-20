@@ -15,6 +15,8 @@ $theme            = wp_get_theme();
 
 <div class="wpzi wpzi--install-plugins wpz-onboard_wrapper">
 
+<div class="wpzi__admin-notices js-wpzi-admin-notices-container"></div>
+
 	<div class="wpz-onboard_header">
 		<!-- Onboard title -->
 		<div class="wpz-onboard_title-wrapper">

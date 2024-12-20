@@ -20,6 +20,8 @@ if ( ! empty( $this->import_files ) && isset( $_GET['import-mode'] ) && 'manual'
 </script>
 <div class="wpz-onboard_wrapper">
 
+<div class="wpzi__admin-notices js-wpzi-admin-notices-container"></div>
+
     <div id="tabs"><!-- #tabs -->
 
 		<div class="wpz-onboard_header">
