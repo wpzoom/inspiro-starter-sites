@@ -131,7 +131,7 @@ $theme            = wp_get_theme();
 						</div>
 					</div>
 					<div class="wpzi-imported-content">
-						<div class="wpzi__response  js-wpzi-ajax-response"></div>
+						<div class="wpzi__response  js-wpzi-ajax-complete-response"></div>
 					</div>
 					<div class="wpzi-imported-footer">
 						<?php echo wp_kses(

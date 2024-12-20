@@ -448,7 +448,7 @@ jQuery( function ( $ ) {
 				ajaxCall( newData );
 			}
 			else if ( 'undefined' !== typeof response.message ) {
-				$( '.js-wpzi-ajax-response' ).append( response.message );
+				$( '.js-wpzi-ajax-complete-response' ).append( response.message );
 
 				if ( 'undefined' !== typeof response.title ) {
 					$( '.js-wpzi-ajax-response-title' ).html( response.title );
@@ -465,7 +465,7 @@ jQuery( function ( $ ) {
 				$( document ).trigger( 'wpziImportComplete' );
 			}
 			else {
-				$( '.js-wpzi-ajax-response' ).append( '<img class="wpzi-imported-content-imported wpzi-imported-content-imported--error" src="' + wpzi.plugin_url + 'assets/images/error.svg" alt="' + wpzi.texts.import_failed + '"><p>' + response + '</p>' );
+				$( '.js-wpzi-ajax-complete-response' ).append( '<img class="wpzi-imported-content-imported wpzi-imported-content-imported--error" src="' + wpzi.plugin_url + 'assets/images/error.svg" alt="' + wpzi.texts.import_failed + '"><p>' + response + '</p>' );
 				$( '.js-wpzi-ajax-response-title' ).html( wpzi.texts.import_failed );
 				$( '.js-wpzi-ajax-response-subtitle' ).html( '<p>' + wpzi.texts.import_failed_subtitle + '</p>' );
 				$( '.js-wpzi-importing' ).hide();
@@ -473,7 +473,7 @@ jQuery( function ( $ ) {
 			}
 		})
 		.fail( function( error ) {
-			$( '.js-wpzi-ajax-response' ).append( '<img class="wpzi-imported-content-imported wpzi-imported-content-imported--error" src="' + wpzi.plugin_url + 'assets/images/error.svg" alt="' + wpzi.texts.import_failed + '"><p>Error: ' + error.statusText + ' (' + error.status + ')' + '</p>' );
+			$( '.js-wpzi-ajax-complete-response' ).append( '<img class="wpzi-imported-content-imported wpzi-imported-content-imported--error" src="' + wpzi.plugin_url + 'assets/images/error.svg" alt="' + wpzi.texts.import_failed + '"><p>Error: ' + error.statusText + ' (' + error.status + ')' + '</p>' );
 			$( '.js-wpzi-ajax-response-title' ).html( wpzi.texts.import_failed );
 			$( '.js-wpzi-ajax-response-subtitle' ).html( '<p>' + wpzi.texts.import_failed_subtitle + '</p>' );
 			$( '.js-wpzi-importing' ).hide();
