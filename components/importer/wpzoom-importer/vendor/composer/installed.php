@@ -1,24 +1,15 @@
 <?php return array(
     'root' => array(
-        'name' => 'awesomemotive/one-click-demo-import',
-        'pretty_version' => 'dev-master',
-        'version' => 'dev-master',
-        'reference' => '6fa0144120776685069dae924af7c1921969d36d',
+        'name' => 'wpzoom/wpzoom-importer',
+        'pretty_version' => '1.0.0+no-version-set',
+        'version' => '1.0.0.0',
+        'reference' => null,
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
         'dev' => true,
     ),
     'versions' => array(
-        'awesomemotive/one-click-demo-import' => array(
-            'pretty_version' => 'dev-master',
-            'version' => 'dev-master',
-            'reference' => '6fa0144120776685069dae924af7c1921969d36d',
-            'type' => 'project',
-            'install_path' => __DIR__ . '/../../',
-            'aliases' => array(),
-            'dev_requirement' => false,
-        ),
         'awesomemotive/wp-content-importer-v2' => array(
             'pretty_version' => 'v3.0.5',
             'version' => '3.0.5.0',
@@ -110,9 +101,9 @@
             'dev_requirement' => true,
         ),
         'phpunit/phpunit' => array(
-            'pretty_version' => '10.5.39',
-            'version' => '10.5.39.0',
-            'reference' => '4e89eff200b801db58f3d580ad7426431949eaa9',
+            'pretty_version' => '10.5.40',
+            'version' => '10.5.40.0',
+            'reference' => 'e6ddda95af52f69c1e0c7b4f977cccb58048798c',
             'type' => 'library',
             'install_path' => __DIR__ . '/../phpunit/phpunit',
             'aliases' => array(),
@@ -261,6 +252,15 @@
             'install_path' => __DIR__ . '/../theseer/tokenizer',
             'aliases' => array(),
             'dev_requirement' => true,
+        ),
+        'wpzoom/wpzoom-importer' => array(
+            'pretty_version' => '1.0.0+no-version-set',
+            'version' => '1.0.0.0',
+            'reference' => null,
+            'type' => 'project',
+            'install_path' => __DIR__ . '/../../',
+            'aliases' => array(),
+            'dev_requirement' => false,
         ),
         'yoast/phpunit-polyfills' => array(
             'pretty_version' => '2.0.2',
