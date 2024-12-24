@@ -48,22 +48,14 @@ class PluginInstaller {
 	}
 
 	/**
-	 * Get all partner plugins data.
-	 *
-	 * @return array[]
-	 */
-	public function get_partner_plugins() {
-		return array();
-	}
-
-	/**
 	 * Set all registered plugins.
 	 * With our recommended plugins being set as defaults.
 	 */
 	public function set_plugins() {
-		$all_plugins = array_merge( $this->get_partner_plugins(), Helpers::apply_filters( 'wpzi/register_plugins', array() ) );
-
+		
+		$all_plugins = Helpers::apply_filters( 'wpzi/register_plugins', array() );
 		$this->plugins = $this->filter_plugins( $all_plugins );
+
 	}
 
 	/**
@@ -71,8 +63,8 @@ class PluginInstaller {
 	 * With our 3 top recommended plugins being set as defaults.
 	 */
 	public function get_theme_plugins() {
+		
 		$default_plugins = array();
-
 		$theme_plugins = array_merge( $default_plugins, Helpers::apply_filters( 'wpzi/register_plugins', array() ) );
 
 		return $this->filter_plugins( $theme_plugins );

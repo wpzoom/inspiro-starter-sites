@@ -9,7 +9,15 @@ namespace WPZI;
 
 $plugin_installer = new PluginInstaller();
 $theme_plugins    = $plugin_installer->get_theme_plugins();
-$theme            = wp_get_theme();
+
+// Check if the Inspiro theme is active.
+$is_theme_active = false;
+$is_theme_recommended = true;
+$theme_slug = 'inspiro';
+
+if ( get_template() === $theme_slug ) {
+	$is_theme_active = true;
+}
 
 ?>
 
@@ -60,6 +68,31 @@ $theme            = wp_get_theme();
 								</div>
 							<?php endif; ?>
 						</div>
+						
+						<?php if( ! $is_theme_active ) : ?>
+						<div class="wpzi-install-theme-content">
+							<label class="theme-item theme-item-inspiro" for="wpzi-inspiro-theme">
+								<div class="theme-item-content">
+									<div class="theme-item-content-title">
+										<h3><?php esc_html_e( 'Install/Activate - Inspiro Lite', 'inspiro-toolkit' ); ?></h3>
+									</div>
+									<p><?php echo wp_kses_post( __( 'To get best styling of the website you recommend to install and activate the Inspiro Lite Theme', 'inspiro-toolkit' ) ) ?> </p>
+									<div class="theme-item-error js-wpzi-theme-item-error"></div>
+									<div class="theme-item-info js-wpzi-theme-item-info"></div>
+								</div>
+								<span class="theme-item-checkbox">
+									<input type="checkbox" id="wpzi-inspiro-theme" name="inspiro" <?php checked( $is_theme_recommended ); ?>>
+									<span class="checkbox">
+										<img src="<?php echo esc_url( WPZI_URL . 'assets/images/icons/check-solid-white.svg' ); ?>" class="wpzi-check-icon" alt="<?php esc_attr_e( 'Checkmark icon', 'inspiro-toolkit' ); ?>">
+										<img src="<?php echo esc_url( WPZI_URL . 'assets/images/loader.svg' ); ?>" class="wpzi-loading wpzi-loading-md" alt="<?php esc_attr_e( 'Loading...', 'inspiro-toolkit' ); ?>">
+									</span>
+								</span>
+							</label>
+						</div>
+						<?php endif; ?>
+						
+
+
 						<div class="wpzi-install-plugins-content-content">
 							<?php if ( empty( $theme_plugins ) ) : ?>
 								<div class="wpzi-content-notice">
@@ -75,11 +108,6 @@ $theme            = wp_get_theme();
 										<div class="plugin-item-content">
 											<div class="plugin-item-content-title">
 												<h3><?php echo esc_html( $plugin['name'] ); ?></h3>
-												<?php if ( in_array( $plugin['slug'], [ 'wpforms-lite', 'all-in-one-seo-pack', 'google-analytics-for-wordpress' ], true ) ) : ?>
-													<span>
-														<img src="<?php echo esc_url( WPZI_URL . 'assets/images/icons/star.svg' ); ?>" alt="<?php esc_attr_e( 'Star icon', 'inspiro-toolkit' ); ?>">
-													</span>
-												<?php endif; ?>
 											</div>
 											<?php if ( ! empty( $plugin['description'] ) ) : ?>
 												<p>

@@ -331,8 +331,10 @@
 				}
 			}
 
+			.wpzi-install-theme-content,
 			.wpzi-install-plugins-content-content,
 			.wpzi-create-content-content {
+				.theme-item,
 				.plugin-item,
 				.content-item {
 					display: flex;
@@ -348,7 +350,8 @@
 
 					&--active {
 						cursor: default;
-
+						
+						.theme-item-checkbox,
 						.plugin-item-checkbox,
 						.content-item-checkbox {
 
@@ -376,6 +379,7 @@
 							display: block;
 						}
 
+						.theme-item-checkbox,
 						.plugin-item-checkbox,
 						.content-item-checkbox {
 
@@ -457,7 +461,8 @@
 							margin: 0;
 						}
 					}
-
+					
+					.theme-item-checkbox,
 					.plugin-item-checkbox,
 					.content-item-checkbox {
 						.checkbox {
@@ -524,18 +529,6 @@
 					}
 				}
 
-				span.wpzi-recommended-star {
-					background-color: #FFB900;
-					width: 16px;
-					height: 16px;
-					border-radius: 8px;
-
-					img {
-						width: 10px;
-						height: 10px;
-						margin: 2px 3px;
-					}
-				}
 			}
 
 			.wpzi-install-plugins-content-footer,

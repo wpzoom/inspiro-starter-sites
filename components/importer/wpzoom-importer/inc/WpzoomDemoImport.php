@@ -28,6 +28,13 @@ class WpzoomDemoImport {
 	public $importer;
 
 	/**
+	 * The instance of the WPZI\InspiroThemeInstaller class.
+	 *
+	 * @var InspiroThemeInstaller object
+	 */
+	public $theme_installer;
+
+	/**
 	 * The instance of the WPZI\PluginInstaller class.
 	 *
 	 * @var PluginInstaller object
@@ -174,25 +181,11 @@ class WpzoomDemoImport {
 	 * Output (HTML) is in another file.
 	 */
 	public function display_plugin_page() {
-
-		if ( isset( $_GET['step'] ) && 'install-plugins' === $_GET['step'] ) {
-			require_once INSPIRO_TOOLKIT_PATH . 'components/importer/views/install-plugins.php';
-
-			return;
-		}
-
-		if ( isset( $_GET['step'] ) && 'create-content' === $_GET['step'] ) {
-			require_once INSPIRO_TOOLKIT_PATH . 'components/importer/views/create-content.php';
-
-			return;
-		}
-
 		if ( isset( $_GET['step'] ) && 'import' === $_GET['step'] ) {
 			require_once INSPIRO_TOOLKIT_PATH . 'components/importer/views/import.php';
 
 			return;
 		}
-
 		require_once INSPIRO_TOOLKIT_PATH . 'components/importer/views/plugin-page.php';
 	}
 
@@ -622,6 +615,10 @@ class WpzoomDemoImport {
 
 		// Create importer instance with proper parameters.
 		$this->importer = new Importer( $importer_options, $logger );
+
+		// Prepare registered themes and register AJAX callbacks.
+		$this->theme_installer = new InspiroThemeInstaller();
+		$this->theme_installer->init();
 
 		// Prepare registered plugins and register AJAX callbacks.
 		$this->plugin_installer = new PluginInstaller();

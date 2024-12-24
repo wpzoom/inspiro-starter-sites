@@ -113,43 +113,6 @@ jQuery( function ( $ ) {
 	} );
 
 	/**
-	 * Remove the files from the manual import upload controls (when clicked on the "cancel" button).
-	 */
-	$( '.js-wpzi-cancel-manual-import').on( 'click', function() {
-		$( '.wpzi__file-upload-container-items input[type=file]' ).each( function() {
-			$( this ).val( '' ).trigger( 'change' );
-		} );
-	} );
-
-	/**
-	 * Show and hide the file upload label and input on file input change event.
-	 */
-	$( document ).on( 'change', '.wpzi__file-upload-container-items input[type=file]', function() {
-		var $input = $( this ),
-			$label = $input.siblings( 'label' ),
-			fileIsSet = false;
-
-		if( this.files && this.files.length > 0 ) {
-			$input.removeClass( 'wpzi-hide-input' ).blur();
-			$label.hide();
-		} else {
-			$input.addClass( 'wpzi-hide-input' );
-			$label.show();
-		}
-
-		// Enable or disable the main manual import/cancel buttons.
-		$( '.wpzi__file-upload-container-items input[type=file]' ).each( function() {
-			if ( this.files && this.files.length > 0 ) {
-				fileIsSet = true;
-			}
-		} );
-
-		$( '.js-wpzi-start-manual-import' ).prop( 'disabled', ! fileIsSet );
-		$( '.js-wpzi-cancel-manual-import' ).prop( 'disabled', ! fileIsSet );
-
-	} );
-
-	/**
 	 * Prevent a required plugin checkbox from changeing state.
 	 */
 	$( '.wpzi-install-plugins-content-content .plugin-item.plugin-item--required input[type=checkbox]' ).on( 'click', function( event ) {
@@ -193,85 +156,78 @@ jQuery( function ( $ ) {
 			return false;
 		}
 
+		//Handle the Install Theme section
+		var themeContainer = $('.wpzi-install-theme-content');
+
+		//Handle plugins that are required for the selected demo content.
 		var pluginsToInstall = $( '.wpzi-install-plugins-content-content .plugin-item:not(.plugin-item--disabled) input[type=checkbox]' ).serializeArray();
 
+		//If there is a theme to install, check if it is selected.
+		if ( typeof themeContainer !== 'undefined' && themeContainer.length > 0 ) {
+			
+			var themeToInstall = themeContainer.find('input[type=checkbox]:checked').val();
+			var themeItem = themeContainer.find('.theme-item');
+			
+			if ( typeof themeToInstall !== 'undefined'  && themeToInstall.length > 0 ) {
+
+				// Step 1: Activate the theme
+				$.ajax({
+					method: 'POST',
+					url: wpzi.ajax_url,
+					data: {
+						action: 'handle_inspiro_theme',
+						security: wpzi.ajax_nonce,
+					},
+					beforeSend: function() {
+						themeItem.addClass( 'theme-item--loading' );
+					}
+				} ).done(function( response ) {
+					themeItem.removeClass( 'theme-item--loading' );
+
+					if ( response.success ) {
+
+						themeItem.addClass( 'theme-item--active' );
+						themeItem.find( 'input[type=checkbox]' ).prop( 'disabled', true );
+
+						initPluginInstall( $button, pluginsToInstall );
+						console.log('Theme activated successfully.');
+						return false;
+			
+					} else {
+						console.log( response.data || 'Failed to activate theme.' );
+						$button.removeClass( 'wpzi-button-disabled' );
+					}
+				} )
+				.fail( function( error ) {
+					console.log( 'Error: ' + error.statusText + ' (' + error.status + ')' );
+					initPluginInstall( $button, pluginsToInstall );
+				} );
+
+			}
+			else {
+				// If there is no theme selected, proceed with the plugin installation.
+				initPluginInstall( $button, pluginsToInstall );				
+			}
+		}
+		else {
+			//If there is no theme to install, proceed with the plugin installation.
+			initPluginInstall( $button, pluginsToInstall );
+		}
+	} );
+
+	/**
+	 * Initiate the Plugin installation process.
+	 */
+	function initPluginInstall( $button,  pluginsToInstall ) {
+		
 		if ( pluginsToInstall.length === 0 ) {
 			startImport( getUrlParameter( 'import' ) );
-
 			return false;
 		}
 
 		$button.addClass( 'wpzi-button-disabled' );
-
 		installPluginsAjaxCall( pluginsToInstall, 0, $button, true, false );
-	} );
-
-
-	/**
-	 * Import the created content.
-	 */
-	$( '.js-wpzi-create-content' ).on( 'click', function( event ) {
-		event.preventDefault();
-
-		var $button = $( this );
-
-		if ( $button.hasClass( 'wpzi-button-disabled' ) ) {
-			return false;
-		}
-
-		var itemsToImport = $( '.wpzi-create-content-content .content-item input[type=checkbox]' ).serializeArray();
-
-		if ( itemsToImport.length === 0 ) {
-			return false;
-		}
-
-		$button.addClass( 'wpzi-button-disabled' );
-
-		createDemoContentAjaxCall( itemsToImport, 0, $button );
-	} );
-
-
-	/**
-	 * Install the SeedProd plugin.
-	 */
-	$( '.js-wpzi-install-coming-soon-plugin' ).on( 'click', function( event ) {
-		event.preventDefault();
-
-		var $button = $( this ),
-			slug = 'coming-soon';
-
-		if ( $button.hasClass( 'button-disabled' ) ) {
-			return false;
-		}
-
-		$button.addClass( 'button-disabled' );
-
-		$.ajax({
-			method:      'POST',
-			url:         wpzi.ajax_url,
-			data:        {
-				action: 'wpzi_install_plugin',
-				security: wpzi.ajax_nonce,
-				slug: slug,
-			},
-			beforeSend: function() {
-				$button.text( wpzi.texts.installing );
-			}
-		})
-			.done( function( response ) {
-				if ( response.success ) {
-					$button.text( wpzi.texts.installed );
-				} else {
-					alert( response.data );
-					$button.text( wpzi.texts.install_plugin );
-					$button.removeClass( 'button-disabled' );
-				}
-			})
-			.fail( function( error ) {
-				alert( error.statusText + ' (' + error.status + ')' );
-				$button.removeClass( 'button-disabled' );
-			})
-	} );
+	}
 
 	/**
 	 * Update "plugins to be installed" notice on Create Demo Content page.
