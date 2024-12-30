@@ -111,7 +111,7 @@ class Inspiro_Toolkit_Importer_Setup {
 
 	public function wpzi_import_files() {
 		return [
-			[
+			[	'import_id'                  => 'inspiro-lite-blocks',
 				'import_file_name'           => 'Inspiro Lite - Gutenberg Blocks',
 				'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-blocks.xml',
 				'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-widgets.wie',
@@ -119,7 +119,8 @@ class Inspiro_Toolkit_Importer_Setup {
 				'import_preview_image_url'   => 'https://www.wpzoom.com/wp-content/uploads/2024/10/inspiro-lite-block.png',
 				'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-blocks/',
 			],
-			[
+			[	
+				'import_id'                  => 'inspiro-lite',
 				'import_file_name'           => 'Inspiro Lite - Elementor',
 				'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite.xml',
 				'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-widgets.wie',
@@ -127,7 +128,8 @@ class Inspiro_Toolkit_Importer_Setup {
 				'import_preview_image_url'   => 'https://www.wpzoom.com/wp-content/uploads/2021/10/inspiro-lite-elementor-1.png',
 				'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite/',
 			],
-			[
+			[	
+				'import_id'                  => 'inspiro-lite-woo',
 				'import_file_name'           => 'Inspiro Lite - WooCommerce Shop',
 				'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-woo.xml',
 				'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-woo-widgets.wie',

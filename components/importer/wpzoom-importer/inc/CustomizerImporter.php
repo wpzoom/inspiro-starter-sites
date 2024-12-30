@@ -17,7 +17,7 @@ class CustomizerImporter {
 	 * @param string $customizer_import_file_path path to the customizer import file.
 	 */
 	public static function import( $customizer_import_file_path ) {
-		$wpzi          = WpzoomDemoImport::get_instance();
+		$wpzi          = WpzoomImporter::get_instance();
 		$log_file_path = $wpzi->get_log_file_path();
 
 		// Try to import the customizer settings.

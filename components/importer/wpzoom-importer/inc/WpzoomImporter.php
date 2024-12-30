@@ -12,7 +12,7 @@ use WP_Error;
 /**
  * WPZOOM Demo Import class, so we don't have to worry about namespaces.
  */
-class WpzoomDemoImport {
+class WpzoomImporter {
 	/**
 	 * The instance *Singleton* of this class
 	 *
@@ -107,7 +107,7 @@ class WpzoomDemoImport {
 	/**
 	 * Returns the *Singleton* instance of this class.
 	 *
-	 * @return WpzoomDemoImport the *Singleton* instance.
+	 * @return WpzoomImporter the *Singleton* instance.
 	 */
 	public static function get_instance() {
 		if ( null === static::$instance ) {
@@ -199,12 +199,18 @@ class WpzoomDemoImport {
 		// Enqueue the scripts only on the plugin page.
 
 		if ( $this->plugin_page === $hook || 'toplevel_page_inspiro-toolkit-demo-import' == $hook || ( 'admin.php' === $hook && $this->plugin_page_setup['menu_slug'] === esc_attr( $_GET['import'] ) ) ) {
-			wp_enqueue_script( 'wpzi-main-js', WPZI_URL . 'assets/js/main.js' , array( 'jquery' ), WPZI_VERSION );
+			
+			wp_enqueue_script( 
+				'wpzi-importer-js', 
+				WPZI_URL . 'assets/js/wpzoom-importer.js', 
+				array( 'jquery' ), 
+				WPZI_VERSION 
+			);
 
 			// Get theme data.
 			$theme = wp_get_theme();
 
-			wp_localize_script( 'wpzi-main-js', 'wpzi',
+			wp_localize_script( 'wpzi-importer-js', 'wpzi',
 				array(
 					'ajax_url'         => admin_url( 'admin-ajax.php' ),
 					'ajax_nonce'       => wp_create_nonce( 'wpzi-ajax-verification' ),
@@ -236,7 +242,12 @@ class WpzoomDemoImport {
 				)
 			);
 
-			wp_enqueue_style( 'wpzi-main-css', WPZI_URL . 'assets/css/main.css', array() , WPZI_VERSION );
+			wp_enqueue_style( 
+				'wpzi-importer-css', 
+				WPZI_URL . 'assets/css/wpzoom-importer.css', 
+				array(), 
+				WPZI_VERSION 
+			);
 		}
 	}
 
@@ -624,9 +635,6 @@ class WpzoomDemoImport {
 		$this->plugin_installer = new PluginInstaller();
 		$this->plugin_installer->init();
 
-		// Prepare registered pre-created demo content pages and the AJAX callback.
-		$demo_content_creator = new CreateDemoContent\DemoContentCreator();
-		$demo_content_creator->init();
 	}
 
 	/**

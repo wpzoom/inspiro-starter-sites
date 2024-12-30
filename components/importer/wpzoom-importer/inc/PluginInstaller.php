@@ -257,7 +257,7 @@ class PluginInstaller {
 	 * @return bool
 	 */
 	private function filesystem_permissions_allowed() {
-		$wpzi  = WpzoomDemoImport::get_instance();
+		$wpzi  = WpzoomImporter::get_instance();
 		$url   = esc_url_raw( $wpzi->get_plugin_settings_url() );
 		$creds = request_filesystem_credentials( $url, '', false, false, null );
 

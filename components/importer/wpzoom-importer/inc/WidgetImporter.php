@@ -18,7 +18,7 @@ class WidgetImporter {
 	 */
 	public static function import( $widget_import_file_path ) {
 		$results       = array();
-		$wpzi          = WpzoomDemoImport::get_instance();
+		$wpzi          = WpzoomImporter::get_instance();
 		$log_file_path = $wpzi->get_log_file_path();
 
 		// Import widgets and return result.

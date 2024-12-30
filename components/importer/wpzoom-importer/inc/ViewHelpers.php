@@ -20,7 +20,7 @@ class ViewHelpers {
 		$name       = $theme->name;
 
 		if ( isset( $selected ) ) {
-			$wpzi          = WpzoomDemoImport::get_instance();
+			$wpzi          = WpzoomImporter::get_instance();
 			$selected_data = $wpzi->import_files[ $selected ];
 			$name          = ! empty( $selected_data['import_file_name'] ) ? $selected_data['import_file_name'] : $name;
 			$screenshot    = ! empty( $selected_data['import_preview_image_url'] ) ? $selected_data['import_preview_image_url'] : $screenshot;

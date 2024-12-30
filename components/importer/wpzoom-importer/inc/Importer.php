@@ -57,7 +57,7 @@ class Importer {
 		}
 
 		// Get the WPZI (main plugin class) instance.
-		$this->wpzi = WpzoomDemoImport::get_instance();
+		$this->wpzi = WpzoomImporter::get_instance();
 	}
 
 

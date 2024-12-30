@@ -19,7 +19,7 @@ class WPCLICommands extends \WP_CLI_Command {
 	public function __construct() {
 		parent::__construct();
 
-		$this->wpzi = WpzoomDemoImport::get_instance();
+		$this->wpzi = WpzoomImporter::get_instance();
 
 		Helpers::set_demo_import_start_time();
 

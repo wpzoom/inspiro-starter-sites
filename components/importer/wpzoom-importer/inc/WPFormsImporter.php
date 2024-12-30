@@ -20,11 +20,11 @@ class WPFormsImporter {
 	private $import_file_path = false;
 
 	/**
-	 * The WpzoomDemoImport instance.
+	 * The WpzoomImporter instance.
 	 *
 	 * @since 3.3.0
 	 *
-	 * @var WpzoomDemoImport
+	 * @var WpzoomImporter
 	 */
 	private $wpzi;
 
@@ -38,7 +38,7 @@ class WPFormsImporter {
 	public function __construct( $import_file_path ) {
 
 		$this->import_file_path = $import_file_path;
-		$this->wpzi             = WpzoomDemoImport::get_instance();
+		$this->wpzi             = WpzoomImporter::get_instance();
 	}
 
 	/**

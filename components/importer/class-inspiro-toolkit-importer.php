@@ -21,7 +21,8 @@ class Inspiro_Toolkit_Importer {
 	 * The Constructor.
 	 */
 	public function __construct() {
-		require_once INSPIRO_TOOLKIT_PATH . 'components/importer/wpzoom-importer/wpzoom-demo-import.php';
+		require_once INSPIRO_TOOLKIT_PATH . 'components/importer/wpzoom-importer/wpzoom-importer.php';
+	
 
 		add_filter( 'wpzi/plugin_page_setup', array( $this, 'wpzi_new_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );

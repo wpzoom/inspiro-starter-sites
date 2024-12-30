@@ -48,7 +48,7 @@ class ImportActions {
 		}
 
 		// Get import data, with new menu IDs.
-		$wpzi                = WpzoomDemoImport::get_instance();
+		$wpzi                = WpzoomImporter::get_instance();
 		$content_import_data = $wpzi->importer->get_importer_data();
 		$term_ids            = $content_import_data['mapping']['term_id'];
 
@@ -143,7 +143,7 @@ class ImportActions {
 	 */
 	private function do_import_action( $action, $selected_import ) {
 		if ( false !== Helpers::has_action( $action ) ) {
-			$wpzi          = WpzoomDemoImport::get_instance();
+			$wpzi          = WpzoomImporter::get_instance();
 			$log_file_path = $wpzi->get_log_file_path();
 
 			ob_start();
