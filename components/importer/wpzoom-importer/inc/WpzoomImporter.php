@@ -127,18 +127,32 @@ class WpzoomImporter {
 		// Actions.
 		add_action( 'admin_menu', array( $this, 'create_plugin_page' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
-		add_action( 'wp_ajax_wpzi_upload_manual_import_files', array( $this, 'upload_manual_import_files_callback' ) );
+
 		add_action( 'wp_ajax_wpzi_import_demo_data', array( $this, 'import_demo_data_ajax_callback' ) );
 		add_action( 'wp_ajax_wpzi_import_customizer_data', array( $this, 'import_customizer_data_ajax_callback' ) );
 		add_action( 'wp_ajax_wpzi_after_import_data', array( $this, 'after_all_import_data_ajax_callback' ) );
+
+		add_action( 'wp_ajax_wpzi_delete_imported_demo', array( $this, 'delete_imported_demo_ajax_callback' ) );
+
 		add_action( 'after_setup_theme', array( $this, 'setup_plugin_with_filter_data' ) );
 		add_action( 'user_admin_notices', array( $this, 'start_notice_output_capturing' ), 0 );
 		add_action( 'admin_notices', array( $this, 'start_notice_output_capturing' ), 0 );
 		add_action( 'all_admin_notices', array( $this, 'finish_notice_output_capturing' ), PHP_INT_MAX );
 		add_action( 'admin_init', array( $this, 'redirect_from_old_default_admin_page' ) );
 		add_action( 'set_object_terms', array( $this, 'add_imported_terms' ), 10, 6 );
+		
 		add_filter( 'wxr_importer.pre_process.post', [ $this, 'skip_failed_attachment_import' ] );
 		add_action( 'wxr_importer.process_failed.post', [ $this, 'handle_failed_attachment_import' ], 10, 5 );
+
+		// Keep track of our progress.
+		add_action( 'wxr_importer.processed.post', array( $this, 'track_post' ), 10, 2 );
+		add_action( 'wxr_importer.processed.term', array( $this, 'track_term' ) );
+
+		// Reset Post & Terms.
+		add_action( 'wp_ajax_wpzi-importer-delete-posts', array( $this, 'delete_imported_posts' ) );
+		add_action( 'wp_ajax_wpzi-importer-delete-wp-forms', array( $this, 'delete_imported_wp_forms' ) );
+		add_action( 'wp_ajax_wpzi-importer-delete-terms', array( $this, 'delete_imported_terms' ) );
+
 		add_action( 'wp_import_insert_post', [ $this, 'save_wp_navigation_import_mapping' ], 10, 4 );
 		add_action( 'wpzi/after_import', [ $this, 'fix_imported_wp_navigation' ] );
 
@@ -181,11 +195,18 @@ class WpzoomImporter {
 	 * Output (HTML) is in another file.
 	 */
 	public function display_plugin_page() {
+		
 		if ( isset( $_GET['step'] ) && 'import' === $_GET['step'] ) {
 			require_once INSPIRO_TOOLKIT_PATH . 'components/importer/views/import.php';
-
 			return;
 		}
+
+		if ( isset( $_GET['step'] ) && 'delete_import' === $_GET['step'] ) {
+			require_once INSPIRO_TOOLKIT_PATH . 'components/importer/views/delete_import.php';
+			return;
+		}
+
+
 		require_once INSPIRO_TOOLKIT_PATH . 'components/importer/views/plugin-page.php';
 	}
 
@@ -251,38 +272,6 @@ class WpzoomImporter {
 		}
 	}
 
-
-	/**
-	 * AJAX callback method for uploading the manual import files.
-	 */
-	public function upload_manual_import_files_callback() {
-		Helpers::verify_ajax_call();
-
-		if ( empty( $_FILES ) ) {
-			wp_send_json_error( esc_html__( 'Manual import files are missing! Please select the import files and try again.', 'inspiro-toolkit' ) );
-		}
-
-		// Create a date and time string to use for demo and log file names.
-		Helpers::set_demo_import_start_time();
-
-		// Define log file path.
-		$this->log_file_path = Helpers::get_log_path();
-
-		$this->selected_index = 0;
-
-		// Get paths for the uploaded files.
-		$this->selected_import_files = Helpers::process_uploaded_files( $_FILES, $this->log_file_path );
-
-		// Set the name of the import files, because we used the uploaded files.
-		$this->import_files[ $this->selected_index ]['import_file_name'] = esc_html__( 'Manually uploaded files', 'inspiro-toolkit' );
-
-		// Save the initial import data as a transient, so the next import call (in new AJAX call) can use that data.
-		Helpers::set_wpzi_import_data_transient( $this->get_current_importer_data() );
-
-		wp_send_json_success();
-	}
-
-
 	/**
 	 * Main AJAX callback function for:
 	 * 1). prepare import files (uploaded or predefined via filters)
@@ -310,18 +299,7 @@ class WpzoomImporter {
 			// Get selected file index or set it to 0.
 			$this->selected_index = empty( $_POST['selected'] ) ? 0 : absint( $_POST['selected'] );
 
-			/**
-			 * 1). Prepare import files.
-			 * Manually uploaded import files or predefined import files via filter: wpzi/import_files
-			 */
-			if ( ! empty( $_FILES ) ) { // Using manual file uploads?
-				// Get paths for the uploaded files.
-				$this->selected_import_files = Helpers::process_uploaded_files( $_FILES, $this->log_file_path );
-
-				// Set the name of the import files, because we used the uploaded files.
-				$this->import_files[ $this->selected_index ]['import_file_name'] = esc_html__( 'Manually uploaded files', 'inspiro-toolkit' );
-			}
-			elseif ( ! empty( $this->import_files[ $this->selected_index ] ) ) { // Use predefined import files from wp filter: wpzi/import_files.
+			if ( ! empty( $this->import_files[ $this->selected_index ] ) ) { // Use predefined import files from wp filter: wpzi/import_files.
 
 				// Download the import files (content, widgets and customizer files).
 				$this->selected_import_files = Helpers::download_import_files( $this->import_files[ $this->selected_index ] );
@@ -388,6 +366,9 @@ class WpzoomImporter {
 
 		// Save the import data as a transient, so other import parts (in new AJAX calls) can use that data.
 		Helpers::set_wpzi_import_data_transient( $this->get_current_importer_data() );
+
+		//Update option with the imported demo ID.
+		update_option( 'inspiro_imported_demo_id', $this->import_files[ $this->selected_index ]['import_id'] );
 
 		// Request the customizer import AJAX call.
 		if ( ! empty( $this->selected_import_files['customizer'] ) ) {
@@ -778,6 +759,187 @@ class WpzoomImporter {
 
 		Helpers::set_failed_attachment_import( $data['attachment_url'] );
 	}
+
+	/**
+	 * Track Imported Post
+	 *
+	 * @param  int   $post_id Post ID.
+	 * @param array $data Raw data imported for the post.
+	 * @return void
+	 */
+	public function track_post( $post_id = 0, $data = array() ) {
+
+		update_post_meta( $post_id, '_wpzoom_demo_importer_imported_post', true );
+		update_post_meta( $post_id, '_wpzoom_demo_importer_enable_for_batch', true );
+
+		// Set the full width template for the pages.
+		if ( isset( $data['post_type'] ) && 'page' === $data['post_type'] ) {
+			$is_elementor_page = get_post_meta( $post_id, '_elementor_version', true );
+			if ( $is_elementor_page ) {
+				// Pass all post meta to use later for our needs.
+				$this->elementor_pages[] = $post_id;
+
+				update_option( 'wpzoom_demo_importer_elementor_pages', $this->elementor_pages, 'no' );
+			}
+		} elseif ( isset( $data['post_type'] ) && 'attachment' === $data['post_type'] ) {
+			$remote_url          = isset( $data['guid'] ) ? $data['guid'] : '';
+			$attachment_hash_url = self::get_hash_image( $remote_url );
+			if ( ! empty( $attachment_hash_url ) ) {
+				update_post_meta( $post_id, '_wpzoom_demo_importer_image_hash', $attachment_hash_url );
+				update_post_meta( $post_id, '_elementor_source_image_hash', $attachment_hash_url );
+			}
+		}
+	}
+
+	/**
+	 * Track Imported Term
+	 *
+	 * @param  int $term_id Term ID.
+	 * @return void
+	 */
+	public function track_term( $term_id ) {
+		$term = get_term( $term_id );
+		update_term_meta( $term_id, '_wpzoom_demo_importer_imported_term', true );
+	}
+
+	/**
+	 * Get Hash Image.
+	 *
+	 * @since 2.0.0
+	 * @param  string $attachment_url Attachment URL.
+	 * @return string                 Hash string.
+	 */
+	public static function get_hash_image( $attachment_url ) {
+		return sha1( $attachment_url );
+	}
+
+	/**
+	 * Get the list of imported posts, WP Forms and terms.
+	 *
+	 * @return array
+	 */
+	public function get_reset_data() {
+		
+		// Verify if the AJAX call is valid (checks nonce and current_user_can).
+		Helpers::verify_ajax_call();
+
+		global $wpdb;
+
+		$post_ids = $wpdb->get_col( "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key='_wpzoom_demo_importer_imported_post'" );
+		$form_ids = $wpdb->get_col( "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key='_wpzoom_demo_importer_imported_wp_forms'" );
+		$term_ids = $wpdb->get_col( "SELECT term_id FROM {$wpdb->termmeta} WHERE meta_key='_wpzoom_demo_importer_imported_term'" );
+
+		$data = array(
+			'reset_posts'    => $post_ids,
+			'reset_wp_forms' => $form_ids,
+			'reset_terms'    => $term_ids,
+		);
+
+		if ( wp_doing_ajax() ) {
+			wp_send_json_success( $data );
+		}
+
+		return $data;
+	}
+
+
+	public function delete_imported_demo_ajax_callback() {
+		
+		// Verify if the AJAX call is valid (checks nonce and current_user_can).
+		Helpers::verify_ajax_call();
+
+		// Get the demo ID to delete.
+
+	}
+
+	/**
+	 * Delete imported posts
+	 *
+	 * @since 2.0.0
+	 * @since 1.4.0 The `$post_id` was added.
+	 *
+	 * @param  integer $post_id Post ID.
+	 * @return void
+	 */
+	public function delete_imported_posts( $post_id = 0 ) {
+
+		if ( wp_doing_ajax() ) {
+			// Verify if the AJAX call is valid (checks nonce and current_user_can).
+			Helpers::verify_ajax_call();
+		}
+
+		$post_id = isset( $_REQUEST['post_id'] ) ? absint( $_REQUEST['post_id'] ) : $post_id;
+		if ( $post_id ) {
+			$post_type = get_post_type( $post_id );
+			do_action( 'wpzoom_demo_importer_before_delete_imported_posts', $post_id, $post_type );
+			wp_delete_post( $post_id, true );
+		}
+		
+		if ( wp_doing_ajax() ) {
+			wp_send_json_success( $message );
+		}
+	}
+
+	/**
+	 * Delete imported WP forms
+	 *
+	 * @since 2.0.0
+	 * @since 1.4.0 The `$post_id` was added.
+	 *
+	 * @param  integer $post_id Post ID.
+	 * @return void
+	 */
+	public function delete_imported_wp_forms( $post_id = 0 ) {
+
+		if ( ! defined( 'WP_CLI' ) && wp_doing_ajax() ) {
+			// Verify if the AJAX call is valid (checks nonce and current_user_can).
+			Helpers::verify_ajax_call();
+		}
+
+		$post_id = isset( $_REQUEST['post_id'] ) ? absint( $_REQUEST['post_id'] ) : $post_id;
+
+		if ( $post_id ) {
+			do_action( 'wpzoom_demo_importer_before_delete_imported_wp_forms', $post_id );
+			wp_delete_post( $post_id, true );
+		}
+
+		if ( wp_doing_ajax() ) {
+			wp_send_json_success( $message );
+		}
+	}
+
+	/**
+	 * Delete imported terms
+	 *
+	 * @since 2.0.0
+	 * @since 1.4.0 The `$post_id` was added.
+	 *
+	 * @param  integer $term_id Term ID.
+	 * @return void
+	 */
+	public function delete_imported_terms( $term_id = 0 ) {
+		if ( ! defined( 'WP_CLI' ) && wp_doing_ajax() ) {
+			// Verify if the AJAX call is valid (checks nonce and current_user_can).
+			Helpers::verify_ajax_call();
+		}
+
+		$term_id = isset( $_REQUEST['term_id'] ) ? absint( $_REQUEST['term_id'] ) : $term_id;
+
+		if ( $term_id ) {
+			$term = get_term( $term_id );
+			if ( ! is_wp_error( $term ) && is_object( $term ) ) {
+				do_action( 'wpzoom_demo_importer_before_delete_imported_terms', $term_id, $term );
+
+				// Delete term.
+				wp_delete_term( $term_id, $term->taxonomy );
+			}
+		}
+
+		if ( wp_doing_ajax() ) {
+			wp_send_json_success( $message );
+		}
+	}
+
 
 	/**
 	 * Save the information needed to process the navigation block.

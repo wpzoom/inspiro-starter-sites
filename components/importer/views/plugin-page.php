@@ -10,6 +10,8 @@ if ( ! empty( $this->import_files ) && isset( $_GET['import-mode'] ) && 'manual'
     $predefined_themes = array();
 }
 
+$imported_demo_id = get_option( 'inspiro_imported_demo_id', false );
+
 ?>
 <script>
     jQuery(document).ready(function ($) {
@@ -67,7 +69,19 @@ if ( ! empty( $this->import_files ) && isset( $_GET['import-mode'] ) && 'manual'
 								<li id="step-choose-design" class="wpz-onboard_content-main-step step-1 step-choose-design">
 									<form method="post" action="#">
 										<ul>
-											<?php foreach ( $predefined_themes as $index => $import_file ) : ?>
+											<?php foreach ( $predefined_themes as $index => $import_file ) : 
+
+													$import_btn_label = __( 'Import Demo', 'inspiro' );
+													$imported_demo = false;
+													$imported_btn_classname = '';
+
+													if( $imported_demo_id && $imported_demo_id == $import_file['import_id'] ) {
+														$imported_demo = true;
+														$imported_btn_classname = 'button-secondary';
+														$import_btn_label = __( 'Imported', 'inspiro' );
+													}
+												
+												?>
 											<?php
 												// Prepare import item display data.
 												$img_src = isset( $import_file['import_preview_image_url'] ) ? $import_file['import_preview_image_url'] : '';
@@ -85,7 +99,11 @@ if ( ! empty( $this->import_files ) && isset( $_GET['import-mode'] ) && 'manual'
 													<figcaption>
 														<h5><?php echo esc_html( $import_file['import_file_name'] ); ?></h5>
 
-														<a href="<?php echo $this->get_plugin_settings_url( [ 'step' => 'import', 'import' => esc_attr( $index ) ] ); ?>" class="button button-primary"><?php esc_html_e( 'Import Demo', 'inspiro' ); ?></a>
+														<a href="<?php echo $this->get_plugin_settings_url( [ 'step' => 'import', 'import' => esc_attr( $index ) ] ); ?>" class="button button-primary <?php echo esc_attr( $imported_btn_classname ); ?>"><?php echo esc_html( $import_btn_label ); ?></a>
+
+														<?php if( $imported_demo ) { ?>
+															<a href="<?php echo $this->get_plugin_settings_url( [ 'step' => 'delete_import', 'imported_demo' => esc_attr( $index ) ] ); ?>" class="delete-imported-demo-content" title="<?php esc_attr_e( 'Delete imported demo content', 'inspiro-toolkit' ); ?>"></a>
+														<?php } ?>
 
 													</figcaption>
 												</figure>
