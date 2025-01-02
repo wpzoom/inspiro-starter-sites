@@ -21,7 +21,7 @@ if ( get_template() === $theme_slug ) {
 
 ?>
 
-<div class="wpzi wpzi--install-plugins wpz-onboard_wrapper">
+<div class="wpzi wpzi--delete-imported wpz-onboard_wrapper">
 
 <div class="wpzi__admin-notices js-wpzi-admin-notices-container"></div>
 
@@ -55,8 +55,8 @@ if ( get_template() === $theme_slug ) {
 		<div class="wpzi__content-container-content">
 			<div class="wpzi__content-container-content--main">
 				<?php if ( isset( $_GET['imported_demo'] ) ) : ?>
-					<div class="wpzi-install-plugins-content js-wpzi-install-plugins-content">
-						<div class="wpzi-install-plugins-content-header">
+					<div class="wpzi-delete-imported-content js-wpzi-delete-imported-content">
+						<div class="wpzi-delete-imported-content-header">
 							<h2><?php esc_html_e( 'Delete imported demo content', 'inspiro-toolkit' ); ?></h2>
 							<p>
 								<?php esc_html_e( 'Are you sure you want to delete the imported demo content? This action will delete all pages and posts that have been imported, whether or not they have been edited later.', 'inspiro-toolkit' ); ?>
@@ -69,36 +69,31 @@ if ( get_template() === $theme_slug ) {
 							<?php endif; ?>
 						</div>
 						
-						<div class="wpzi-install-plugins-content-footer">
+						<div class="wpzi-delete-imported-content-footer">
 							<a href="<?php echo esc_url( $this->get_plugin_settings_url() ); ?>" class="button"><img src="<?php echo esc_url( WPZI_URL . 'assets/images/icons/long-arrow-alt-left-blue.svg' ); ?>" alt="<?php esc_attr_e( 'Back icon', 'inspiro-toolkit' ); ?>"><span><?php esc_html_e( 'Go Back' , 'inspiro-toolkit' ); ?></span></a>
-							<a href="#" class="button button-primary js-wpzi-delete-imported-demo"><?php esc_html_e( 'Continue & Delete' , 'inspiro-toolkit' ); ?></a>
+							<a href="#" class="button button-danger js-wpzi-delete-imported-demo"><?php esc_html_e( 'Delete?' , 'inspiro-toolkit' ); ?></a>
 						</div>
 					</div>
 				<?php endif; ?>
 
-				<div class="wpzi-importing js-wpzi-importing">
-					<div class="wpzi-importing-header">
+				<div class="wpzi-deleting js-wpzi-deleting">
+					<div class="wpzi-deleting-header">
 						<h2><?php esc_html_e( 'Deleting Content' , 'inspiro-toolkit' ); ?></h2>
 						<p><?php esc_html_e( 'Please sit tight while we deleting the demo content. Do not refresh the page or hit the back button.' , 'inspiro-toolkit' ); ?></p>
 					</div>
-					<div class="wpzi-importing-content">
-						<img class="wpzi-importing-content-importing" src="<?php echo esc_url( WPZI_URL . 'assets/images/importing.svg' ); ?>" alt="<?php esc_attr_e( 'Deleting animation', 'inspiro-toolkit' ); ?>">
+					<div class="wpzi-deleting-content">
+						<img class="wpzi-deleting-content-deleting" src="<?php echo esc_url( WPZI_URL . 'assets/images/importing.svg' ); ?>" alt="<?php esc_attr_e( 'Deleting animation', 'inspiro-toolkit' ); ?>">
 					</div>
 				</div>
 
-				<div class="wpzi-imported js-wpzi-imported">
-					<div class="wpzi-imported-header">
+				<div class="wpzi-deleted js-wpzi-deleted">
+					<div class="wpzi-deleted-content-header">
 						<h2 class="js-wpzi-ajax-response-title"><?php esc_html_e( 'Deleting Complete!' , 'inspiro-toolkit' ); ?></h2>
-						<div class="js-wpzi-ajax-response-subtitle">
-							<p>
-								<?php esc_html_e( 'Congrats, your demo was imported successfully. You can now begin editing your site.' , 'inspiro-toolkit' ); ?>
-							</p>
-						</div>
 					</div>
-					<div class="wpzi-imported-content">
-						<div class="wpzi__response  js-wpzi-ajax-complete-response"></div>
+					<div class="wpzi-deleted-content">
+						<div class="wpzi__response js-wpzi-ajax-complete-response"></div>
 					</div>
-					<div class="wpzi-imported-footer">
+					<div class="wpzi-deleted-footer">
 						<?php echo wp_kses(
 							$this->get_import_successful_buttons_html(),
 							[

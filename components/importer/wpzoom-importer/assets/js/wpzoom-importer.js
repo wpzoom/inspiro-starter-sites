@@ -10,107 +10,12 @@ jQuery( function ( $ ) {
 	// Move the admin notices inside the appropriate div.
 	$( '.js-wpzi-notice-wrapper' ).appendTo( '.js-wpzi-admin-notices-container' );
 
-	// Auto start the manual import if on the import page and the 'js-wpzi-auto-start-manual-import' element is present.
-	if ( $( '.js-wpzi-auto-start-manual-import' ).length ) {
-		startImport( false );
-	}
-
 	/**
 	 * ---------------------------------------
 	 * ------------- Events ------------------
 	 * ---------------------------------------
 	 */
 
-	/**
-	 * No predefined demo import button click (manual import).
-	 */
-	$( '.js-wpzi-start-manual-import' ).on( 'click', function ( event ) {
-		event.preventDefault();
-
-		var $button = $( this );
-
-		if ( $button.hasClass( 'wpzi-button-disabled' ) ) {
-			return false;
-		}
-
-		// Prepare data for the AJAX call
-		var data = new FormData();
-		data.append( 'action', 'wpzi_upload_manual_import_files' );
-		data.append( 'security', wpzi.ajax_nonce );
-
-		if ( $('#wpzi__content-file-upload').length && $('#wpzi__content-file-upload').get(0).files.length ) {
-			var contentFile = $('#wpzi__content-file-upload')[0].files[0];
-			var contentFileExt = contentFile.name.split('.').pop();
-
-			if ( -1 === [ 'xml' ].indexOf( contentFileExt.toLowerCase() ) ) {
-				alert( wpzi.texts.content_filetype_warn );
-
-				return false;
-			}
-
-			data.append( 'content_file', contentFile );
-		}
-		if ( $('#wpzi__widget-file-upload').length && $('#wpzi__widget-file-upload').get(0).files.length ) {
-			var widgetsFile = $('#wpzi__widget-file-upload')[0].files[0];
-			var widgetsFileExt = widgetsFile.name.split('.').pop();
-
-			if ( -1 === [ 'json', 'wie' ].indexOf( widgetsFileExt.toLowerCase() ) ) {
-				alert( wpzi.texts.widgets_filetype_warn );
-
-				return false;
-			}
-
-			data.append( 'widget_file', widgetsFile );
-		}
-		if ( $('#wpzi__customizer-file-upload').length && $('#wpzi__customizer-file-upload').get(0).files.length ) {
-			var customizerFile = $('#wpzi__customizer-file-upload')[0].files[0];
-			var customizerFileExt = customizerFile.name.split('.').pop();
-
-			if ( -1 === [ 'dat' ].indexOf( customizerFileExt.toLowerCase() ) ) {
-				alert( wpzi.texts.customizer_filetype_warn );
-
-				return false;
-			}
-
-			data.append( 'customizer_file', customizerFile );
-		}
-		if ( $('#wpzi__redux-file-upload').length && $('#wpzi__redux-file-upload').get(0).files.length ) {
-			var reduxFile = $('#wpzi__redux-file-upload')[0].files[0];
-			var reduxFileExt = reduxFile.name.split('.').pop();
-
-			if ( -1 === [ 'json' ].indexOf( reduxFileExt.toLowerCase() ) ) {
-				alert( wpzi.texts.redux_filetype_warn );
-
-				return false;
-			}
-
-			data.append( 'redux_file', reduxFile );
-			data.append( 'redux_option_name', $('#wpzi__redux-option-name').val() );
-		}
-
-		$button.addClass( 'wpzi-button-disabled' );
-
-		// AJAX call to upload all selected import files (content, widgets, customizer and redux).
-		$.ajax({
-			method: 'POST',
-			url: wpzi.ajax_url,
-			data: data,
-			contentType: false,
-			processData: false,
-		})
-			.done( function( response ) {
-				if ( response.success ) {
-					window.location.href = wpzi.import_url;
-				} else {
-					alert( response.data );
-					$button.removeClass( 'wpzi-button-disabled' );
-				}
-			})
-			.fail( function( error ) {
-				alert( error.statusText + ' (' + error.status + ')' );
-				$button.removeClass( 'wpzi-button-disabled' );
-			})
-	} );
 
 	/**
 	 * Prevent a required plugin checkbox from changeing state.
@@ -254,6 +159,46 @@ jQuery( function ( $ ) {
 			$missingPluginNotice.hide();
 		}
 	} );
+
+	/**
+	 * Delete the imported content.
+	 */
+	$('.js-wpzi-delete-imported-demo').on('click', function (event) {
+		event.preventDefault();
+
+		var $button = $(this);
+
+		if ( $button.hasClass( 'wpzi-button-disabled' ) ) {
+			return false;
+		}
+
+		$button.addClass('wpzi-button-disabled');
+		// AJAX call to delete the imported content.
+
+		$.ajax({
+			method: 'POST',
+			url: wpzi.ajax_url,
+			data: {
+				action: 'wpzi_delete_imported_demo',
+				security: wpzi.ajax_nonce,
+			},
+			beforeSend:  function() {
+				$( '.js-wpzi-delete-imported-content' ).hide();
+				$( '.js-wpzi-deleting' ).show();
+			}
+		})
+		.done(function (response) {
+			if (response.success) {
+				$( '.js-wpzi-deleting' ).hide();
+				$( '.js-wpzi-deleted' ).show();
+			} else {
+				console.log(response.data || 'Failed to delete imported content.');
+				$( '.js-wpzi-deleting' ).hide();
+				$( '.js-wpzi-deleted' ).show();
+			}
+		})
+
+	} );	
 
 
 	/**

@@ -132,8 +132,6 @@ class WpzoomImporter {
 		add_action( 'wp_ajax_wpzi_import_customizer_data', array( $this, 'import_customizer_data_ajax_callback' ) );
 		add_action( 'wp_ajax_wpzi_after_import_data', array( $this, 'after_all_import_data_ajax_callback' ) );
 
-		add_action( 'wp_ajax_wpzi_delete_imported_demo', array( $this, 'delete_imported_demo_ajax_callback' ) );
-
 		add_action( 'after_setup_theme', array( $this, 'setup_plugin_with_filter_data' ) );
 		add_action( 'user_admin_notices', array( $this, 'start_notice_output_capturing' ), 0 );
 		add_action( 'admin_notices', array( $this, 'start_notice_output_capturing' ), 0 );
@@ -148,10 +146,8 @@ class WpzoomImporter {
 		add_action( 'wxr_importer.processed.post', array( $this, 'track_post' ), 10, 2 );
 		add_action( 'wxr_importer.processed.term', array( $this, 'track_term' ) );
 
-		// Reset Post & Terms.
-		add_action( 'wp_ajax_wpzi-importer-delete-posts', array( $this, 'delete_imported_posts' ) );
-		add_action( 'wp_ajax_wpzi-importer-delete-wp-forms', array( $this, 'delete_imported_wp_forms' ) );
-		add_action( 'wp_ajax_wpzi-importer-delete-terms', array( $this, 'delete_imported_terms' ) );
+		// Delete imported demo.
+		add_action( 'wp_ajax_wpzi_delete_imported_demo', array( $this, 'delete_imported_demo_ajax_callback' ) );
 
 		add_action( 'wp_import_insert_post', [ $this, 'save_wp_navigation_import_mapping' ], 10, 4 );
 		add_action( 'wpzi/after_import', [ $this, 'fix_imported_wp_navigation' ] );
@@ -202,7 +198,7 @@ class WpzoomImporter {
 		}
 
 		if ( isset( $_GET['step'] ) && 'delete_import' === $_GET['step'] ) {
-			require_once INSPIRO_TOOLKIT_PATH . 'components/importer/views/delete_import.php';
+			require_once INSPIRO_TOOLKIT_PATH . 'components/importer/views/delete-import.php';
 			return;
 		}
 
@@ -819,9 +815,6 @@ class WpzoomImporter {
 	 * @return array
 	 */
 	public function get_reset_data() {
-		
-		// Verify if the AJAX call is valid (checks nonce and current_user_can).
-		Helpers::verify_ajax_call();
 
 		global $wpdb;
 
@@ -835,10 +828,6 @@ class WpzoomImporter {
 			'reset_terms'    => $term_ids,
 		);
 
-		if ( wp_doing_ajax() ) {
-			wp_send_json_success( $data );
-		}
-
 		return $data;
 	}
 
@@ -849,6 +838,41 @@ class WpzoomImporter {
 		Helpers::verify_ajax_call();
 
 		// Get the demo ID to delete.
+		$reset_data = $this->get_reset_data();
+		if( ! empty( $reset_data ) ) {
+			$post_ids = $reset_data['reset_posts'];
+			$form_ids = $reset_data['reset_wp_forms'];
+			$term_ids = $reset_data['reset_terms'];
+
+			// Delete imported posts.
+			if ( ! empty( $post_ids ) ) {
+				foreach ( $post_ids as $post_id ) {
+					$this->delete_imported_posts( $post_id );
+				}
+			}
+
+			// Delete imported WP forms.
+			if ( ! empty( $form_ids ) ) {
+				foreach ( $form_ids as $form_id ) {
+					$this->delete_imported_wp_forms( $form_id );
+				}
+			}
+
+			// Delete imported terms.
+			if ( ! empty( $term_ids ) ) {
+				foreach ( $term_ids as $term_id ) {
+					$this->delete_imported_terms( $term_id );
+				}
+			}
+		}
+
+		// Delete the demo ID option.
+		delete_option( 'inspiro_imported_demo_id' );
+
+		// Send a JSON response with success message.
+		wp_send_json_success( 
+			esc_html__( 'Demo data has been deleted successfully.', 'inspiro-toolkit' ) 
+		);
 
 	}
 
@@ -863,21 +887,12 @@ class WpzoomImporter {
 	 */
 	public function delete_imported_posts( $post_id = 0 ) {
 
-		if ( wp_doing_ajax() ) {
-			// Verify if the AJAX call is valid (checks nonce and current_user_can).
-			Helpers::verify_ajax_call();
-		}
-
-		$post_id = isset( $_REQUEST['post_id'] ) ? absint( $_REQUEST['post_id'] ) : $post_id;
 		if ( $post_id ) {
 			$post_type = get_post_type( $post_id );
 			do_action( 'wpzoom_demo_importer_before_delete_imported_posts', $post_id, $post_type );
 			wp_delete_post( $post_id, true );
 		}
-		
-		if ( wp_doing_ajax() ) {
-			wp_send_json_success( $message );
-		}
+
 	}
 
 	/**
@@ -891,21 +906,11 @@ class WpzoomImporter {
 	 */
 	public function delete_imported_wp_forms( $post_id = 0 ) {
 
-		if ( ! defined( 'WP_CLI' ) && wp_doing_ajax() ) {
-			// Verify if the AJAX call is valid (checks nonce and current_user_can).
-			Helpers::verify_ajax_call();
-		}
-
-		$post_id = isset( $_REQUEST['post_id'] ) ? absint( $_REQUEST['post_id'] ) : $post_id;
-
 		if ( $post_id ) {
 			do_action( 'wpzoom_demo_importer_before_delete_imported_wp_forms', $post_id );
 			wp_delete_post( $post_id, true );
 		}
 
-		if ( wp_doing_ajax() ) {
-			wp_send_json_success( $message );
-		}
 	}
 
 	/**
@@ -918,12 +923,6 @@ class WpzoomImporter {
 	 * @return void
 	 */
 	public function delete_imported_terms( $term_id = 0 ) {
-		if ( ! defined( 'WP_CLI' ) && wp_doing_ajax() ) {
-			// Verify if the AJAX call is valid (checks nonce and current_user_can).
-			Helpers::verify_ajax_call();
-		}
-
-		$term_id = isset( $_REQUEST['term_id'] ) ? absint( $_REQUEST['term_id'] ) : $term_id;
 
 		if ( $term_id ) {
 			$term = get_term( $term_id );
@@ -933,10 +932,6 @@ class WpzoomImporter {
 				// Delete term.
 				wp_delete_term( $term_id, $term->taxonomy );
 			}
-		}
-
-		if ( wp_doing_ajax() ) {
-			wp_send_json_success( $message );
 		}
 	}
 

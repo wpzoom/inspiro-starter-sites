@@ -350,6 +350,12 @@
     margin-right: 5px;
     margin-bottom: 8px;
 }
+.wp-core-ui .wpz-onboard_wrapper .button.button-danger {
+    border:none;
+    color: #fff;
+    background-color: #d84b4b !important;
+}
+
 .wp-core-ui .wpz-onboard_wrapper .button:hover, .wp-core-ui .wpz-onboard_wrapper .button:active {
     color: #fff;
     background-color: #67b0ff;

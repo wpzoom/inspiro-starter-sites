@@ -384,7 +384,7 @@ class Helpers {
 		$attachment = array(
 			'guid'           => self::get_log_url( $log_path ),
 			'post_mime_type' => $filetype['type'],
-			'post_title'     => self::apply_filters( 'wpzi/attachment_prefix', esc_html__( 'One Click Demo Import - ', 'inspiro-toolkit' ) ) . preg_replace( '/\.[^.]+$/', '', basename( $log_path ) ),
+			'post_title'     => self::apply_filters( 'wpzi/attachment_prefix', esc_html__( 'WPZOOM Importer - ', 'inspiro-toolkit' ) ) . preg_replace( '/\.[^.]+$/', '', basename( $log_path ) ),
 			'post_content'   => '',
 			'post_status'    => 'inherit',
 		);
