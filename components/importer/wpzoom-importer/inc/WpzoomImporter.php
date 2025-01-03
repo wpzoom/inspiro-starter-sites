@@ -889,6 +889,9 @@ class WpzoomImporter {
 
 		if ( $post_id ) {
 			$post_type = get_post_type( $post_id );
+			if( 'elementor_library' === $post_type ) {
+				return;
+			}
 			do_action( 'wpzoom_demo_importer_before_delete_imported_posts', $post_id, $post_type );
 			wp_delete_post( $post_id, true );
 		}
