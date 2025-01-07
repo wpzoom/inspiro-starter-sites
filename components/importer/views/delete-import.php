@@ -70,7 +70,7 @@ if ( get_template() === $theme_slug ) {
 						</div>
 						
 						<div class="wpzi-delete-imported-content-footer">
-							<a href="<?php echo esc_url( $this->get_plugin_settings_url() ); ?>" class="button"><img src="<?php echo esc_url( WPZI_URL . 'assets/images/icons/long-arrow-alt-left-blue.svg' ); ?>" alt="<?php esc_attr_e( 'Back icon', 'inspiro-toolkit' ); ?>"><span><?php esc_html_e( 'Go Back' , 'inspiro-toolkit' ); ?></span></a>
+							<a href="<?php echo esc_url( $this->get_plugin_settings_url() ); ?>" class="button"><span><?php esc_html_e( '&larr; Go Back' , 'inspiro-toolkit' ); ?></span></a>
 							<a href="#" class="button button-danger js-wpzi-delete-imported-demo"><?php esc_html_e( 'Delete?' , 'inspiro-toolkit' ); ?></a>
 						</div>
 					</div>
@@ -94,16 +94,9 @@ if ( get_template() === $theme_slug ) {
 						<div class="wpzi__response js-wpzi-ajax-complete-response"></div>
 					</div>
 					<div class="wpzi-deleted-footer">
-						<?php echo wp_kses(
-							$this->get_import_successful_buttons_html(),
-							[
-								'a' => [
-									'href'   => [],
-									'class'  => [],
-									'target' => [],
-								],
-							]
-						); ?>
+						<div class="wpzi-delete-imported-content-footer">
+                            <a href="<?php echo esc_url( $this->get_plugin_settings_url() ); ?>" class="button"><span><?php esc_html_e( '&larr; View all demos' , 'inspiro-toolkit' ); ?></span></a>
+                        </div>
 					</div>
 				</div>
 			</div>

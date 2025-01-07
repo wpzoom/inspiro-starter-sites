@@ -1074,7 +1074,7 @@ class WpzoomImporter {
 			'wpzi/import_successful_buttons',
 			[
 				[
-					'label'  => __( 'Theme Settings' , 'inspiro-toolkit' ),
+					'label'  => __( 'Customize Theme' , 'inspiro-toolkit' ),
 					'class'  => 'button button-primary button-hero',
 					'href'   => admin_url( 'customize.php' ),
 					'target' => '_blank',

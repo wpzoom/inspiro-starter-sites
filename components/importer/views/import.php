@@ -133,7 +133,7 @@ if ( get_template() === $theme_slug ) {
 							<?php endif; ?>
 						</div>
 						<div class="wpzi-install-plugins-content-footer">
-							<a href="<?php echo esc_url( $this->get_plugin_settings_url() ); ?>" class="button"><img src="<?php echo esc_url( WPZI_URL . 'assets/images/icons/long-arrow-alt-left-blue.svg' ); ?>" alt="<?php esc_attr_e( 'Back icon', 'inspiro-toolkit' ); ?>"><span><?php esc_html_e( 'Go Back' , 'inspiro-toolkit' ); ?></span></a>
+							<a href="<?php echo esc_url( $this->get_plugin_settings_url() ); ?>" class="button"><span><?php esc_html_e( '&larr; Go Back' , 'inspiro-toolkit' ); ?></span></a>
 							<a href="#" class="button button-primary js-wpzi-install-plugins-before-import"><?php esc_html_e( 'Continue & Import' , 'inspiro-toolkit' ); ?></a>
 						</div>
 					</div>

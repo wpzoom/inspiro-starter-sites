@@ -9,7 +9,6 @@
 	h2 {
 		text-align: inherit;
 		font-size: 32px;
-		line-height: 39px;
 		font-weight: 500;
 		margin-bottom: 20px;
 	}
@@ -63,7 +62,6 @@
 
 		p {
 			font-size: 14px;
-			line-height: 24px;
 			color: #444444;
 			margin: 0 0 10px 0;
 
@@ -78,7 +76,6 @@
 
 			p {
 				font-size: 16px;
-				line-height: 24px;
 			}
 		}
 	}
@@ -93,8 +90,6 @@
 
 		p {
 			font-size: 16px;
-			line-height: 19px;
-			font-weight: 300;
 			color: #444444;
 			margin: 0 0 10px 0;
 
@@ -106,7 +101,6 @@
 		&-header {
 			h2 {
 				font-size: 24px;
-				line-height: 29px;
 				margin-bottom: 10px;
 			}
 
@@ -152,7 +146,6 @@
 				p {
 					padding: 15px 3px;
 					font-size: 14px;
-					line-height: 22px;
 					color: #777777;
 				}
 			}
@@ -181,7 +174,6 @@
 
 	.button.button-hero {
 		font-size: 16px;
-		line-height: 20px;
 		font-weight: 500;
 		min-height: 40px;
 		padding: 9px 18px;
@@ -241,7 +233,6 @@
 		&-title {
 			margin: 0;
 			font-size: 24px;
-			line-height: 29px;
 			font-weight: 700;
 		}
 
@@ -286,7 +277,6 @@
 
 					h3 {
 						font-size: 16px;
-						line-height: 19px;
 						font-weight: 500;
 						margin: 0;
 					}
@@ -305,15 +295,11 @@
 
 				h2 {
 					font-size: 22px;
-					line-height: 26px;
-					font-weight: normal;
 					margin: 0 0 6px 0;
 				}
 
 				p {
 					font-size: 16px;
-					line-height: 22px;
-					font-weight: 300;
 					color: #444444;
 					margin: 0 0 10px 0;
 
@@ -449,7 +435,6 @@
 
 					h3 {
 						font-size: 18px;
-						line-height: 22px;
 						color: #444444;
 						font-weight: 500;
 						margin: 0;
@@ -457,7 +442,6 @@
 
 					p {
 						font-size: 14px;
-						line-height: 17px;
 						color: #777777;
 						margin: 0 0 6px 0;
 
@@ -523,7 +507,6 @@
 
 					p {
 						font-size: 14px;
-						line-height: 24px;
 						color: #444444;
 						margin: 0 0 10px 0;
 
@@ -561,8 +544,6 @@
 	&__intro-text {
 		p {
 			font-size: 18px;
-			line-height: 26px;
-			font-weight: 300;
 			color: #666666;
 			margin: 0 0 24px;
 		}
@@ -621,27 +602,23 @@
 					margin-left: 10px;
 					color: #72777C;
 					font-size: 13px;
-					line-height: 16px;
 				}
 			}
 
 			.theme-author {
 				font-size: 16px;
-				line-height: 19px;
 				color: #72777C;
 				margin: 0 0 20px;
 			}
 
 			.theme-description {
 				font-size: 16px;
-				line-height: 24px;
 				color: #555555;
 				margin: 0 0 20px;
 			}
 
 			.theme-tags {
 				font-size: 13px;
-				line-height: 20px;
 				color: #555555;
 				margin: 4px 0 0;
 
@@ -653,7 +630,6 @@
 			.wpzi-import-mode-switch {
 				float: right;
 				font-size: 14px;
-				line-height: 17px;
 			}
 		}
 
@@ -690,7 +666,6 @@
 		padding: 20px;
 		margin: 30px 0;
 		font-size: 14px;
-		line-height: 19px;
 		background-color: #ffffff;
 		border: 1px solid #e5e5e5;
 	}
@@ -706,7 +681,6 @@
 
 			h2 {
 				font-size: 22px;
-				line-height: 27px;
 				margin: 0;
 			}
 		}
@@ -846,7 +820,6 @@
 				display: block;
 				margin: 0;
 				font-size: 16px;
-				line-height: 19px;
 				text-align: center;
 				font-weight: 500;
 				color: #23282d;
@@ -909,7 +882,6 @@
 
 		&-navigation {
 			font-size: 13px;
-			line-height: 16px;
 			width: 100%;
 			float: left;
 
@@ -960,7 +932,6 @@
 			width: 100%;
 			margin: 10px 0;
 			font-size: 13px;
-			line-height: 16px;
 			color: #72777C !important;
 		}
 
@@ -1070,14 +1041,12 @@
 			h3 {
 				margin: 5px 0;
 				font-size: 16px;
-				line-height: 20px;
 				font-weight: 500;
 			}
 
 			p {
 				margin: 0;
 				font-size: 13px;
-				line-height: 16px;
 				color: #666666;
 			}
 		}
