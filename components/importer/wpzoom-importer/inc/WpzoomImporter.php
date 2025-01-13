@@ -215,7 +215,7 @@ class WpzoomImporter {
 	public function admin_enqueue_scripts( $hook ) {
 		// Enqueue the scripts only on the plugin page.
 
-		if ( $this->plugin_page === $hook || 'toplevel_page_inspiro-toolkit-demo-import' == $hook || ( 'admin.php' === $hook && $this->plugin_page_setup['menu_slug'] === esc_attr( $_GET['import'] ) ) ) {
+		if ( $this->plugin_page === $hook || 'inspiro_page_inspiro-demo' == $hook || ( 'admin.php' === $hook && $this->plugin_page_setup['menu_slug'] === esc_attr( $_GET['import'] ) ) ) {
 			
 			wp_enqueue_script( 
 				'wpzi-importer-js', 

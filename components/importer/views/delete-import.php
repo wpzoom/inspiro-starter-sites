@@ -102,7 +102,7 @@ if ( get_template() === $theme_slug ) {
 			</div>
 			<div class="wpzi__content-container-content--side">
 				<?php
-					$selected = isset( $_GET['delete_import'] ) ? (int) $_GET['delete_import'] : null;
+					$selected = isset( $_GET['imported_demo'] ) ? (int) $_GET['imported_demo'] : null;					
 					echo wp_kses_post( ViewHelpers::small_theme_card( $selected ) );
 				?>
 			</div>

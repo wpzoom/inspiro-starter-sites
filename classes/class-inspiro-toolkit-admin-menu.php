@@ -28,15 +28,6 @@ class Inspiro_Toolkit_Admin_Menu {
 	 */
 	public function __construct() {
 
-		// Let's add menu item with subitems
-		add_action( 'admin_menu', array( $this, 'register_menus' ), 15 );
-		add_action( 'plugin_action_links_' . INSPIRO_TOOLKIT_PLUGIN_BASE, array( $this, 'plugin_action_links' ) );
-		
-		// Add go PRO link to plugin page.
-		add_action( 'admin_menu', array( $this, 'plugin_add_go_pro_link_to_menu' ), 15 );
-		add_action( 'admin_head', array( $this, 'add_css_go_pro_menu' ) );
-		add_action( 'admin_footer', array( $this, 'add_target_blank_go_pro_menu' ) );
-
 		// Remove Inspiro Lite Demo menu item
 		add_action( 'admin_menu', array( $this, 'remove_inspiro_demo_page' ), 999 );
 
@@ -46,29 +37,15 @@ class Inspiro_Toolkit_Admin_Menu {
 	 * Register admin menus.
 	 */
 	public function register_menus() {
-		
-		$page_title = esc_html__( 'Inspiro Toolkit Settings Page', 'inspiro-toolkit' );
 
-		// Main menu item.
-		add_menu_page(
-			$page_title,
-			esc_html__( 'Inspiro Toolkit', 'inspiro-toolkit' ),
-			'manage_options',
-			INSPIRO_TOOLKIT_SETTINGS_PAGE,
-			array( $this, 'admin_page' ),
-			'dashicons-admin-tools',
-			78
-		);
-
-		//About the plugin menu item
-		add_submenu_page(
-			INSPIRO_TOOLKIT_SETTINGS_PAGE,
-			esc_html__( 'About the Inspiro Toolkit', 'inspiro-toolkit'),
-			esc_html__( 'About', 'inspiro-toolkit'),
-			'manage_options',
-			'inspiro-toolkit-about',
-			array( $this, 'about_the_plugin_page' ),
-			6
+		// Add the "Import Demo" submenu page
+		add_submenu_page( // phpcs:ignore WPThemeReview.PluginTerritory.NoAddAdminPages.add_menu_pages_add_submenu_page
+			'inspiro',                   // parent slug
+			__( 'Import Demo', 'inspiro' ),      // page title
+			__( 'Import Demo', 'inspiro' ),      // menu title
+			'manage_options',              // capability
+			'inspiro-demo',            // menu slug,
+			array( $this, 'admin_page' )               // callback function
 		);
 
 	}

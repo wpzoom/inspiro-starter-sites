@@ -21,28 +21,34 @@ class Inspiro_Toolkit_Importer {
 	 * The Constructor.
 	 */
 	public function __construct() {
+
+		$current_theme = wp_get_theme();
+		$theme_name    = $current_theme->get( 'Name' );
+
 		require_once INSPIRO_TOOLKIT_PATH . 'components/importer/wpzoom-importer/wpzoom-importer.php';
 	
-
-		add_filter( 'wpzi/plugin_page_setup', array( $this, 'wpzi_new_menu' ) );
+		if ( 'Inspiro' == $theme_name ) {
+			add_filter( 'wpzi/plugin_page_setup', array( $this, 'wpzi_new_menu' ) );
+		}
+		
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
 	}
 
 	public function wpzi_new_menu() {
+		
 		return array(
-			'parent_slug' => 'inspiro-toolkit-demo-import',
-			'page_title'  => esc_html__( 'Import Demo Data', 'inspiro-toolkit' ),
-			'menu_title'  => esc_html__( 'Import Demo Data', 'inspiro-toolkit' ),
+			'parent_slug' => 'inspiro',
+			'page_title'  => esc_html__( 'Import Demo', 'inspiro-toolkit' ),
+			'menu_title'  => esc_html__( 'Import Demo', 'inspiro-toolkit' ),
 			'capability'  => 'manage_options',
-			'menu_slug'   => 'inspiro-toolkit-demo-import',
+			'menu_slug'   => 'inspiro-demo',
 		);
 	}
 
-	public function enqueue_scripts( $hook ) {
+	public function enqueue_scripts( $hook ) {		
 
-
-		if ( 'toplevel_page_inspiro-toolkit-demo-import' !== $hook ) {
+		if ( 'inspiro_page_inspiro-demo' !== $hook && 'appearance_page_inspiro-toolkit' !== $hook ) {
 			return;
 		}
 		

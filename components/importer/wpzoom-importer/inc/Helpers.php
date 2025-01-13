@@ -778,8 +778,8 @@ class Helpers {
 	public static function get_plugin_page_setup_data() {
 		return Helpers::apply_filters( 'wpzi/plugin_page_setup', array(
 			'parent_slug' => 'themes.php',
-			'page_title'  => esc_html__( 'One Click Demo Import' , 'inspiro-toolkit' ),
-			'menu_title'  => esc_html__( 'Import Demo Data' , 'inspiro-toolkit' ),
+			'page_title'  => esc_html__( 'WPZOOM Importer' , 'inspiro-toolkit' ),
+			'menu_title'  => esc_html__( 'Import Demo' , 'inspiro-toolkit' ),
 			'capability'  => 'import',
 			'menu_slug'   => 'inspiro-toolkit',
 		) );
