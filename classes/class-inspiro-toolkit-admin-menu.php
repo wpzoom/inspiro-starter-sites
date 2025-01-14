@@ -6,6 +6,8 @@
  * @package WPZOOM_Inspiro_Toolkit
  */
 
+namespace WPZI;
+
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -30,6 +32,8 @@ class Inspiro_Toolkit_Admin_Menu {
 
 		// Remove Inspiro Lite Demo menu item
 		add_action( 'admin_menu', array( $this, 'remove_inspiro_demo_page' ), 999 );
+
+		add_action( 'plugin_action_links_' . INSPIRO_TOOLKIT_PLUGIN_BASE, array( $this, 'plugin_action_links' ) );
 
 	}
 
@@ -116,20 +120,36 @@ class Inspiro_Toolkit_Admin_Menu {
 	 */
 	public function plugin_action_links( $links ) {
 
-		// Settings link
-		$settings_link = '<a href="' . admin_url( 'admin.php?page=' . INSPIRO_TOOLKIT_SETTINGS_PAGE ) . '">' . esc_html__( 'Dashboard', 'inspiro-toolkit' ) . '</a>';
+		$plugin_import_page = Helpers::get_plugin_page_setup_data();
 
-		// Add settings link to the array
-		array_unshift( $links, $settings_link );
+		if ( ! $plugin_import_page ) {
+			return $links;
+		}
+		if( ! isset( $plugin_import_page['menu_slug'] ) ) {
+			return $links;
+		}
+
+		$import_page_url = admin_url( 'themes.php?page=' . $plugin_import_page['menu_slug'] );
+
+		if( isset( $plugin_import_page['parent_slug'] ) && 'inspiro' == $plugin_import_page['parent_slug'] ) {
+			$import_page_url = admin_url( 'admin.php?page=' . $plugin_import_page['menu_slug'] );
+		}
+
+
+		// Settings link
+		$import_page_link = '<a href="' . esc_url( $import_page_url ) . '">' . esc_html__( 'Open Import Demo', 'inspiro-toolkit' ) . '</a>';
+
+		// Add import_page link to the array
+		array_unshift( $links, $import_page_link );
 
 		// Add Go Pro link if the plugin is not active
-		if( ! defined( 'INSPIRO_TOOLKIT_PRO_VERSION' ) ) {
-			$links['go_pro'] = sprintf( 
-				'<a href="%1$s" target="_blank" class="inspiro-toolkit-gopro" style="color:#0BB4AA;font-weight:bold;">UPGRADE &rarr; <span class="rcb-premium-badge" style="background-color: #0BB4AA; color: #fff; margin-left: 5px; font-size: 11px; min-height: 16px;  border-radius: 8px; display: inline-block; font-weight: 600; line-height: 1.6; padding: 0 8px">%2$s</span></a>',
-				self::$goProLink, 
-				esc_html__( 'PRO', 'inspiro-toolkit' )
-			);
-		}
+		// if( ! defined( 'INSPIRO_TOOLKIT_PRO_VERSION' ) ) {
+		// 	$links['go_pro'] = sprintf( 
+		// 		'<a href="%1$s" target="_blank" class="inspiro-toolkit-gopro" style="color:#0BB4AA;font-weight:bold;">UPGRADE &rarr; <span class="rcb-premium-badge" style="background-color: #0BB4AA; color: #fff; margin-left: 5px; font-size: 11px; min-height: 16px;  border-radius: 8px; display: inline-block; font-weight: 600; line-height: 1.6; padding: 0 8px">%2$s</span></a>',
+		// 		self::$goProLink, 
+		// 		esc_html__( 'PRO', 'inspiro-toolkit' )
+		// 	);
+		// }
 
 		return $links;
 
