@@ -47,8 +47,10 @@ add_action( 'plugins_loaded', 'inspiro_toolkit_load' );
  */
 function inspiro_toolkit_load() {
 
-	// Load the menu class
+	// Load the plugin classes
 	require_once INSPIRO_TOOLKIT_PATH . 'classes/class-inspiro-toolkit-admin-menu.php';
+	require_once INSPIRO_TOOLKIT_PATH . 'classes/class-inspiro-toolkit-admin-helpers.php';
+	
 
 }
 

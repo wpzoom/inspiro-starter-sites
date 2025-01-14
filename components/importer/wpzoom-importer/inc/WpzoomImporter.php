@@ -12,6 +12,7 @@ use WP_Error;
 /**
  * WPZOOM Demo Import class, so we don't have to worry about namespaces.
  */
+#[AllowDynamicProperties]
 class WpzoomImporter {
 	/**
 	 * The instance *Singleton* of this class
@@ -26,6 +27,13 @@ class WpzoomImporter {
 	 * @var object
 	 */
 	public $importer;
+
+	/**
+	 * Holds elementor pages.
+	 *
+	 * @var object
+	 */
+	public $elementor_pages = [];
 
 	/**
 	 * The instance of the WPZI\InspiroThemeInstaller class.
@@ -291,6 +299,9 @@ class WpzoomImporter {
 
 			// Define log file path.
 			$this->log_file_path = Helpers::get_log_path();
+
+			// Delete default pages and posts
+			Helpers::delete_default_posts();
 
 			// Get selected file index or set it to 0.
 			$this->selected_index = empty( $_POST['selected'] ) ? 0 : absint( $_POST['selected'] );

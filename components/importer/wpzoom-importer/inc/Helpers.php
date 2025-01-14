@@ -819,4 +819,20 @@ class Helpers {
 
 		set_transient( 'wpzi_importer_data_failed_attachment_imports', $failed_media_imports, HOUR_IN_SECONDS );
 	}
+
+	/**
+	 * Delete default post and page
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return mixed
+	 */
+	public static function delete_default_posts() {
+		
+		$hello_world = wp_delete_post( 1, true ); // 'Hello World!' post.
+		$sample_page = wp_delete_post( 2, true ); // 'Sample page' page.
+
+	}
+
+
 }
