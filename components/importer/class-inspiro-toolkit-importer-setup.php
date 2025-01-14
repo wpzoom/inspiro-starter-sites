@@ -75,7 +75,7 @@ class Inspiro_Toolkit_Importer_Setup {
 			$theme_plugins[] = [
 				'name'     => 'Video Popup Block by WPZOOM',
 				'slug'     => 'wpzoom-video-popup-block',
-				'required' => false,
+				'required' => true,
 			];
 			$theme_plugins[] =  [
 				'name'     => 'WPZOOM Portfolio',
