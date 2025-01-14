@@ -51,16 +51,16 @@ class Inspiro_Toolkit_Importer_Setup {
 
 	public function wpzi_register_plugins( $plugins ) {
 		$theme_plugins = [
-		  [
-			  'name'     => 'Instagram Widget by WPZOOM',
-			  'slug'     => 'instagram-widget-by-wpzoom',
-			  'required' => false,
-		  ],
-		  [
-			  'name'     => 'WPZOOM Forms',
-			  'slug'     => 'wpzoom-forms',
-			  'required' => true,
-		  ],
+			[
+				'name'     => 'Instagram Widget by WPZOOM',
+				'slug'     => 'instagram-widget-by-wpzoom',
+				'required' => false,
+		  	],
+			[
+				'name'     => 'WPZOOM Forms',
+				'slug'     => 'wpzoom-forms',
+				'required' => true,
+			],
 		];
 
 		// Check if user is on the theme recommeneded plugins step and a demo was selected.
@@ -72,7 +72,11 @@ class Inspiro_Toolkit_Importer_Setup {
 
 		// Adding one additional plugin for the first demo import ('import' number = 0).
 		if ( $_GET['import'] === '0' ) {
-
+			$theme_plugins[] = [
+				'name'     => 'Video Popup Block by WPZOOM',
+				'slug'     => 'wpzoom-video-popup-block',
+				'required' => false,
+			];
 			$theme_plugins[] =  [
 				'name'     => 'WPZOOM Portfolio',
 				'slug'     => 'wpzoom-portfolio',
