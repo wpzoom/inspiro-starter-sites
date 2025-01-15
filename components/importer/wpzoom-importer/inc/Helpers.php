@@ -533,37 +533,6 @@ class Helpers {
 			);
 		}
 
-		// Process Redux import file.
-		if ( $redux_file_info && ! isset( $redux_file_info['error'] ) ) {
-			if ( isset( $_POST['redux_option_name'] ) && empty( $_POST['redux_option_name'] ) ) {
-				// Write error to log file and send an AJAX response with the error.
-				self::log_error_and_send_ajax_response(
-					esc_html__( 'Missing Redux option name! Please also enter the Redux option name!', 'inspiro-toolkit' ),
-					$log_file_path,
-					esc_html__( 'Upload files', 'inspiro-toolkit' )
-				);
-			}
-
-			// Set uploaded Redux file.
-			$selected_import_files['redux'] = array(
-				array(
-					'option_name' => sanitize_text_field( $_POST['redux_option_name'] ),
-					'file_path'   => $redux_file_info['file'],
-				),
-			);
-		}
-		else {
-			// Add this error to log file.
-			$log_added = self::append_to_file(
-				sprintf( /* translators: %s - the error message. */
-					__( 'Redux file was not uploaded. Error: %s', 'inspiro-toolkit' ),
-					$redux_file_info['error']
-				),
-				$log_file_path,
-				esc_html__( 'Upload files' , 'inspiro-toolkit' )
-			);
-		}
-
 		// Add this message to log file.
 		$log_added = self::append_to_file(
 			__( 'The import files were successfully uploaded!', 'inspiro-toolkit' ) . self::import_file_info( $selected_import_files ),
@@ -596,13 +565,12 @@ class Helpers {
 			ini_get( 'max_execution_time' )
 		) . PHP_EOL .
 		sprintf( /* translators: %1$s - new line break, %2$s - the site URL, %3$s - the file path for content import, %4$s - the file path for widgets import, %5$s - the file path for widgets import, %6$s - the file path for redux import. */
-			__( 'Files info:%1$sSite URL = %2$s%1$sData file = %3$s%1$sWidget file = %4$s%1$sCustomizer file = %5$s%1$sRedux files:%1$s%6$s', 'inspiro-toolkit' ),
+			__( 'Files info:%1$sSite URL = %2$s%1$sData file = %3$s%1$sWidget file = %4$s%1$sCustomizer file = %5$s%1$s', 'inspiro-toolkit' ),
 			PHP_EOL,
 			get_site_url(),
 			empty( $selected_import_files['content'] ) ? esc_html__( 'not defined!', 'inspiro-toolkit' ) : $selected_import_files['content'],
 			empty( $selected_import_files['widgets'] ) ? esc_html__( 'not defined!', 'inspiro-toolkit' ) : $selected_import_files['widgets'],
-			empty( $selected_import_files['customizer'] ) ? esc_html__( 'not defined!', 'inspiro-toolkit' ) : $selected_import_files['customizer'],
-			empty( $redux_file_string ) ? esc_html__( 'not defined!', 'inspiro-toolkit' ) : $redux_file_string
+			empty( $selected_import_files['customizer'] ) ? esc_html__( 'not defined!', 'inspiro-toolkit' ) : $selected_import_files['customizer']
 		);
 	}
 

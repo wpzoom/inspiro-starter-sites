@@ -59,10 +59,10 @@ $imported_demo_id = get_option( 'inspiro_imported_demo_id', false );
 					<div id="demo-importer" class="wpz-onboard_content-main-tab">
 						<div class="theme-info-wrap welcome-section">
 							<h3 class="wpz-onboard_content-main-title">
-								<?php esc_html_e( 'Demo Importer', 'inspiro' ); ?>
+								<?php esc_html_e( 'Demo Importer', 'inspiro-toolkit' ); ?>
 							</h3>
 							<p class="about">
-								<?php esc_html_e( 'Importing demo data (post, pages, images, theme settings, etc.) is the quickest and easiest way to set up your new theme. It allows you to simply edit everything instead of creating content and layouts from scratch.', 'inspiro' ); ?>
+								<?php esc_html_e( 'Importing demo data (post, pages, images, theme settings, etc.) is the quickest and easiest way to set up your new theme. It allows you to simply edit everything instead of creating content and layouts from scratch.', 'inspiro-toolkit' ); ?>
 							</p>
 							<ol class="wpz-onboard_content-main-steps">
 								<li id="step-choose-design" class="wpz-onboard_content-main-step step-1 step-choose-design">
@@ -70,14 +70,14 @@ $imported_demo_id = get_option( 'inspiro_imported_demo_id', false );
 										<ul>
 											<?php foreach ( $predefined_themes as $index => $import_file ) : 
 
-													$import_btn_label = __( 'Import Demo', 'inspiro' );
+													$import_btn_label = esc_html__( 'Import Demo', 'inspiro-toolkit' );
 													$imported_demo = false;
 													$imported_btn_classname = '';
 
 													if( $imported_demo_id && $imported_demo_id == $import_file['import_id'] ) {
 														$imported_demo = true;
 														$imported_btn_classname = 'button-secondary';
-														$import_btn_label = __( 'Imported', 'inspiro' );
+														$import_btn_label = esc_html__( 'Imported', 'inspiro-toolkit' );
 													}
 												
 												?>
@@ -94,14 +94,14 @@ $imported_demo_id = get_option( 'inspiro_imported_demo_id', false );
 											<li data-name="<?php echo esc_attr( strtolower( $import_file['import_file_name'] ) ); ?>">
 												<figure title="<?php echo esc_attr( $import_file['import_file_name'] ); ?>">
 													<div class="preview-thumbnail wpzi-import" style="background-image:url('<?php echo esc_url( $img_src ) ?>')">
-														<a href="<?php echo esc_url( $import_file['preview_url'] ); ?>" target="_blank" class="button-select-template"><?php esc_html_e( 'View Demo', 'inspiro' ); ?></a></div>
+														<a href="<?php echo esc_url( $import_file['preview_url'] ); ?>" target="_blank" class="button-select-template"><?php esc_html_e( 'View Demo', 'inspiro-toolkit' ); ?></a></div>
 													<figcaption>
 														<h5><?php echo esc_html( $import_file['import_file_name'] ); ?></h5>
 
-														<a href="<?php echo $this->get_plugin_settings_url( [ 'step' => 'import', 'import' => esc_attr( $index ) ] ); ?>" class="button button-primary <?php echo esc_attr( $imported_btn_classname ); ?>"><?php echo esc_html( $import_btn_label ); ?></a>
+														<a href="<?php echo esc_url( $this->get_plugin_settings_url( [ 'step' => 'import', 'import' => esc_attr( $index ) ] ) ); ?>" class="button button-primary <?php echo esc_attr( $imported_btn_classname ); ?>"><?php echo esc_html( $import_btn_label ); ?></a>
 
 														<?php if( $imported_demo ) { ?>
-															<a href="<?php echo $this->get_plugin_settings_url( [ 'step' => 'delete_import', 'imported_demo' => esc_attr( $index ) ] ); ?>" class="delete-imported-demo-content" title="<?php esc_attr_e( 'Delete imported demo content', 'inspiro-toolkit' ); ?>"></a>
+															<a href="<?php echo esc_url( $this->get_plugin_settings_url( [ 'step' => 'delete_import', 'imported_demo' => esc_attr( $index ) ] ) ); ?>" class="delete-imported-demo-content" title="<?php esc_attr_e( 'Delete imported demo content', 'inspiro-toolkit' ); ?>"></a>
 														<?php } ?>
 
 													</figcaption>

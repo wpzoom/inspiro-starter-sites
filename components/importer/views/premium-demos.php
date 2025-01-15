@@ -43,7 +43,8 @@ $premium_demos = apply_filters( 'inspiro_toolkit_premium_demos', array() );
 		<br/>
 		<a href="<?php echo esc_url( $demo_section['purchase'] ); ?>" target="_blank" class="button button-large button-primary">
 			<?php
-				printf( __( 'Get %s Today &rarr;', 'inspiro-toolkit' ), esc_html( $demo_section['name'] ) );
+				// translators: %s: Demo name
+				printf( esc_html__( 'Get %s Today &rarr;', 'inspiro-toolkit' ), esc_html( $demo_section['name'] ) );
 			?>
 		</a>
 	</div>

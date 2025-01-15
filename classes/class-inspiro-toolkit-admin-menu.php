@@ -33,6 +33,7 @@ class Inspiro_Toolkit_Admin_Menu {
 		// Remove Inspiro Lite Demo menu item
 		add_action( 'admin_menu', array( $this, 'remove_inspiro_demo_page' ), 999 );
 
+		// Add plugin action links
 		add_action( 'plugin_action_links_' . INSPIRO_TOOLKIT_PLUGIN_BASE, array( $this, 'plugin_action_links' ) );
 
 	}
@@ -45,8 +46,8 @@ class Inspiro_Toolkit_Admin_Menu {
 		// Add the "Import Demo" submenu page
 		add_submenu_page( // phpcs:ignore WPThemeReview.PluginTerritory.NoAddAdminPages.add_menu_pages_add_submenu_page
 			'inspiro',                   // parent slug
-			__( 'Import Demo', 'inspiro' ),      // page title
-			__( 'Import Demo', 'inspiro' ),      // menu title
+			esc_html__( 'Import Demo', 'inspiro-toolkit' ),      // page title
+			esc_html__( 'Import Demo', 'inspiro-toolkit' ),      // menu title
 			'manage_options',              // capability
 			'inspiro-demo',            // menu slug,
 			array( $this, 'admin_page' )               // callback function
@@ -135,23 +136,23 @@ class Inspiro_Toolkit_Admin_Menu {
 			$import_page_url = admin_url( 'admin.php?page=' . $plugin_import_page['menu_slug'] );
 		}
 
-
 		// Settings link
 		$import_page_link = '<a href="' . esc_url( $import_page_url ) . '">' . esc_html__( 'Open Import Demo', 'inspiro-toolkit' ) . '</a>';
 
 		// Add import_page link to the array
 		array_unshift( $links, $import_page_link );
 
-		// Add Go Pro link if the plugin is not active
-		// if( ! defined( 'INSPIRO_TOOLKIT_PRO_VERSION' ) ) {
-		// 	$links['go_pro'] = sprintf( 
-		// 		'<a href="%1$s" target="_blank" class="inspiro-toolkit-gopro" style="color:#0BB4AA;font-weight:bold;">UPGRADE &rarr; <span class="rcb-premium-badge" style="background-color: #0BB4AA; color: #fff; margin-left: 5px; font-size: 11px; min-height: 16px;  border-radius: 8px; display: inline-block; font-weight: 600; line-height: 1.6; padding: 0 8px">%2$s</span></a>',
-		// 		self::$goProLink, 
-		// 		esc_html__( 'PRO', 'inspiro-toolkit' )
-		// 	);
-		// }
-
 		return $links;
+
+		//Add Go Pro link if the plugin is not active
+		if( ! defined( 'INSPIRO_TOOLKIT_PRO_VERSION' ) ) {
+			$links['go_pro'] = sprintf( 
+				'<a href="%1$s" target="_blank" class="inspiro-toolkit-gopro" style="color:#0BB4AA;font-weight:bold;">UPGRADE &rarr; <span class="rcb-premium-badge" style="background-color: #0BB4AA; color: #fff; margin-left: 5px; font-size: 11px; min-height: 16px;  border-radius: 8px; display: inline-block; font-weight: 600; line-height: 1.6; padding: 0 8px">%2$s</span></a>',
+				self::$goProLink, 
+				esc_html__( 'PRO', 'inspiro-toolkit' )
+			);
+		}
+
 
 	}
 
@@ -175,7 +176,7 @@ class Inspiro_Toolkit_Admin_Menu {
 	public function add_css_go_pro_menu() {
 		?>
 		<style>
-			#adminmenu #toplevel_page_inspiro-toolkit-demo-import a[href="<?php echo self::$goProLink; ?>"] {
+			#adminmenu #toplevel_page_inspiro-toolkit-demo-import a[href="<?php echo esc_url( self::$goProLink ); ?>"] {
 				color: #0BB4AA;
 				font-weight: bold;
 			}
@@ -190,7 +191,7 @@ class Inspiro_Toolkit_Admin_Menu {
 		?>
 		<script>
 			jQuery( document ).ready( function( $ ) {
-				$('a[href$="<?php echo self::$goProLink; ?>"]').attr('target', '_blank');				
+				$('a[href$="<?php echo esc_url( self::$goProLink ); ?>"]').attr('target', '_blank');				
 			});
 		</script>
 		<?php
