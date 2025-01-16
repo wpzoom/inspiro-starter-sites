@@ -1,0 +1,82 @@
+=== Inspiro Toolkit ===
+Contributors: 		WPZOOM, alexus450, ciorici
+Donate link:		http://paypal.me/wpzm/10usd
+Author URI:			https://www.wpzoom.com/  
+Requires at least: 	5.8  
+Tested up to: 		6.7  
+Requires PHP: 		7.4  
+Stable tag: 		1.0.0  
+License: 			GPLv2 or later  
+License URI: 		https://www.gnu.org/licenses/gpl-2.0.html
+Tags: 				starter templates, Gutenberg, Elementor, WooCommerce
+
+Import starter templates with Gutenberg Blocks, Elementor, and WooCommerce to create a new website in just a few clicks.
+
+== Description ==
+
+**Inspiro Toolkit** is a free plugin designed to simplify the process of building a website with the [Inspiro](https://wordpress.org/themes/inspiro/) theme. It provides access to a library of professionally designed starter templates for:
+
+- **Gutenberg Blocks** | [View Demo](https://demo.wpzoom.com/inspiro-lite-blocks/)
+- **Elementor** | [View Demo](https://demo.wpzoom.com/inspiro-lite/)
+- **WooCommerce** | [View Demo](https://demo.wpzoom.com/inspiro-lite-woo/)
+
+Whether you're creating a blog, an online store, or a portfolio, Inspiro Toolkit helps you get started with a professional design.
+
+= FEATURES =
+- Easy import of starter templates
+- Pre-designed layouts for blogs, portfolios, e-commerce, and more
+- Compatibility with the WordPress block editor and Elementor
+
+= How does it work? =
+
+Inspiro Toolkit is optimized to work with the [Inspiro](https://wordpress.org/themes/inspiro/) theme. 
+After installing and activating the theme, click on the Starter Sites button from the theme banner or go to Inspiro -> Import Demo and click on the Install Inspiro Toolkit button. 
+Choose the demo you want to use and click on Import Demo. 
+Follow the steps of the installer. 
+
+= Additional Resources =
+
+* [WPZOOM website](https://www.wpzoom.com)
+* [Github repository](https://github.com/wpzoom/inspiro-toolkit)
+
+
+= 🙌 FOLLOW US =
+
+* 🐦 [Twitter](https://twitter.com/wpzoom)
+* 📘 [Facebook](https://facebook.com/wpzoom)
+* 📘 [Facebook Group](https://www.facebook.com/groups/wpzoom)
+* 🌄 [Instagram](https://instagram.com/wpzoom)
+
+
+= 100% GDPR COMPLIANT =
+
+This plugin is **100% GDPR compliant**. It doesn't integrate any Google Fonts.
+Inspiro Toolkit does not collect any information outside your WordPress installation, therefore it’s **100% GDPR compliant**.
+
+
+== Frequently Asked Questions ==
+
+= Can I use this plugin with themes other than Inspiro? =  
+Inspiro Toolkit is optimized for use with the Inspiro theme, but it may work with other themes, too. 
+
+= Are the templates free? =  
+Yes, all templates included in Inspiro Toolkit are free to use.
+
+= Do I need Elementor or WooCommerce installed to use specific templates? =  
+Templates built for Elementor or WooCommerce require these plugins to be installed and activated.
+
+= Can I customize the imported templates? =  
+Yes, all templates can be customized using either Gutenberg or Elementor, depending on the selected template.
+
+== Screenshots ==
+1. Demo Importer
+
+== Changelog ==
+
+= 1.0.0 =  
+* Initial release. 
+
+== Upgrade Notice ==
+
+= 1.0.0 =  
+This is the first release of Inspiro Toolkit. Update regularly to access new templates and features.
