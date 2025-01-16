@@ -39,22 +39,24 @@ define( 'INSPIRO_TOOLKIT_URL', plugin_dir_url( INSPIRO_TOOLKIT__FILE__ ) );
 // Define the UTM code for the footer menu
 define( 'INSPIRO_TOOLKIT_MARKETING_UTM_CODE_FOOTER_MENU', '?utm_source=inspiro-toolkit&utm_medium=footer-menu&utm_campaign=inspiro-toolkit' );
 
+// Load the activator class
+require_once INSPIRO_TOOLKIT_PATH . 'classes/class-inspiro-toolkit-activator.php';
+
 // Load the plugin after the theme is loaded
 add_action( 'plugins_loaded', 'inspiro_toolkit_load' );
 
 /**
- * Load the plugin after the theme is loaded
+ * Load the plugin
  */
 function inspiro_toolkit_load() {
 
 	// Load the plugin classes
 	require_once INSPIRO_TOOLKIT_PATH . 'classes/class-inspiro-toolkit-admin-menu.php';
-	require_once INSPIRO_TOOLKIT_PATH . 'classes/class-inspiro-toolkit-admin-helpers.php';
-	
+	require_once INSPIRO_TOOLKIT_PATH . 'classes/class-inspiro-toolkit-admin-helpers.php';	
 
 }
 
-// Load after the plugsi is loaded
+// Load after the plugin is loaded
 add_action( 'plugins_loaded', 'inspiro_toolkit_plugins_loaded' );
 
 /**

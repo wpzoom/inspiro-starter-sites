@@ -2,12 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
-This projects adheres to [Keep a CHANGELOG](http://keepachangelog.com/) and uses [Semantic Versioning](http://semver.org/).
+This projects adheres to [Keep a CHANGELOG](http://keepachangelog.com/) and uses [Semantic Versioning](https://semver.org/).
 
 
 ## [Unreleased]
 
 _Nothing yet._
+
+## [2.0.3] - 2025-01-08
+
+This is a maintenance release.
+
+### Changed
+* README: fixed a few broken badges.
+* General housekeeping.
+
 
 ## [2.0.2] - 2024-09-07
 
@@ -87,6 +96,15 @@ Projects which don't use any of the new or removed functionality in their test s
 [#110]: https://github.com/Yoast/PHPUnit-Polyfills/pull/110
 [#116]: https://github.com/Yoast/PHPUnit-Polyfills/pull/116
 [#130]: https://github.com/Yoast/PHPUnit-Polyfills/pull/130
+
+
+## [1.1.3] - 2025-01-08
+
+This is a maintenance release.
+
+### Changed
+* README: fixed a few broken badges.
+* General housekeeping.
 
 
 ## [1.1.2] - 2024-09-07
@@ -268,10 +286,12 @@ As of version 2.15.0 of the `shivammathur/setup-php` action for GitHub Actions, 
 Initial release.
 
 
-[Unreleased]: https://github.com/Yoast/PHPUnit-Polyfills/compare/2.x...HEAD
+[Unreleased]: https://github.com/Yoast/PHPUnit-Polyfills/compare/2.0.3...2.x
+[2.0.3]: https://github.com/Yoast/PHPUnit-Polyfills/compare/2.0.2...2.0.3
 [2.0.2]: https://github.com/Yoast/PHPUnit-Polyfills/compare/2.0.1...2.0.2
 [2.0.1]: https://github.com/Yoast/PHPUnit-Polyfills/compare/2.0.0...2.0.1
-[2.0.0]: https://github.com/Yoast/PHPUnit-Polyfills/compare/1.1.2...2.0.0
+[2.0.0]: https://github.com/Yoast/PHPUnit-Polyfills/compare/1.1.3...2.0.0
+[1.1.3]: https://github.com/Yoast/PHPUnit-Polyfills/compare/1.1.2...1.1.3
 [1.1.2]: https://github.com/Yoast/PHPUnit-Polyfills/compare/1.1.1...1.1.2
 [1.1.1]: https://github.com/Yoast/PHPUnit-Polyfills/compare/1.1.0...1.1.1
 [1.1.0]: https://github.com/Yoast/PHPUnit-Polyfills/compare/1.0.5...1.1.0

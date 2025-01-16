@@ -8,6 +8,7 @@ $baseDir = dirname($vendorDir);
 return array(
     'WPZI\\' => array($baseDir . '/inc'),
     'PhpParser\\' => array($vendorDir . '/nikic/php-parser/lib/PhpParser'),
+    'Doctrine\\Instantiator\\' => array($vendorDir . '/doctrine/instantiator/src/Doctrine/Instantiator'),
     'DeepCopy\\' => array($vendorDir . '/myclabs/deep-copy/src/DeepCopy'),
     'AwesomeMotive\\WPContentImporter2\\' => array($vendorDir . '/awesomemotive/wp-content-importer-v2/src'),
 );
