@@ -31,7 +31,7 @@ $imported_demo_id = get_option( 'inspiro_imported_demo_id', false );
 			<div class="wpz-onboard_title-wrapper">
 				<h1 class="wpz-onboard_title">
 					<svg width="30" height="30" viewBox="0 0 46 46" fill="none" xmlns="https://www.w3.org/2000/svg"><path fill-rule="evenodd"   clip-rule="evenodd" d="M23 46C35.7025 46 46 35.7025 46 23C46 10.2975 35.7025 0 23 0C10.2975 0 0 10.2975 0 23C0 35.7025 10.2975 46 23 46ZM19.4036 10.3152C19.4036 8.31354 21.0263 6.69091 23.0279 6.69091H26.2897C26.4899 6.69091 26.6521 6.85317 26.6521 7.05333V13.5025C26.6521 13.622 26.5884 13.7324 26.4848 13.7922L19.9055 17.5908C19.6824 17.7196 19.4036 17.5586 19.4036 17.3011V10.3152ZM19.5709 24.0613L26.1503 20.2627C26.3733 20.134 26.6521 20.2949 26.6521 20.5525V35.6849C26.6521 37.6865 25.0295 39.3091 23.0279 39.3091H19.7661C19.5659 39.3091 19.4036 39.1468 19.4036 38.9467V24.3511C19.4036 24.2316 19.4674 24.1211 19.5709 24.0613Z" fill="#242628"/></svg>
-					<?php esc_html_e( 'Inspiro Starter Templates', 'inspiro-toolkit' ); ?>
+					<?php esc_html_e( 'Inspiro Toolkit', 'inspiro-toolkit' ); ?>
 				</h1>
 				<h2 class="wpz-onboard_framework-version">v <?php echo esc_html( INSPIRO_TOOLKIT_VERSION ); ?></h2>
 			</div>
