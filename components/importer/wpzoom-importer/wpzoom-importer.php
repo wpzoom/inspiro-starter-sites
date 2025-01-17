@@ -3,7 +3,7 @@
  * Register WPZOOM importer class.
  *
  * @since   1.0.0
- * @package WPZOOM_Inspiro_Toolkit
+ * @package WPZOOM_Inspiro_Starter_Sites
  */
 
 // Exit if accessed directly.
@@ -57,7 +57,7 @@ class WPZI_Importer {
 	public function set_importer_version_constant() {
 
 		if ( ! defined( 'WPZI_VERSION' ) ) {
-			define( 'WPZI_VERSION', INSPIRO_TOOLKIT_VERSION );
+			define( 'WPZI_VERSION', INSPIRO_STARTER_SITES_VERSION );
 		}
 	}
 }

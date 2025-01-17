@@ -176,7 +176,7 @@ class Importer {
 
 			// Add message to log file.
 			$log_added = Helpers::append_to_file(
-				__( 'New AJAX call!' , 'inspiro-toolkit' ) . PHP_EOL . $message,
+				__( 'New AJAX call!' , 'inspiro-starter-sites' ) . PHP_EOL . $message,
 				$this->wpzi->get_log_file_path(),
 				''
 			);

@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'wpzoom/wpzoom-importer',
-        'pretty_version' => '1.0.0+no-version-set',
-        'version' => '1.0.0.0',
-        'reference' => null,
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => '54dc0af48364ebb79bca4b5d19efa9e9fc221cda',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -272,9 +272,9 @@
             'dev_requirement' => true,
         ),
         'wpzoom/wpzoom-importer' => array(
-            'pretty_version' => '1.0.0+no-version-set',
-            'version' => '1.0.0.0',
-            'reference' => null,
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => '54dc0af48364ebb79bca4b5d19efa9e9fc221cda',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

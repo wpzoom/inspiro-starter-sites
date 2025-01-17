@@ -160,7 +160,7 @@ class WpzoomImporter {
 		add_action( 'wp_import_insert_post', [ $this, 'save_wp_navigation_import_mapping' ], 10, 4 );
 		add_action( 'wpzi/after_import', [ $this, 'fix_imported_wp_navigation' ] );
 
-		add_action( 'inspiro_toolkit_admin_page', array( $this, 'display_plugin_page' ) );
+		add_action( 'inspiro_starter_sites_admin_page', array( $this, 'display_plugin_page' ) );
 	}
 
 	/**
@@ -201,17 +201,17 @@ class WpzoomImporter {
 	public function display_plugin_page() {
 		
 		if ( isset( $_GET['step'] ) && 'import' === $_GET['step'] ) {
-			require_once INSPIRO_TOOLKIT_PATH . 'components/importer/views/import.php';
+			require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/views/import.php';
 			return;
 		}
 
 		if ( isset( $_GET['step'] ) && 'delete_import' === $_GET['step'] ) {
-			require_once INSPIRO_TOOLKIT_PATH . 'components/importer/views/delete-import.php';
+			require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/views/delete-import.php';
 			return;
 		}
 
 
-		require_once INSPIRO_TOOLKIT_PATH . 'components/importer/views/plugin-page.php';
+		require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/views/plugin-page.php';
 	}
 
 
@@ -246,23 +246,23 @@ class WpzoomImporter {
 					'plugin_url'       => WPZI_URL,
 					'import_url'       => $this->get_plugin_settings_url( [ 'step' => 'import' ] ),
 					'texts'            => array(
-						'missing_preview_image'    => esc_html__( 'No preview image defined for this import.', 'inspiro-toolkit' ),
-						'dialog_title'             => esc_html__( 'Are you sure?', 'inspiro-toolkit' ),
-						'dialog_no'                => esc_html__( 'Cancel', 'inspiro-toolkit' ),
-						'dialog_yes'               => esc_html__( 'Yes, import!', 'inspiro-toolkit' ),
-						'selected_import_title'    => esc_html__( 'Selected demo import:', 'inspiro-toolkit' ),
-						'installing'               => esc_html__( 'Installing...', 'inspiro-toolkit' ),
-						'importing'                => esc_html__( 'Importing...', 'inspiro-toolkit' ),
-						'successful_import'        => esc_html__( 'Successfully Imported!', 'inspiro-toolkit' ),
-						'install_plugin'           => esc_html__( 'Install Plugin', 'inspiro-toolkit' ),
-						'installed'                => esc_html__( 'Installed', 'inspiro-toolkit' ),
-						'import_failed'            => esc_html__( 'Import Failed', 'inspiro-toolkit' ),
-						'import_failed_subtitle'   => esc_html__( 'Whoops, there was a problem importing your content.', 'inspiro-toolkit' ),
-						'plugin_install_failed'    => esc_html__( 'Looks like some of the plugins failed to install. Please try again. If this issue persists, please manually install the failing plugins and come back to this step to import the theme demo data.', 'inspiro-toolkit' ),
-						'content_filetype_warn'    => esc_html__( 'Invalid file type detected! Please select an XML file for the Content Import.', 'inspiro-toolkit' ),
-						'widgets_filetype_warn'    => esc_html__( 'Invalid file type detected! Please select a JSON or WIE file for the Widgets Import.', 'inspiro-toolkit' ),
-						'customizer_filetype_warn' => esc_html__( 'Invalid file type detected! Please select a DAT file for the Customizer Import.', 'inspiro-toolkit' ),
-						'redux_filetype_warn'      => esc_html__( 'Invalid file type detected! Please select a JSON file for the Redux Import.', 'inspiro-toolkit' ),
+						'missing_preview_image'    => esc_html__( 'No preview image defined for this import.', 'inspiro-starter-sites' ),
+						'dialog_title'             => esc_html__( 'Are you sure?', 'inspiro-starter-sites' ),
+						'dialog_no'                => esc_html__( 'Cancel', 'inspiro-starter-sites' ),
+						'dialog_yes'               => esc_html__( 'Yes, import!', 'inspiro-starter-sites' ),
+						'selected_import_title'    => esc_html__( 'Selected demo import:', 'inspiro-starter-sites' ),
+						'installing'               => esc_html__( 'Installing...', 'inspiro-starter-sites' ),
+						'importing'                => esc_html__( 'Importing...', 'inspiro-starter-sites' ),
+						'successful_import'        => esc_html__( 'Successfully Imported!', 'inspiro-starter-sites' ),
+						'install_plugin'           => esc_html__( 'Install Plugin', 'inspiro-starter-sites' ),
+						'installed'                => esc_html__( 'Installed', 'inspiro-starter-sites' ),
+						'import_failed'            => esc_html__( 'Import Failed', 'inspiro-starter-sites' ),
+						'import_failed_subtitle'   => esc_html__( 'Whoops, there was a problem importing your content.', 'inspiro-starter-sites' ),
+						'plugin_install_failed'    => esc_html__( 'Looks like some of the plugins failed to install. Please try again. If this issue persists, please manually install the failing plugins and come back to this step to import the theme demo data.', 'inspiro-starter-sites' ),
+						'content_filetype_warn'    => esc_html__( 'Invalid file type detected! Please select an XML file for the Content Import.', 'inspiro-starter-sites' ),
+						'widgets_filetype_warn'    => esc_html__( 'Invalid file type detected! Please select a JSON or WIE file for the Widgets Import.', 'inspiro-starter-sites' ),
+						'customizer_filetype_warn' => esc_html__( 'Invalid file type detected! Please select a DAT file for the Customizer Import.', 'inspiro-starter-sites' ),
+						'redux_filetype_warn'      => esc_html__( 'Invalid file type detected! Please select a JSON file for the Redux Import.', 'inspiro-starter-sites' ),
 					),
 				)
 			);
@@ -317,23 +317,23 @@ class WpzoomImporter {
 					Helpers::log_error_and_send_ajax_response(
 						$this->selected_import_files->get_error_message(),
 						$this->log_file_path,
-						esc_html__( 'Downloaded files', 'inspiro-toolkit' )
+						esc_html__( 'Downloaded files', 'inspiro-starter-sites' )
 					);
 				}
 
 				// Add this message to log file.
 				$log_added = Helpers::append_to_file(
 					sprintf( /* translators: %s - the name of the selected import. */
-						__( 'The import files for: %s were successfully downloaded!', 'inspiro-toolkit' ),
+						__( 'The import files for: %s were successfully downloaded!', 'inspiro-starter-sites' ),
 						$this->import_files[ $this->selected_index ]['import_file_name']
 					) . Helpers::import_file_info( $this->selected_import_files ),
 					$this->log_file_path,
-					esc_html__( 'Downloaded files' , 'inspiro-toolkit' )
+					esc_html__( 'Downloaded files' , 'inspiro-starter-sites' )
 				);
 			}
 			else {
 				// Send JSON Error response to the AJAX call.
-				wp_send_json( esc_html__( 'No import files specified!', 'inspiro-toolkit' ) );
+				wp_send_json( esc_html__( 'No import files specified!', 'inspiro-starter-sites' ) );
 			}
 		}
 
@@ -462,16 +462,16 @@ class WpzoomImporter {
 		delete_transient( 'wpzi_import_posts_with_nav_block' );
 
 		// Display final messages (success or warning messages).
-		$response['title'] = esc_html__( 'Import Complete!', 'inspiro-toolkit' );
-		$response['subtitle'] = '<p>' . esc_html__( 'Congrats, your demo was imported successfully. You can now begin editing your site.', 'inspiro-toolkit' ) . '</p>';
-		$response['message'] = '<img class="wpzi-imported-content-imported wpzi-imported-content-imported--success" src="' . esc_url( WPZI_URL . 'assets/images/success.svg' ) . '" alt="' . esc_attr__( 'Successful Import', 'inspiro-toolkit' ) . '">';
+		$response['title'] = esc_html__( 'Demo Content Successfully Imported', 'inspiro-starter-sites' );
+		$response['subtitle'] = '<p>' . esc_html__( 'Congratulations! Your demo has been imported successfully. You can now either customize your website or view it live.', 'inspiro-starter-sites' ) . '</p>';
+		$response['message'] = '<img class="wpzi-imported-content-imported wpzi-imported-content-imported--success" src="' . esc_url( WPZI_URL . 'assets/images/success.svg' ) . '" alt="' . esc_attr__( 'Successful Import', 'inspiro-starter-sites' ) . '">';
 
 		if ( ! empty( $this->frontend_error_messages ) ) {
-			$response['subtitle'] = '<p>' . esc_html__( 'Your import completed, but some things may not have imported properly.', 'inspiro-toolkit' ) . '</p>';
+			$response['subtitle'] = '<p>' . esc_html__( 'Your import completed, but some things may not have imported properly.', 'inspiro-starter-sites' ) . '</p>';
 			$response['subtitle'] .= sprintf(
 				wp_kses(
 				/* translators: %s - link to the log file. */
-					__( '<p><a href="%s" target="_blank">View error log</a> for more information.</p>', 'inspiro-toolkit' ),
+					__( '<p><a href="%s" target="_blank">View error log</a> for more information.</p>', 'inspiro-starter-sites' ),
 					array(
 						'p'      => [],
 						'a'      => [
@@ -694,7 +694,7 @@ class WpzoomImporter {
 	public function redirect_from_old_default_admin_page() {
 		global $pagenow;
 
-		if ( $pagenow == 'themes.php' && isset( $_GET['page'] ) && $_GET['page'] == 'pt-inspiro-toolkit' ) {
+		if ( $pagenow == 'themes.php' && isset( $_GET['page'] ) && $_GET['page'] == 'pt-inspiro-starter-sites' ) {
 			wp_safe_redirect( $this->get_plugin_settings_url() );
 			exit;
 		}
@@ -882,7 +882,7 @@ class WpzoomImporter {
 
 		// Send a JSON response with success message.
 		wp_send_json_success( 
-			esc_html__( 'Demo data has been deleted successfully.', 'inspiro-toolkit' ) 
+			esc_html__( 'Demo data has been deleted successfully.', 'inspiro-starter-sites' ) 
 		);
 
 	}
@@ -1085,13 +1085,13 @@ class WpzoomImporter {
 			'wpzi/import_successful_buttons',
 			[
 				[
-					'label'  => __( 'Customize Theme' , 'inspiro-toolkit' ),
+					'label'  => __( 'Customize Theme' , 'inspiro-starter-sites' ),
 					'class'  => 'button button-primary button-hero',
 					'href'   => admin_url( 'customize.php' ),
 					'target' => '_blank',
 				],
 				[
-					'label'  => __( 'Visit Site' , 'inspiro-toolkit' ),
+					'label'  => __( 'View Site' , 'inspiro-starter-sites' ),
 					'class'  => 'button button-primary button-hero',
 					'href'   => get_home_url(),
 					'target' => '_blank',

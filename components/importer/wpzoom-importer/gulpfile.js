@@ -19,8 +19,8 @@ const gulp = require( 'gulp' ),
 	exec = require( 'child_process' ).exec;
 
 const plugin = {
-	name: 'Inspiro Toolkit',
-	slug: 'inspiro-toolkit',
+	name: 'Inspiro Starter Sites',
+	slug: 'inspiro-starter-sites',
 	files: [
 		'**',
 		// Exclude all the files/dirs below. Note the double negate (when ! is used inside the exclusion) - we may actually need some things.
@@ -124,7 +124,7 @@ gulp.task( 'js', function () {
  */
 gulp.task( 'pot', function ( cb ) {
 	exec(
-		'wp i18n make-pot ./ ./languages/inspiro-toolkit.pot --slug="inspiro-toolkit" --domain="inspiro-toolkit" --package-name="One Click Demo Import" --file-comment="" --exclude="node_modules,vendor,tests,bin,docs"',
+		'wp i18n make-pot ./ ./languages/inspiro-starter-sites.pot --slug="inspiro-starter-sites" --domain="inspiro-starter-sites" --package-name="One Click Demo Import" --file-comment="" --exclude="node_modules,vendor,tests,bin,docs"',
 		function ( err, stdout, stderr ) {
 			console.log( stdout );
 			console.log( stderr );
@@ -152,7 +152,7 @@ gulp.task( 'copy', function () {
 		// .pipe( rename( function ( file ) {
 		// 	file.dirname = plugin.slug + '/' + file.dirname;
 		// } ) )
-		.pipe(copy('inspiro-toolkit'))
+		.pipe(copy('inspiro-starter-sites'))
 		.pipe( debug( { title: '[copy]' } ) );
 } );
 
@@ -160,7 +160,7 @@ gulp.task( 'copy', function () {
  * Replace plugin version with one from package.json in the main plugin file.
  */
 gulp.task( 'replace_plugin_file_ver', function () {
-	return gulp.src( [ 'inspiro-toolkit.php' ] )
+	return gulp.src( [ 'inspiro-starter-sites.php' ] )
 		.pipe(
 			// File header.
 			replace(

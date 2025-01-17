@@ -50,14 +50,14 @@ class WPFormsImporter {
 
 		// WPForms plugin is not active!
 		if ( ! class_exists( 'WPForms' ) || ! function_exists( 'wpforms' )  ) {
-			$this->log_error( esc_html__( 'The WPForms plugin is not activated, so the WPForms import was skipped!', 'inspiro-toolkit' ) );
+			$this->log_error( esc_html__( 'The WPForms plugin is not activated, so the WPForms import was skipped!', 'inspiro-starter-sites' ) );
 			return;
 		}
 
 		$wpforms_api = method_exists( wpforms(), 'obj' ) ? wpforms()->obj( 'api' ) : wpforms()->get("api");
 
 		if ( ! is_a( $wpforms_api, "WPForms\API" ) ) {
-			$this->log_error( esc_html__( 'The WPForms plugin\'s version is not >= v1.8.6, so the WPForms import was skipped!', 'inspiro-toolkit' ) );
+			$this->log_error( esc_html__( 'The WPForms plugin\'s version is not >= v1.8.6, so the WPForms import was skipped!', 'inspiro-starter-sites' ) );
 			return;
 		}
 
@@ -69,9 +69,9 @@ class WPFormsImporter {
 		}
 
 		Helpers::append_to_file(
-			esc_html__( 'WPForms import finished successfully!', 'inspiro-toolkit' ),
+			esc_html__( 'WPForms import finished successfully!', 'inspiro-starter-sites' ),
 			$this->wpzi->get_log_file_path(),
-			esc_html__( 'Importing WPForms' , 'inspiro-toolkit' )
+			esc_html__( 'Importing WPForms' , 'inspiro-starter-sites' )
 		);
 	}
 
@@ -91,7 +91,7 @@ class WPFormsImporter {
 		Helpers::append_to_file(
 			$error_message,
 			$this->wpzi->get_log_file_path(),
-			esc_html__( 'Importing WPForms' , 'inspiro-toolkit' )
+			esc_html__( 'Importing WPForms' , 'inspiro-starter-sites' )
 		);
 	}
 }

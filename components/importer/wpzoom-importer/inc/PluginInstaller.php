@@ -79,18 +79,18 @@ class PluginInstaller {
 
 		// Check if user has the WP capability to install plugins.
 		if ( ! current_user_can( 'install_plugins' ) ) {
-			wp_send_json_error( esc_html__( 'Could not install the plugin. You don\'t have permission to install plugins.', 'inspiro-toolkit' ) );
+			wp_send_json_error( esc_html__( 'Could not install the plugin. You don\'t have permission to install plugins.', 'inspiro-starter-sites' ) );
 		}
 
 		$slug = ! empty( $_POST['slug'] ) ? sanitize_key( wp_unslash( $_POST['slug'] ) ) : '';
 
 		if ( empty( $slug ) ) {
-			wp_send_json_error( esc_html__( 'Could not install the plugin. Plugin slug is missing.', 'inspiro-toolkit' ) );
+			wp_send_json_error( esc_html__( 'Could not install the plugin. Plugin slug is missing.', 'inspiro-starter-sites' ) );
 		}
 
 		// Check if the plugin is already installed and activated.
 		if ( $this->is_plugin_active( $slug ) ) {
-			wp_send_json_success( esc_html__( 'Plugin is already installed and activated!', 'inspiro-toolkit' ) );
+			wp_send_json_success( esc_html__( 'Plugin is already installed and activated!', 'inspiro-starter-sites' ) );
 		}
 
 		// Activate the plugin if the plugin is already installed.
@@ -98,7 +98,7 @@ class PluginInstaller {
 			$activated = $this->activate_plugin( $this->get_plugin_basename_from_slug( $slug ), $slug );
 
 			if ( ! is_wp_error( $activated ) ) {
-				wp_send_json_success( esc_html__( 'Plugin was already installed! We activated it for you.', 'inspiro-toolkit' ) );
+				wp_send_json_success( esc_html__( 'Plugin was already installed! We activated it for you.', 'inspiro-starter-sites' ) );
 			} else {
 				wp_send_json_error( $activated->get_error_message() );
 			}
@@ -106,7 +106,7 @@ class PluginInstaller {
 
 		// Check for file system permissions.
 		if ( ! $this->filesystem_permissions_allowed() ) {
-			wp_send_json_error( esc_html__( 'Could not install the plugin. Don\'t have file permission.', 'inspiro-toolkit' ) );
+			wp_send_json_error( esc_html__( 'Could not install the plugin. Don\'t have file permission.', 'inspiro-starter-sites' ) );
 		}
 
 		// Do not allow WordPress to search/download translations, as this will break JS output.
@@ -146,14 +146,14 @@ class PluginInstaller {
 
 			if ( ! is_wp_error( $activated ) ) {
 				wp_send_json_success(
-					esc_html__( 'Plugin installed and activated succesfully.', 'inspiro-toolkit' )
+					esc_html__( 'Plugin installed and activated succesfully.', 'inspiro-starter-sites' )
 				);
 			} else {
 				wp_send_json_success( $activated->get_error_message() );
 			}
 		}
 
-		wp_send_json_error( esc_html__( 'Could not install the plugin. WP Plugin installer could not retrieve plugin information.', 'inspiro-toolkit' ) );
+		wp_send_json_error( esc_html__( 'Could not install the plugin. WP Plugin installer could not retrieve plugin information.', 'inspiro-starter-sites' ) );
 	}
 
 	/**

@@ -30,7 +30,7 @@ class ViewHelpers {
 		<div class="wpzi__card wpzi__card--theme">
 			<div class="wpzi__card-content">
 				<?php if ( $screenshot ) : ?>
-					<div class="screenshot"><img src="<?php echo esc_url( $screenshot ); ?>" alt="<?php esc_attr_e( 'Theme screenshot', 'inspiro-toolkit' ); ?>" /></div>
+					<div class="screenshot"><img src="<?php echo esc_url( $screenshot ); ?>" alt="<?php esc_attr_e( 'Theme screenshot', 'inspiro-starter-sites' ); ?>" /></div>
 				<?php else : ?>
 					<div class="screenshot blank"></div>
 				<?php endif; ?>

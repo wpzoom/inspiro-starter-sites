@@ -31,10 +31,10 @@ class WPCLICommands extends \WP_CLI_Command {
 	 */
 	public function list_predefined() {
 		if ( empty( $this->wpzi->import_files ) ) {
-			WP_CLI::error( esc_html__( 'There are no predefined demo imports for currently active theme!', 'inspiro-toolkit' ) );
+			WP_CLI::error( esc_html__( 'There are no predefined demo imports for currently active theme!', 'inspiro-starter-sites' ) );
 		}
 
-		WP_CLI::success( esc_html__( 'Here are the predefined demo imports:', 'inspiro-toolkit' ) );
+		WP_CLI::success( esc_html__( 'Here are the predefined demo imports:', 'inspiro-starter-sites' ) );
 
 		foreach ( $this->wpzi->import_files as $index => $import_file ) {
 			WP_CLI::log( sprintf(
@@ -68,7 +68,7 @@ class WPCLICommands extends \WP_CLI_Command {
 	 */
 	public function import( $args, $assoc_args ) {
 		if ( ! $this->any_import_options_set( $assoc_args ) ) {
-			WP_CLI::error( esc_html__( 'At least one of the possible options should be set! Check them with --help', 'inspiro-toolkit' ) );
+			WP_CLI::error( esc_html__( 'At least one of the possible options should be set! Check them with --help', 'inspiro-starter-sites' ) );
 		}
 
 		if ( isset( $assoc_args['predefined'] ) ) {
@@ -119,38 +119,38 @@ class WPCLICommands extends \WP_CLI_Command {
 	 */
 	private function import_predefined( $predefined_index ) {
 		if ( ! is_numeric( $predefined_index ) ) {
-			WP_CLI::error( esc_html__( 'The "predefined" parameter should be a number (an index of the WPZI predefined demo import)!', 'inspiro-toolkit' ) );
+			WP_CLI::error( esc_html__( 'The "predefined" parameter should be a number (an index of the WPZI predefined demo import)!', 'inspiro-starter-sites' ) );
 		}
 
 		$predefined_index = absint( $predefined_index );
 
 		if ( ! array_key_exists( $predefined_index, $this->wpzi->import_files ) ) {
-			WP_CLI::warning( esc_html__( 'The supplied predefined index does not exist! Please take a look at the available predefined demo imports:', 'inspiro-toolkit' ) );
+			WP_CLI::warning( esc_html__( 'The supplied predefined index does not exist! Please take a look at the available predefined demo imports:', 'inspiro-starter-sites' ) );
 
 			$this->list_predefined();
 
 			return false;
 		}
 
-		WP_CLI::log( esc_html__( 'Predefined demo import started! All other parameters will be ignored!', 'inspiro-toolkit' ) );
+		WP_CLI::log( esc_html__( 'Predefined demo import started! All other parameters will be ignored!', 'inspiro-starter-sites' ) );
 
 		$selected_files = $this->wpzi->import_files[ $predefined_index ];
 
 		if ( ! empty( $selected_files['import_file_name'] ) ) { /* translators: %s - the name of the selected demo import. */
-			WP_CLI::log( sprintf( esc_html__( 'Selected predefined demo import: %s', 'inspiro-toolkit' ), $selected_files['import_file_name'] ) );
+			WP_CLI::log( sprintf( esc_html__( 'Selected predefined demo import: %s', 'inspiro-starter-sites' ), $selected_files['import_file_name'] ) );
 		}
 
-		WP_CLI::log( esc_html__( 'Preparing the demo import files...', 'inspiro-toolkit' ) );
+		WP_CLI::log( esc_html__( 'Preparing the demo import files...', 'inspiro-starter-sites' ) );
 
 		$import_files =	Helpers::download_import_files( $selected_files );
 
 		if ( empty( $import_files ) ) {
-			WP_CLI::error( esc_html__( 'Demo import files could not be retrieved!', 'inspiro-toolkit' ) );
+			WP_CLI::error( esc_html__( 'Demo import files could not be retrieved!', 'inspiro-starter-sites' ) );
 		}
 
-		WP_CLI::log( esc_html__( 'Demo import files retrieved successfully!', 'inspiro-toolkit' ) );
+		WP_CLI::log( esc_html__( 'Demo import files retrieved successfully!', 'inspiro-starter-sites' ) );
 
-		WP_CLI::log( esc_html__( 'Importing...', 'inspiro-toolkit' ) );
+		WP_CLI::log( esc_html__( 'Importing...', 'inspiro-starter-sites' ) );
 
 		if ( ! empty( $import_files['content'] ) ) {
 			$this->do_action( 'wpzi/before_content_import_execution', $import_files, $this->wpzi->import_files, $predefined_index );
@@ -170,7 +170,7 @@ class WPCLICommands extends \WP_CLI_Command {
 
 		$this->do_action( 'wpzi/after_all_import_execution', $import_files, $this->wpzi->import_files, $predefined_index );
 
-		WP_CLI::log( esc_html__( 'Predefined import finished!', 'inspiro-toolkit' ) );
+		WP_CLI::log( esc_html__( 'Predefined import finished!', 'inspiro-starter-sites' ) );
 	}
 
 	/**
@@ -182,7 +182,7 @@ class WPCLICommands extends \WP_CLI_Command {
 		$content_import_file_path = realpath( $relative_file_path );
 
 		if ( ! file_exists( $content_import_file_path ) ) {
-			WP_CLI::warning( esc_html__( 'Content import file provided does not exist! Skipping this import!', 'inspiro-toolkit' ) );
+			WP_CLI::warning( esc_html__( 'Content import file provided does not exist! Skipping this import!', 'inspiro-starter-sites' ) );
 			return false;
 		}
 
@@ -191,17 +191,17 @@ class WPCLICommands extends \WP_CLI_Command {
 			return 3600;
 		} );
 
-		WP_CLI::log( esc_html__( 'Importing content (this might take a while)...', 'inspiro-toolkit' ) );
+		WP_CLI::log( esc_html__( 'Importing content (this might take a while)...', 'inspiro-starter-sites' ) );
 
-		Helpers::append_to_file( '', $this->wpzi->log_file_path, esc_html__( 'Importing content' , 'inspiro-toolkit' ) );
+		Helpers::append_to_file( '', $this->wpzi->log_file_path, esc_html__( 'Importing content' , 'inspiro-starter-sites' ) );
 
 		$this->wpzi->append_to_frontend_error_messages( $this->wpzi->importer->import_content( $content_import_file_path ) );
 
 		if( empty( $this->wpzi->frontend_error_messages ) ) {
-			WP_CLI::success( esc_html__( 'Content import finished!', 'inspiro-toolkit' ) );
+			WP_CLI::success( esc_html__( 'Content import finished!', 'inspiro-starter-sites' ) );
 		}
 		else {
-			WP_CLI::warning( esc_html__( 'There were some issues while importing the content!', 'inspiro-toolkit' ) );
+			WP_CLI::warning( esc_html__( 'There were some issues while importing the content!', 'inspiro-starter-sites' ) );
 
 			foreach ( $this->wpzi->frontend_error_messages as $line ) {
 				WP_CLI::log( $line );
@@ -220,19 +220,19 @@ class WPCLICommands extends \WP_CLI_Command {
 		$widgets_import_file_path = realpath( $relative_file_path );
 
 		if ( ! file_exists( $widgets_import_file_path ) ) {
-			WP_CLI::warning( esc_html__( 'Widgets import file provided does not exist! Skipping this import!', 'inspiro-toolkit' ) );
+			WP_CLI::warning( esc_html__( 'Widgets import file provided does not exist! Skipping this import!', 'inspiro-starter-sites' ) );
 			return false;
 		}
 
-		WP_CLI::log( esc_html__( 'Importing widgets...', 'inspiro-toolkit' ) );
+		WP_CLI::log( esc_html__( 'Importing widgets...', 'inspiro-starter-sites' ) );
 
 		WidgetImporter::import( $widgets_import_file_path );
 
 		if( empty( $this->wpzi->frontend_error_messages ) ) {
-			WP_CLI::success( esc_html__( 'Widgets imported successfully!', 'inspiro-toolkit' ) );
+			WP_CLI::success( esc_html__( 'Widgets imported successfully!', 'inspiro-starter-sites' ) );
 		}
 		else {
-			WP_CLI::warning( esc_html__( 'There were some issues while importing widgets!', 'inspiro-toolkit' ) );
+			WP_CLI::warning( esc_html__( 'There were some issues while importing widgets!', 'inspiro-starter-sites' ) );
 
 			foreach ( $this->wpzi->frontend_error_messages as $line ) {
 				WP_CLI::log( $line );
@@ -251,19 +251,19 @@ class WPCLICommands extends \WP_CLI_Command {
 		$customizer_import_file_path = realpath( $relative_file_path );
 
 		if ( ! file_exists( $customizer_import_file_path ) ) {
-			WP_CLI::warning( esc_html__( 'Customizer import file provided does not exist! Skipping this import!', 'inspiro-toolkit' ) );
+			WP_CLI::warning( esc_html__( 'Customizer import file provided does not exist! Skipping this import!', 'inspiro-starter-sites' ) );
 			return false;
 		}
 
-		WP_CLI::log( esc_html__( 'Importing customizer settings...', 'inspiro-toolkit' ) );
+		WP_CLI::log( esc_html__( 'Importing customizer settings...', 'inspiro-starter-sites' ) );
 
 		CustomizerImporter::import( $customizer_import_file_path );
 
 		if( empty( $this->wpzi->frontend_error_messages ) ) {
-			WP_CLI::success( esc_html__( 'Customizer settings imported successfully!', 'inspiro-toolkit' ) );
+			WP_CLI::success( esc_html__( 'Customizer settings imported successfully!', 'inspiro-starter-sites' ) );
 		}
 		else {
-			WP_CLI::warning( esc_html__( 'There were some issues while importing customizer settings!', 'inspiro-toolkit' ) );
+			WP_CLI::warning( esc_html__( 'There were some issues while importing customizer settings!', 'inspiro-starter-sites' ) );
 
 			foreach ( $this->wpzi->frontend_error_messages as $line ) {
 				WP_CLI::log( $line );
@@ -283,7 +283,7 @@ class WPCLICommands extends \WP_CLI_Command {
 	 */
 	private function do_action( $action, $import_files = array(), $all_import_files = array(), $selected_index = null ) {
 		if ( false !== Helpers::has_action( $action ) ) { /* translators: %s - the name of the executing action. */
-			WP_CLI::log( sprintf( esc_html__( 'Executing action: %s ...', 'inspiro-toolkit' ), $action ) );
+			WP_CLI::log( sprintf( esc_html__( 'Executing action: %s ...', 'inspiro-starter-sites' ), $action ) );
 
 			ob_start();
 				Helpers::do_action( $action, $import_files, $all_import_files, $selected_index );
