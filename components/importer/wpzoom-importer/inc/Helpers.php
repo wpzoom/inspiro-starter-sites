@@ -746,8 +746,8 @@ class Helpers {
 	public static function get_plugin_page_setup_data() {
 		return Helpers::apply_filters( 'wpzi/plugin_page_setup', array(
 			'parent_slug' => 'themes.php',
-			'page_title'  => esc_html__( 'WPZOOM Importer' , 'inspiro-starter-sites' ),
-			'menu_title'  => esc_html__( 'Import Demo' , 'inspiro-starter-sites' ),
+			'page_title'  => esc_html__( 'Inspiro Starter Sites' , 'inspiro-starter-sites' ),
+			'menu_title'  => esc_html__( 'Inspiro Starter Sites' , 'inspiro-starter-sites' ),
 			'capability'  => 'import',
 			'menu_slug'   => 'inspiro-starter-sites',
 		) );
