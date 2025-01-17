@@ -64,7 +64,14 @@ if( isset( $plugin_import_page['parent_slug'] ) && 'inspiro' == $plugin_import_p
 				<?php if ( isset( $_GET['import'] ) ) : ?>
 					<div class="wpzi-install-plugins-content js-wpzi-install-plugins-content">
 						<div class="wpzi-install-plugins-content-header">
+
+                            <?php if( ! $is_theme_active ) { ?>
+
 							<h2><?php esc_html_e( 'Before We Import Your Demo', 'inspiro-starter-sites' ); ?></h2>
+
+                             <?php } else { ?>
+                                <h2><?php esc_html_e( 'Install Recommended Plugins', 'inspiro-starter-sites' ); ?></h2>
+                            <?php } ?>
 
 							<?php if( ! $is_theme_active ) { ?>
 							<p>
@@ -88,7 +95,7 @@ if( isset( $plugin_import_page['parent_slug'] ) && 'inspiro' == $plugin_import_p
 							<label class="theme-item theme-item-inspiro" for="wpzi-inspiro-theme">
 								<div class="theme-item-content">
 									<div class="theme-item-content-title">
-										<h3><?php esc_html_e( 'Inspiro Theme', 'inspiro-starter-sites' ); ?></h3>
+										<h3><?php esc_html_e( 'Install Inspiro Theme', 'inspiro-starter-sites' ); ?></h3>
 									</div>
 									<p><?php echo wp_kses_post( __( 'A free WordPress theme by WPZOOM, perfect for showcasing videos, photos, and creative projects.', 'inspiro-starter-sites' ) ) ?> </p>
 									<div class="theme-item-error js-wpzi-theme-item-error"></div>
@@ -148,7 +155,7 @@ if( isset( $plugin_import_page['parent_slug'] ) && 'inspiro' == $plugin_import_p
 						</div>
 						<div class="wpzi-install-plugins-content-footer">
 							<a href="<?php echo esc_url( $this->get_plugin_settings_url() ); ?>" class="button"><span><?php esc_html_e( '&larr; Go Back' , 'inspiro-starter-sites' ); ?></span></a>
-							<a href="#" class="button button-primary js-wpzi-install-plugins-before-import"><?php esc_html_e( 'Continue & Import' , 'inspiro-starter-sites' ); ?></a>
+							<a href="#" class="button button-primary js-wpzi-install-plugins-before-import"><?php esc_html_e( 'Install & Import' , 'inspiro-starter-sites' ); ?></a>
 						</div>
 					</div>
 				<?php else : ?>

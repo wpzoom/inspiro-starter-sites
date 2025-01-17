@@ -299,12 +299,10 @@
 				}
 
 				p {
-					font-size: 16px;
-					color: #444444;
-					margin: 0 0 10px 0;
+					margin: 8px 0 10px 0;
 
 					&:last-child {
-						margin: 0;
+						margin: 12px 0 0;
 					}
 				}
 
@@ -324,6 +322,10 @@
 			.wpzi-install-theme-content,
 			.wpzi-install-plugins-content-content,
 			.wpzi-delete-imported-content {
+
+                .theme-item {
+                    border-bottom: 1px solid #eeeeee;
+                }
 				.theme-item,
 				.plugin-item,
 				.content-item {
@@ -331,8 +333,8 @@
 					justify-content: space-between;
 					align-items: center;
 					margin: 0 30px;
-					padding: 25px 0;
-					border-bottom: 1px solid #eeeeee;
+					padding: 20px 0 15px;
+					border-top: 1px solid #eeeeee;
 
 					.wpzi-loading {
 						display: none;
@@ -347,7 +349,7 @@
 
 							input[type=checkbox]:checked + .checkbox {
 								border: none;
-								background: #64B450;
+								background: #22BB66;
 
 								.wpzi-check-icon {
 									display: inline-block;
@@ -424,9 +426,8 @@
 						}
 					}
 
-					&:last-child {
-						padding-bottom: 30px;
-						border-bottom: none;
+					&:first-child {
+						border-top: none;
 					}
 
 					label {
@@ -434,9 +435,7 @@
 					}
 
 					h3 {
-						font-size: 18px;
-						color: #444444;
-						font-weight: 500;
+						font-size: 16px;
 						margin: 0;
 					}
 
@@ -456,6 +455,7 @@
 						.checkbox {
 							box-sizing: border-box;
 							position: relative;
+                            cursor: pointer;
 							display: block;
 							background: #f1f1f1;
 							width: 32px;
@@ -488,7 +488,7 @@
 								content: '';
 								display: block;
 								font-size: 10px;
-								background: #007cba;
+								background: #3496ff;
 								width: 20px;
 								height: 20px;
 								border-radius: 10px;
