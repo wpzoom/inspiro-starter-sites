@@ -39,6 +39,10 @@ Follow the steps of the installer.
 * [WPZOOM website](https://www.wpzoom.com)
 * [Github repository](https://github.com/wpzoom/inspiro-starter-sites)
 
+= Credits =
+
+This plugin incorporates code from the [One Click Demo Import](https://wordpress.org/plugins/one-click-demo-import) plugin by Awesome Motive, available under the GNU General Public License.
+
 
 = 🙌 FOLLOW US =
 
@@ -47,6 +51,13 @@ Follow the steps of the installer.
 * 📘 [Facebook Group](https://www.facebook.com/groups/wpzoom)
 * 🌄 [Instagram](https://instagram.com/wpzoom)
 
+== Installation ==
+
+= Installation from within WordPress =
+
+1. Visit **Plugins > Add New**.
+2. Search for **Inspiro Starter Sites**.
+3. Install and activate the Inspiro Starter Sites plugin.
 
 
 == Frequently Asked Questions ==

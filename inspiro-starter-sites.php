@@ -9,14 +9,16 @@
  *
  * @wordpress-plugin
  * Plugin Name: Inspiro Starter Sites
- * Plugin URI:  https://www.wpzoom.com/plugins/inspiro-starter-sites/
+ * Plugin URI:  https://www.wpzoom.com/plugins//
  * Description: Import starter templates with Gutenberg Blocks, Elementor, and WooCommerce to create a new website in just a few clicks.
  * Author:      WPZOOM
  * Author URI:  https://www.wpzoom.com
  * Text Domain: inspiro-starter-sites
  * Version:     1.0.0
- * License:     GPL2+
- * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
+ * Requires at least: 6.0
+ * Requires PHP: 7.4
+ * License:     GPLv2 or later
+ * License URI: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
  */
 
 // Exit if accessed directly
