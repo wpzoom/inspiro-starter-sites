@@ -37,7 +37,7 @@ Follow the steps of the installer.
 = Additional Resources =
 
 * [WPZOOM website](https://www.wpzoom.com)
-* [Github repository](https://github.com/wpzoom/inspiro-toolkit)
+* [Github repository](https://github.com/wpzoom/inspiro-starter-sites)
 
 
 = 🙌 FOLLOW US =
