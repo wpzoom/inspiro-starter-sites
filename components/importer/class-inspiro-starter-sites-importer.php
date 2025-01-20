@@ -25,25 +25,14 @@ class Inspiro_Starter_Sites_Importer {
 		$current_theme = wp_get_theme();
 		$theme_name    = $current_theme->get( 'Name' );
 
-		require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/wpzoom-importer/wpzoom-importer.php';
-	
-		if ( 'Inspiro' == $theme_name ) {
-			add_filter( 'wpzi/plugin_page_setup', array( $this, 'wpzi_new_menu' ) );
-		}
-		
+		require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/wpzoom-importer/wpzoom-importer.php';		
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
-	}
+		if ( 'Inspiro' == $theme_name && ! class_exists( 'WPZOOM' ) ) {
+			add_action( 'admin_menu', array( $this, 'add_prevent_conflict_menu_item' ), 999 );
+			add_action( 'admin_head', array( $this, 'add_css_hide_duplicate_menu' ) );
+		}
 
-	public function wpzi_new_menu() {
-		
-		return array(
-			'parent_slug' => 'inspiro',
-			'page_title'  => esc_html__( 'Import Demo', 'inspiro-starter-sites' ),
-			'menu_title'  => esc_html__( 'Import Demo', 'inspiro-starter-sites' ),
-			'capability'  => 'manage_options',
-			'menu_slug'   => 'inspiro-demo',
-		);
 	}
 
 	public function enqueue_scripts( $hook ) {		
@@ -69,6 +58,53 @@ class Inspiro_Starter_Sites_Importer {
 			array(),
 			INSPIRO_STARTER_SITES_VERSION 
 		);
+	}
+
+	/**
+	 * Add admin page
+	 */
+	public function add_prevent_conflict_menu_item() {
+
+		add_submenu_page(
+			'themes.php',
+			esc_html__( 'Inspiro Starter Sites', 'inspiro-starter-sites' ),
+			esc_html__( 'Inspiro Starter Sites', 'inspiro-starter-sites' ),
+			'manage_options',
+			'inspiro-starter-sites',
+			array( $this, 'redirect_page' )
+		);
+	}
+
+	/**
+	 * Redirect to the correct page
+	 */
+	public function redirect_page() {
+
+		global $pagenow;
+
+	// Verify if we are on the correct page and sanitize the input.
+	$is_dashboard_page = ( 'themes.php' === $pagenow && isset( $_GET['page'] ) && 'inspiro-starter-sites' === sanitize_text_field( wp_unslash( $_GET['page'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+	if ( $is_dashboard_page ) {
+			echo '<script type="text/javascript">';
+			echo 'window.location.href = "' . esc_url( admin_url( 'admin.php?page=inspiro-demo' ) ) . '";';
+			echo '</script>';
+			exit; // Prevent further execution.
+		}
+	}
+
+
+	/**
+	 * Add CSS to hide duplicate menu
+	 */
+	public function add_css_hide_duplicate_menu() {
+		?>
+		<style>
+			#menu-appearance a[href="themes.php?page=inspiro-starter-sites"] {
+				display: none;
+			}
+		</style>
+		<?php
 	}
 
 

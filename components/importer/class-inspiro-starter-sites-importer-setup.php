@@ -41,12 +41,19 @@ class Inspiro_Starter_Sites_Importer_Setup {
 	 */
 	public function __construct() {
 
+		$current_theme = wp_get_theme();
+		$theme_name    = $current_theme->get( 'Name' );
+
 		add_filter( 'wpzi/register_plugins', array( $this, 'wpzi_register_plugins' ) );
 		add_filter( 'wpzi/import_files', array( $this, 'wpzi_import_files' ) );
 		add_action( 'wpzi/after_import', array( $this, 'wpzi_after_import_setup' ) );
 
 		add_filter( 'inspiro_starter_sites_premium_demos', array( $this, 'premium_demos' ) );
 
+		if ( 'Inspiro' == $theme_name && ! class_exists( 'WPZOOM' ) ) {
+			add_filter( 'wpzi/plugin_page_setup', array( $this, 'wpzi_new_menu' ) );
+		}
+		
 	}
 
 	public function wpzi_register_plugins( $plugins ) {
@@ -363,6 +370,21 @@ class Inspiro_Starter_Sites_Importer_Setup {
 		}
 
 		return $page_got_by_title;
+	}
+
+
+	/*
+	 * Register new menu for the demo importer
+	*/
+	public function wpzi_new_menu() {
+		
+		return array(
+			'parent_slug' => 'inspiro',
+			'page_title'  => esc_html__( 'Import Demo', 'inspiro-starter-sites' ),
+			'menu_title'  => esc_html__( 'Import Demo', 'inspiro-starter-sites' ),
+			'capability'  => 'manage_options',
+			'menu_slug'   => 'inspiro-demo',
+		);
 	}
 
 

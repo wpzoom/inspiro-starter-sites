@@ -211,7 +211,7 @@ class WpzoomImporter {
 		}
 
 
-		require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/views/plugin-page.php';
+		require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/views/importer-page.php';
 	}
 
 
