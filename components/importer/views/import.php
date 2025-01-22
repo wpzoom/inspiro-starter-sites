@@ -61,7 +61,11 @@ if( isset( $plugin_import_page['parent_slug'] ) && 'inspiro' == $plugin_import_p
 
 		<div class="wpzi__content-container-content">
 			<div class="wpzi__content-container-content--main">
-				<?php if ( isset( $_GET['import'] ) ) : ?>
+				<?php if ( isset( $_GET['import'] ) ) : 
+
+					check_admin_referer( 'importer_step' );
+					
+					?>
 					<div class="wpzi-install-plugins-content js-wpzi-install-plugins-content">
 						<div class="wpzi-install-plugins-content-header">
 
@@ -83,9 +87,11 @@ if( isset( $plugin_import_page['parent_slug'] ) && 'inspiro' == $plugin_import_p
 								<?php esc_html_e( 'To get the best experience with your selected starter site, the plugins marked with a lock icon are required. Other plugins are optional but recommended if you want to add extra features to your website.', 'inspiro-starter-sites' ); ?>
 							</p>
 
-							<?php if ( ! empty( $this->import_files[ $_GET['import'] ]['import_notice'] ) ) : ?>
+							<?php if ( ! empty( $this->import_files[ $_GET['import'] ]['import_notice'] ) ) : 
+									$import_notice = sanitize_text_field( wp_unslash( $this->import_files[ $_GET['import'] ] ) );
+								?>
 								<div class="notice  notice-info">
-									<p><?php echo wp_kses_post( $this->import_files[ $_GET['import'] ]['import_notice'] ); ?></p>
+									<p><?php echo wp_kses_post( $import_notice['import_notice'] ); ?></p>
 								</div>
 							<?php endif; ?>
 						</div>

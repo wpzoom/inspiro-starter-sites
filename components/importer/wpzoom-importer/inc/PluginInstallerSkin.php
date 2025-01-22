@@ -56,7 +56,7 @@ class PluginInstallerSkin extends \WP_Upgrader_Skin {
 			wp_send_json_error( $errors );
 		} elseif ( is_wp_error( $errors ) && $errors->has_errors() ) {
 			if ( $errors->get_error_data() && is_string( $errors->get_error_data() ) ) {
-				wp_send_json_error( $message . ' ' . esc_html( strip_tags( $errors->get_error_data() ) ) );
+				wp_send_json_error( $message . ' ' . esc_html( wp_strip_all_tags( $errors->get_error_data() ) ) );
 			} else {
 				wp_send_json_error( $message );
 			}

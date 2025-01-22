@@ -119,7 +119,7 @@ class Importer {
 
 		// Increase PHP max execution time. Just in case, even though the AJAX calls are only 25 sec long.
 		if ( strpos( ini_get( 'disable_functions' ), 'set_time_limit' ) === false ) {
-			set_time_limit( Helpers::apply_filters( 'wpzi/set_time_limit_for_demo_data_import', 300 ) );
+			//set_time_limit( Helpers::apply_filters( 'wpzi/set_time_limit_for_demo_data_import', 300 ) );
 		}
 
 		// Disable import of authors.

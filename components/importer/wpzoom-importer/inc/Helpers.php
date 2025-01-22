@@ -417,133 +417,14 @@ class Helpers {
 		// Check if user has the WP capability to import data.
 		if ( ! current_user_can( 'import' ) ) {
 			wp_die(
-				sprintf( /* translators: %1$s - opening div and paragraph HTML tags, %2$s - closing div and paragraph HTML tags. */
-					__( '%1$sYour user role isn\'t high enough. You don\'t have permission to import demo data.%2$s', 'inspiro-starter-sites' ),
-					'<div class="notice  notice-error"><p>',
-					'</p></div>'
+				/* translators: %1$s - opening div and paragraph HTML tags, %2$s - closing div and paragraph HTML tags. */
+				sprintf( 
+					'<div class="notice  notice-error"><p>%1$s</p></div>',
+					esc_html__( 'Your user role isn\'t high enough. You don\'t have permission to import demo data.', 'inspiro-starter-sites' ),
 				)
 			);
 		}
 	}
-
-
-	/**
-	 * Process uploaded files and return the paths to these files.
-	 *
-	 * @param array  $uploaded_files $_FILES array form an AJAX request.
-	 * @param string $log_file_path path to the log file.
-	 * @return array of paths to the content import and widget import files.
-	 */
-	public static function process_uploaded_files( $uploaded_files, $log_file_path ) {
-		// Variable holding the paths to the uploaded files.
-		$selected_import_files = array(
-			'content'    => '',
-			'widgets'    => '',
-			'customizer' => '',
-			'redux'      => '',
-		);
-
-		// Upload settings to disable form and type testing for AJAX uploads.
-		$upload_overrides = array(
-			'test_form' => false,
-		);
-
-		// Register the import file types and their mime types.
-		add_filter( 'upload_mimes', function ( $defaults ) {
-			$custom = [
-				'xml'  => 'text/xml',
-				'json' => 'application/json',
-				'wie'  => 'application/json',
-				'dat'  => 'text/plain',
-			];
-
-			return array_merge( $custom, $defaults );
-		} );
-
-		// Error data if the demo file was not provided.
-		$file_not_provided_error = array(
-			'error' => esc_html__( 'No file provided.', 'inspiro-starter-sites' )
-		);
-
-		// Handle demo file uploads.
-		$content_file_info = isset( $_FILES['content_file'] ) ?
-			wp_handle_upload( $_FILES['content_file'], $upload_overrides ) :
-			$file_not_provided_error;
-
-		$widget_file_info = isset( $_FILES['widget_file'] ) ?
-			wp_handle_upload( $_FILES['widget_file'], $upload_overrides ) :
-			$file_not_provided_error;
-
-		$customizer_file_info = isset( $_FILES['customizer_file'] ) ?
-			wp_handle_upload( $_FILES['customizer_file'], $upload_overrides ) :
-			$file_not_provided_error;
-
-		$redux_file_info = isset( $_FILES['redux_file'] ) ?
-			wp_handle_upload( $_FILES['redux_file'], $upload_overrides ) :
-			$file_not_provided_error;
-
-		// Process content import file.
-		if ( $content_file_info && ! isset( $content_file_info['error'] ) ) {
-			// Set uploaded content file.
-			$selected_import_files['content'] = $content_file_info['file'];
-		}
-		else {
-			// Add this error to log file.
-			$log_added = self::append_to_file(
-				sprintf( /* translators: %s - the error message. */
-					__( 'Content file was not uploaded. Error: %s', 'inspiro-starter-sites' ),
-					$content_file_info['error']
-				),
-				$log_file_path,
-				esc_html__( 'Upload files' , 'inspiro-starter-sites' )
-			);
-		}
-
-		// Process widget import file.
-		if ( $widget_file_info && ! isset( $widget_file_info['error'] ) ) {
-			// Set uploaded widget file.
-			$selected_import_files['widgets'] = $widget_file_info['file'];
-		}
-		else {
-			// Add this error to log file.
-			$log_added = self::append_to_file(
-				sprintf( /* translators: %s - the error message. */
-					__( 'Widget file was not uploaded. Error: %s', 'inspiro-starter-sites' ),
-					$widget_file_info['error']
-				),
-				$log_file_path,
-				esc_html__( 'Upload files' , 'inspiro-starter-sites' )
-			);
-		}
-
-		// Process Customizer import file.
-		if ( $customizer_file_info && ! isset( $customizer_file_info['error'] ) ) {
-			// Set uploaded customizer file.
-			$selected_import_files['customizer'] = $customizer_file_info['file'];
-		}
-		else {
-			// Add this error to log file.
-			$log_added = self::append_to_file(
-				sprintf( /* translators: %s - the error message. */
-					__( 'Customizer file was not uploaded. Error: %s', 'inspiro-starter-sites' ),
-					$customizer_file_info['error']
-				),
-				$log_file_path,
-				esc_html__( 'Upload files' , 'inspiro-starter-sites' )
-			);
-		}
-
-		// Add this message to log file.
-		$log_added = self::append_to_file(
-			__( 'The import files were successfully uploaded!', 'inspiro-starter-sites' ) . self::import_file_info( $selected_import_files ),
-			$log_file_path,
-			esc_html__( 'Upload files' , 'inspiro-starter-sites' )
-		);
-
-		// Return array with paths of uploaded files.
-		return $selected_import_files;
-	}
-
 
 	/**
 	 * Get import file information and max execution time.
@@ -599,7 +480,7 @@ class Helpers {
 	 * Set the $demo_import_start_time class variable with the current date and time string.
 	 */
 	public static function set_demo_import_start_time() {
-		self::$demo_import_start_time = date( self::apply_filters( 'wpzi/date_format_for_file_names', 'Y-m-d__H-i-s' ) );
+		self::$demo_import_start_time = gmdate( self::apply_filters( 'wpzi/date_format_for_file_names', 'Y-m-d__H-i-s' ) );
 	}
 
 

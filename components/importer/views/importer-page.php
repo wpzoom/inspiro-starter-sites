@@ -5,10 +5,6 @@ $the_theme = wp_get_theme();
 
 $predefined_themes = $this->import_files;
 
-if ( ! empty( $this->import_files ) && isset( $_GET['import-mode'] ) && 'manual' === $_GET['import-mode'] ) {
-    $predefined_themes = array();
-}
-
 $imported_demo_id = get_option( 'inspiro_imported_demo_id', false );
 
 ?>
@@ -98,10 +94,15 @@ $imported_demo_id = get_option( 'inspiro_imported_demo_id', false );
 													<figcaption>
 														<h5><?php echo esc_html( $import_file['import_file_name'] ); ?></h5>
 
-														<a href="<?php echo esc_url( $this->get_plugin_settings_url( [ 'step' => 'import', 'import' => esc_attr( $index ) ] ) ); ?>" class="button button-primary <?php echo esc_attr( $imported_btn_classname ); ?>"><?php echo esc_html( $import_btn_label ); ?></a>
+														<?php
+															$step_url        =  wp_nonce_url( $this->get_plugin_settings_url( [ 'step' => 'import', 'import' => esc_attr( $index ) ] ), 'importer_step' );
+															$delete_step_url = wp_nonce_url( $this->get_plugin_settings_url( [ 'step' => 'delete_import', 'imported_demo' => esc_attr( $index ) ] ), 'importer_step' );
+														?>
+
+														<a href="<?php echo esc_url( $step_url ); ?>" class="button button-primary <?php echo esc_attr( $imported_btn_classname ); ?>"><?php echo esc_html( $import_btn_label ); ?></a>
 
 														<?php if( $imported_demo ) { ?>
-															<a href="<?php echo esc_url( $this->get_plugin_settings_url( [ 'step' => 'delete_import', 'imported_demo' => esc_attr( $index ) ] ) ); ?>" class="delete-imported-demo-content" title="<?php esc_attr_e( 'Delete imported demo content', 'inspiro-starter-sites' ); ?>"></a>
+															<a href="<?php echo esc_url( $delete_step_url ); ?>" class="delete-imported-demo-content" title="<?php esc_attr_e( 'Delete imported demo content', 'inspiro-starter-sites' ); ?>"></a>
 														<?php } ?>
 
 													</figcaption>

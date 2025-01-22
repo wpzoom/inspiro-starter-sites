@@ -61,7 +61,9 @@ if( isset( $plugin_import_page['parent_slug'] ) && 'inspiro' == $plugin_import_p
 
 		<div class="wpzi__content-container-content">
 			<div class="wpzi__content-container-content--main">
-				<?php if ( isset( $_GET['imported_demo'] ) ) : ?>
+				<?php if ( isset( $_GET['imported_demo'] ) ) : 
+						check_admin_referer( 'importer_step' );
+					?>
 					<div class="wpzi-delete-imported-content js-wpzi-delete-imported-content">
 						<div class="wpzi-delete-imported-content-header">
 							<h2><?php esc_html_e( 'Delete Imported Demo Content', 'inspiro-starter-sites' ); ?></h2>
@@ -69,9 +71,11 @@ if( isset( $plugin_import_page['parent_slug'] ) && 'inspiro' == $plugin_import_p
 								<?php esc_html_e( 'Are you sure you want to delete the imported demo content? This action will permanently remove all imported pages and posts, including any edits made to them.', 'inspiro-starter-sites' ); ?>
 							</p>
 
-							<?php if ( ! empty( $this->import_files[ $_GET['imported_demo'] ]['import_notice'] ) ) : ?>
+							<?php if ( ! empty( $this->import_files[ $_GET['imported_demo'] ]['import_notice'] ) ) : 
+									$import_notice = sanitize_text_field( wp_unslash( $this->import_files[ $_GET['imported_demo'] ] ) );
+								?>
 								<div class="notice  notice-info">
-									<p><?php echo wp_kses_post( $this->import_files[ $_GET['imported_demo'] ]['import_notice'] ); ?></p>
+									<p><?php echo wp_kses_post( $import_notice['import_notice'] ); ?></p>
 								</div>
 							<?php endif; ?>
 						</div>

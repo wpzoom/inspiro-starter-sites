@@ -84,14 +84,14 @@ class InspiroThemeInstaller {
         // Prepare to install
         $theme_root = get_theme_root();
         $result = unzip_file($temp_file, $theme_root);
-        unlink($temp_file); // Remove temporary file
+        wp_delete_file( $temp_file ); // Remove temporary file
 
-        if (is_wp_error($result)) {
+        if ( is_wp_error( $result ) ) {
             return 'Error unzipping theme: ' . $result->get_error_message();
         }
 
         // Activate the theme if requested
-        if ($activate) {
+        if ( $activate ) {
             switch_theme($theme_slug);
             return "Theme '$theme_slug' installed and activated.";
         }

@@ -34,8 +34,8 @@ class Logger extends \AwesomeMotive\WPContentImporter2\WPImporterLoggerCLI {
 
 		printf(
 			'[%s] %s' . PHP_EOL,
-			strtoupper( $level ),
-			$message
+			esc_html( strtoupper(  $level ) ),
+			wp_kses_post( $message )
 		);
 	}
 
@@ -55,8 +55,8 @@ class Logger extends \AwesomeMotive\WPContentImporter2\WPImporterLoggerCLI {
 
 		$this->error_output .= sprintf(
 			'[%s] %s<br>',
-			strtoupper( $level ),
-			$message
+			esc_html( strtoupper(  $level ) ),
+			wp_kses_post( $message )
 		);
 	}
 }

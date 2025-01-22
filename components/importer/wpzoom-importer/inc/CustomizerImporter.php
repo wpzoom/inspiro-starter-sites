@@ -204,9 +204,9 @@ class CustomizerImporter {
 			// Do the validation and storage stuff.
 			$id = media_handle_sideload( $file_array, 0 );
 
-			// If error storing permanently, unlink.
+			// If error storing permanently, wp_delete_file.
 			if ( is_wp_error( $id ) ) {
-				unlink( $file_array['tmp_name'] );
+				wp_delete_file( $file_array['tmp_name'] );
 				return $id;
 			}
 

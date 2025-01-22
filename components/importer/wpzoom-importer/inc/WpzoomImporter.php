@@ -144,7 +144,7 @@ class WpzoomImporter {
 		add_action( 'user_admin_notices', array( $this, 'start_notice_output_capturing' ), 0 );
 		add_action( 'admin_notices', array( $this, 'start_notice_output_capturing' ), 0 );
 		add_action( 'all_admin_notices', array( $this, 'finish_notice_output_capturing' ), PHP_INT_MAX );
-		add_action( 'admin_init', array( $this, 'redirect_from_old_default_admin_page' ) );
+
 		add_action( 'set_object_terms', array( $this, 'add_imported_terms' ), 10, 6 );
 		
 		add_filter( 'wxr_importer.pre_process.post', [ $this, 'skip_failed_attachment_import' ] );
@@ -201,11 +201,13 @@ class WpzoomImporter {
 	public function display_plugin_page() {
 		
 		if ( isset( $_GET['step'] ) && 'import' === $_GET['step'] ) {
+			check_admin_referer( 'importer_step' );
 			require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/views/import.php';
 			return;
 		}
 
 		if ( isset( $_GET['step'] ) && 'delete_import' === $_GET['step'] ) {
+			check_admin_referer( 'importer_step' );
 			require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/views/delete-import.php';
 			return;
 		}
@@ -223,7 +225,7 @@ class WpzoomImporter {
 	public function admin_enqueue_scripts( $hook ) {
 		// Enqueue the scripts only on the plugin page.
 
-		if ( $this->plugin_page === $hook || 'inspiro_page_inspiro-demo' == $hook || ( 'admin.php' === $hook && $this->plugin_page_setup['menu_slug'] === esc_attr( $_GET['import'] ) ) ) {
+		if ( $this->plugin_page === $hook || 'inspiro_page_inspiro-demo' == $hook ) {
 			
 			wp_enqueue_script( 
 				'wpzi-importer-js', 
@@ -285,7 +287,7 @@ class WpzoomImporter {
 	 */
 	public function import_demo_data_ajax_callback() {
 		// Try to update PHP memory limit (so that it does not run out of it).
-		ini_set( 'memory_limit', Helpers::apply_filters( 'wpzi/import_memory_limit', '350M' ) );
+		//ini_set( 'memory_limit', Helpers::apply_filters( 'wpzi/import_memory_limit', '350M' ) );
 
 		// Verify if the AJAX call is valid (checks nonce and current_user_can).
 		Helpers::verify_ajax_call();
@@ -305,6 +307,7 @@ class WpzoomImporter {
 
 			// Get selected file index or set it to 0.
 			$this->selected_index = empty( $_POST['selected'] ) ? 0 : absint( $_POST['selected'] );
+			check_ajax_referer( 'wpzi-ajax-verification', 'security' );
 
 			if ( ! empty( $this->import_files[ $this->selected_index ] ) ) { // Use predefined import files from wp filter: wpzi/import_files.
 
@@ -468,19 +471,12 @@ class WpzoomImporter {
 
 		if ( ! empty( $this->frontend_error_messages ) ) {
 			$response['subtitle'] = '<p>' . esc_html__( 'Your import completed, but some things may not have imported properly.', 'inspiro-starter-sites' ) . '</p>';
-			$response['subtitle'] .= sprintf(
-				wp_kses(
-				/* translators: %s - link to the log file. */
-					__( '<p><a href="%s" target="_blank">View error log</a> for more information.</p>', 'inspiro-starter-sites' ),
-					array(
-						'p'      => [],
-						'a'      => [
-							'href'   => [],
-							'target' => [],
-						],
-					)
-				),
-				Helpers::get_log_url( $this->log_file_path )
+			
+			/* translators: %s - link to the log file. */
+			$response['subtitle'] .= sprintf( '<p><a href="%s" target="_blank">%s</a> %s</p>',
+				Helpers::get_log_url( $this->log_file_path ),
+				wp_kses_post( __( 'View error log', 'inspiro-starter-sites' ) ),
+				wp_kses_post( __( 'for more information.', 'inspiro-starter-sites' ) ),
 			);
 
 			$response['message'] = '<div class="notice notice-warning"><p>' . $this->frontend_error_messages_display() . '</p></div>';
@@ -689,18 +685,6 @@ class WpzoomImporter {
 	}
 
 	/**
-	 * Redirect from the old default WPZI settings page URL to the new one.
-	 */
-	public function redirect_from_old_default_admin_page() {
-		global $pagenow;
-
-		if ( $pagenow == 'themes.php' && isset( $_GET['page'] ) && $_GET['page'] == 'pt-inspiro-starter-sites' ) {
-			wp_safe_redirect( $this->get_plugin_settings_url() );
-			exit;
-		}
-	}
-
-	/**
 	 * Add imported terms.
 	 *
 	 * Mainly it's needed for saving all imported terms and trigger terms count updates.
@@ -826,19 +810,39 @@ class WpzoomImporter {
 	 * @return array
 	 */
 	public function get_reset_data() {
-
-		global $wpdb;
-
-		$post_ids = $wpdb->get_col( "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key='_wpzoom_demo_importer_imported_post'" );
-		$form_ids = $wpdb->get_col( "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key='_wpzoom_demo_importer_imported_wp_forms'" );
-		$term_ids = $wpdb->get_col( "SELECT term_id FROM {$wpdb->termmeta} WHERE meta_key='_wpzoom_demo_importer_imported_term'" );
-
+		$post_ids = get_posts( array(
+			'meta_key'   => '_wpzoom_demo_importer_imported_post',
+			'fields'     => 'ids',
+			'post_type'  => 'any',
+			'post_status'=> 'any',
+			'numberposts'=> -1,
+		) );
+	
+		$form_ids = get_posts( array(
+			'meta_key'   => '_wpzoom_demo_importer_imported_wp_forms',
+			'fields'     => 'ids',
+			'post_type'  => 'any',
+			'post_status'=> 'any',
+			'numberposts'=> -1,
+		) );
+	
+		$term_ids = get_terms( array(
+			'meta_query' => array(
+				array(
+					'key'     => '_wpzoom_demo_importer_imported_term',
+					'compare' => 'EXISTS',
+				),
+			),
+			'fields'     => 'ids',
+			'hide_empty' => false,
+		) );
+	
 		$data = array(
 			'reset_posts'    => $post_ids,
 			'reset_wp_forms' => $form_ids,
 			'reset_terms'    => $term_ids,
 		);
-
+	
 		return $data;
 	}
 

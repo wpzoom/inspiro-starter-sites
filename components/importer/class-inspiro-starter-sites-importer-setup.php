@@ -73,14 +73,14 @@ class Inspiro_Starter_Sites_Importer_Setup {
 		];
 
 		// Check if user is on the theme recommeneded plugins step and a demo was selected.
-		if (
-			isset( $_GET['step'] ) &&
-			$_GET['step'] === 'import' &&
-			isset( $_GET['import'] )
-		) {
+		if ( isset( $_GET['step'] ) && $_GET['step'] === 'import' && isset( $_GET['import'] ) ) {
+			
+			$import_step = sanitize_text_field( wp_unslash( $_GET['import'] ) );
+
+			check_admin_referer( 'importer_step' );
 
 		// Adding one additional plugin for the first demo import ('import' number = 0).
-		if ( $_GET['import'] === '0' ) {
+		if ( $import_step === '0' ) {
 			$theme_plugins[] = [
 				'name'     => 'Video Popup Block by WPZOOM',
 				'slug'     => 'wpzoom-video-popup-block',
@@ -93,7 +93,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'desc'     => 'Showcases your projects in a professional and visually appealing portfolio layout.',
 				'required' => true,
 			];
-		} elseif ( $_GET['import'] === '1' ) {
+		} elseif ( $import_step === '1' ) {
 
 
 			$theme_plugins[] =  [
@@ -114,7 +114,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'desc'     => 'Showcases your projects in a professional and visually appealing portfolio layout.',
 				'required' => true,
 			];
-		} elseif ( $_GET['import'] === '2' ) {
+		} elseif ( $import_step === '2' ) {
 
 			$theme_plugins[] =  [
 				'name'     => 'WooCommerce',

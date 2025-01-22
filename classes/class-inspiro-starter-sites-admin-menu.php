@@ -96,7 +96,6 @@ class Inspiro_Starter_Sites_Admin_Menu {
 		foreach ( $menu as $key => $menu_item ) {
 			if (isset($menu_item[2]) && $menu_item[2] === "admin.php?page=$custom_page_slug") {
 				unset($menu[$key]); // Remove the menu
-				error_log("Custom admin page '$custom_page_slug' removed.");
 				return;
 			}
 		}

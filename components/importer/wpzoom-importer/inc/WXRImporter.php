@@ -63,7 +63,6 @@ class WXRImporter extends \AwesomeMotive\WPContentImporter2\WXRImporter {
 	 * Fixes: [WARNING] Failed to import pa_size L warnings in content import.
 	 * Code from: woocommerce/includes/admin/class-wc-admin-importers.php (ver 2.6.9).
 	 *
-	 * Github issue: https://github.com/awesomemotive/inspiro-starter-sites/issues/71
 	 *
 	 * @param  array $date The term data to import.
 	 * @return array       The unchanged term data.
@@ -74,21 +73,31 @@ class WXRImporter extends \AwesomeMotive\WPContentImporter2\WXRImporter {
 		if ( strstr( $data['taxonomy'], 'pa_' ) ) {
 			if ( ! taxonomy_exists( $data['taxonomy'] ) ) {
 				$attribute_name = wc_sanitize_taxonomy_name( str_replace( 'pa_', '', $data['taxonomy'] ) );
-
-				// Create the taxonomy
-				if ( ! in_array( $attribute_name, wc_get_attribute_taxonomies() ) ) {
-					$attribute = array(
-						'attribute_label'   => $attribute_name,
-						'attribute_name'    => $attribute_name,
-						'attribute_type'    => 'select',
-						'attribute_orderby' => 'menu_order',
-						'attribute_public'  => 0
-					);
-					$wpdb->insert( $wpdb->prefix . 'woocommerce_attribute_taxonomies', $attribute );
+	
+				// Check if the attribute already exists
+				$attribute_taxonomies = wc_get_attribute_taxonomies();
+				$exists = false;
+				foreach ( $attribute_taxonomies as $taxonomy ) {
+					if ( $taxonomy->attribute_name === $attribute_name ) {
+						$exists = true;
+						break;
+					}
+				}
+	
+				if ( ! $exists ) {
+					// Use WooCommerce function to add a new attribute
+					wc_create_attribute( array(
+						'name'         => $attribute_name,
+						'slug'         => $attribute_name,
+						'type'         => 'select',
+						'order_by'     => 'menu_order',
+						'has_archives' => false,
+					) );
+	
 					delete_transient( 'wc_attribute_taxonomies' );
 				}
-
-				// Register the taxonomy now so that the import works!
+	
+				// Register the taxonomy now so that the import works
 				register_taxonomy(
 					$data['taxonomy'],
 					apply_filters( 'woocommerce_taxonomy_objects_' . $data['taxonomy'], array( 'product' ) ),
