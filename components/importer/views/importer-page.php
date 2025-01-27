@@ -55,7 +55,7 @@ $imported_demo_id = get_option( 'inspiro_starter_sites_imported_demo_id', false 
                 <div class="inspiro-starter-sites-onboard_content-main">
 
 					<div id="demo-importer" class="inspiro-starter-sites-onboard_content-main-tab">
-						<div class="theme-info-wrap welcome-section">
+						<div class="plugin-info-wrap welcome-section">
 							<h3 class="inspiro-starter-sites-onboard_content-main-title">
 								<?php esc_html_e( 'Demo Importer', 'inspiro-starter-sites' ); ?>
 							</h3>
