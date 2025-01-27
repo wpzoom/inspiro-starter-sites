@@ -19,7 +19,7 @@ class WPCLICommands extends \WP_CLI_Command {
 	public function __construct() {
 		parent::__construct();
 
-		$this->iss = WpzoomImporter::get_instance();
+		$this->iss = InspiroStarterSitesImporter::get_instance();
 
 		Helpers::set_demo_import_start_time();
 
@@ -153,13 +153,13 @@ class WPCLICommands extends \WP_CLI_Command {
 		WP_CLI::log( esc_html__( 'Importing...', 'inspiro-starter-sites' ) );
 
 		if ( ! empty( $import_files['content'] ) ) {
-			$this->do_action( 'iss/before_content_import_execution', $import_files, $this->iss->import_files, $predefined_index );
+			$this->do_action( 'inspiro_starter_sites/before_content_import_execution', $import_files, $this->iss->import_files, $predefined_index );
 
 			$this->import_content( $import_files['content'] );
 		}
 
 		if ( ! empty( $import_files['widgets'] ) ) {
-			$this->do_action( 'iss/before_widgets_import', $import_files );
+			$this->do_action( 'inspiro_starter_sites/before_widgets_import', $import_files );
 
 			$this->import_widgets( $import_files['widgets'] );
 		}
@@ -168,7 +168,7 @@ class WPCLICommands extends \WP_CLI_Command {
 			$this->import_customizer( $import_files['customizer'] );
 		}
 
-		$this->do_action( 'iss/after_all_import_execution', $import_files, $this->iss->import_files, $predefined_index );
+		$this->do_action( 'inspiro_starter_sites/after_all_import_execution', $import_files, $this->iss->import_files, $predefined_index );
 
 		WP_CLI::log( esc_html__( 'Predefined import finished!', 'inspiro-starter-sites' ) );
 	}
@@ -187,7 +187,7 @@ class WPCLICommands extends \WP_CLI_Command {
 		}
 
 		// Change the single AJAX call duration so the whole content import will be done in one go.
-		add_filter( 'iss/time_for_one_ajax_call', function() {
+		add_filter( 'inspiro_starter_sites/time_for_one_ajax_call', function() {
 			return 3600;
 		} );
 

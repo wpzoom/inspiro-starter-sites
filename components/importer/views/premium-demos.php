@@ -14,11 +14,11 @@ $premium_demos = apply_filters( 'inspiro_starter_sites_premium_demos', array() )
 
 <?php foreach ( $premium_demos as $index => $demo_section ) : ?>
 	<div class="theme-info-wrap">
-		<h3 class="iss-onboard_content-main-title"><?php echo esc_html( $demo_section['name'] ); ?> <?php echo esc_html__( 'Demos', 'inspiro-starter-sites' ); ?> <?php echo '(' . count( $demo_section['demos'] ) . ')' ?></h3>
-		<p class="iss-onboard_content-main-intro"><?php echo wp_kses_post( $demo_section['desc'] ); ?></p>
-		<ol class="iss-onboard_content-main-steps">
-			<li id="step-choose-design" class="iss-onboard_content-main-step step-1 step-choose-design">
-				<div class="iss-onboard_content-main-step-content">
+		<h3 class="inspiro-starter-sites-onboard_content-main-title"><?php echo esc_html( $demo_section['name'] ); ?> <?php echo esc_html__( 'Demos', 'inspiro-starter-sites' ); ?> <?php echo '(' . count( $demo_section['demos'] ) . ')' ?></h3>
+		<p class="inspiro-starter-sites-onboard_content-main-intro"><?php echo wp_kses_post( $demo_section['desc'] ); ?></p>
+		<ol class="inspiro-starter-sites-onboard_content-main-steps">
+			<li id="step-choose-design" class="inspiro-starter-sites-onboard_content-main-step step-1 step-choose-design">
+				<div class="inspiro-starter-sites-onboard_content-main-step-content">
 					<form method="post" action="#">
 						<ul>
 							<?php foreach ( $demo_section['demos'] as $demo ) {  ?>

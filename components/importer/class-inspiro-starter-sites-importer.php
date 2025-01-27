@@ -29,7 +29,7 @@ class Inspiro_Starter_Sites_Importer {
 		require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/vendor/autoload.php';
 
 		// Instantiate the demo importer class.
-		$iss_import = Inspiro\Starter_Sites\WpzoomImporter::get_instance();
+		$inspiro_starter_sites_import = Inspiro\Starter_Sites\InspiroStarterSitesImporter::get_instance();
 
 
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
@@ -47,14 +47,6 @@ class Inspiro_Starter_Sites_Importer {
 		if ( 'inspiro_page_inspiro-demo' !== $hook && 'appearance_page_inspiro-starter-sites' !== $hook ) {
 			return;
 		}
-		
-		wp_enqueue_script( 
-			'inspiro-starter-sites-admin', 
-			INSPIRO_STARTER_SITES_URL . 'components/importer/assets/js/admin.js',
-			array( 'jquery' ), 
-			INSPIRO_STARTER_SITES_VERSION, 
-			true 
-		);
 
 		wp_enqueue_script( 'jquery-ui' );
 		wp_enqueue_script( 'jquery-ui-tabs' );

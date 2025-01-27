@@ -20,11 +20,11 @@ class WPFormsImporter {
 	private $import_file_path = false;
 
 	/**
-	 * The WpzoomImporter instance.
+	 * The InspiroStarterSitesImporter instance.
 	 *
 	 * @since 3.3.0
 	 *
-	 * @var WpzoomImporter
+	 * @var InspiroStarterSitesImporter
 	 */
 	private $iss;
 
@@ -38,7 +38,7 @@ class WPFormsImporter {
 	public function __construct( $import_file_path ) {
 
 		$this->import_file_path = $import_file_path;
-		$this->iss             = WpzoomImporter::get_instance();
+		$this->iss             = InspiroStarterSitesImporter::get_instance();
 	}
 
 	/**

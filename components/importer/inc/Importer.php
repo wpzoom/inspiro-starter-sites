@@ -57,7 +57,7 @@ class Importer {
 		}
 
 		// Get the WPZI (main plugin class) instance.
-		$this->iss = WpzoomImporter::get_instance();
+		$this->iss = InspiroStarterSitesImporter::get_instance();
 	}
 
 
@@ -121,7 +121,7 @@ class Importer {
 
 		// Increase PHP max execution time. Just in case, even though the AJAX calls are only 25 sec long.
 		if ( strpos( ini_get( 'disable_functions' ), 'set_time_limit' ) === false ) {
-			//set_time_limit( Helpers::apply_filters( 'iss/set_time_limit_for_demo_data_import', 300 ) );
+			//set_time_limit( Helpers::apply_filters( 'inspiro_starter_sites/set_time_limit_for_demo_data_import', 300 ) );
 		}
 
 		// Disable import of authors.
@@ -131,7 +131,7 @@ class Importer {
 		add_filter( 'wxr_importer.pre_process.post', array( $this, 'new_ajax_request_maybe' ) );
 
 		// Disables generation of multiple image sizes (thumbnails) in the content import step.
-		if ( ! Helpers::apply_filters( 'iss/regenerate_thumbnails_in_content_import', true ) ) {
+		if ( ! Helpers::apply_filters( 'inspiro_starter_sites/regenerate_thumbnails_in_content_import', true ) ) {
 			add_filter( 'intermediate_image_sizes_advanced', '__return_null' );
 		}
 
@@ -162,7 +162,7 @@ class Importer {
 		$time = microtime( true ) - $this->microtime;
 
 		// We should make a new ajax call, if the time is right.
-		if ( $time > Helpers::apply_filters( 'iss/time_for_one_ajax_call', 25 ) ) {
+		if ( $time > Helpers::apply_filters( 'inspiro_starter_sites/time_for_one_ajax_call', 25 ) ) {
 			$response = array(
 				'status'  => 'newAJAX',
 				'message' => 'Time for new AJAX request!: ' . $time,
@@ -205,6 +205,6 @@ class Importer {
 	private function set_current_importer_data() {
 		$data = array_merge( $this->iss->get_current_importer_data(), $this->get_importer_data() );
 
-		Helpers::set_iss_import_data_transient( $data );
+		Helpers::set_inspiro_starter_sites_import_data_transient( $data );
 	}
 }

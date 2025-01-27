@@ -20,22 +20,22 @@ class ViewHelpers {
 		$name       = $theme->name;
 
 		if ( isset( $selected ) ) {
-			$iss          = WpzoomImporter::get_instance();
+			$iss          = InspiroStarterSitesImporter::get_instance();
 			$selected_data = $iss->import_files[ $selected ];
 			$name          = ! empty( $selected_data['import_file_name'] ) ? $selected_data['import_file_name'] : $name;
 			$screenshot    = ! empty( $selected_data['import_preview_image_url'] ) ? $selected_data['import_preview_image_url'] : $screenshot;
 		}
 
 		ob_start(); ?>
-		<div class="iss__card iss__card--theme">
-			<div class="iss__card-content">
+		<div class="inspiro-starter-sites__card inspiro-starter-sites__card--theme">
+			<div class="inspiro-starter-sites__card-content">
 				<?php if ( $screenshot ) : ?>
 					<div class="screenshot"><img src="<?php echo esc_url( $screenshot ); ?>" alt="<?php esc_attr_e( 'Theme screenshot', 'inspiro-starter-sites' ); ?>" /></div>
 				<?php else : ?>
 					<div class="screenshot blank"></div>
 				<?php endif; ?>
 			</div>
-			<div class="iss__card-footer">
+			<div class="inspiro-starter-sites__card-footer">
 				<h3><?php echo esc_html( $name ); ?></h3>
 			</div>
 		</div>

@@ -22,10 +22,10 @@ class PluginInstaller {
 	public function init() {
 		$this->set_plugins();
 
-		add_action( 'iss/plugin_intaller_before_plugin_activation', array( $this, 'before_plugin_activation' ) );
-		add_action( 'iss/plugin_intaller_after_plugin_activation', array( $this, 'after_plugin_activation' ) );
+		add_action( 'inspiro_starter_sites/plugin_intaller_before_plugin_activation', array( $this, 'before_plugin_activation' ) );
+		add_action( 'inspiro_starter_sites/plugin_intaller_after_plugin_activation', array( $this, 'after_plugin_activation' ) );
 
-		add_action( 'wp_ajax_iss_install_plugin', array( $this, 'install_plugin_callback' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_install_plugin', array( $this, 'install_plugin_callback' ) );
 	}
 
 	/**
@@ -53,7 +53,7 @@ class PluginInstaller {
 	 */
 	public function set_plugins() {
 		
-		$all_plugins = Helpers::apply_filters( 'iss/register_plugins', array() );
+		$all_plugins = Helpers::apply_filters( 'inspiro_starter_sites/register_plugins', array() );
 		$this->plugins = $this->filter_plugins( $all_plugins );
 
 	}
@@ -65,7 +65,7 @@ class PluginInstaller {
 	public function get_theme_plugins() {
 		
 		$default_plugins = array();
-		$theme_plugins = array_merge( $default_plugins, Helpers::apply_filters( 'iss/register_plugins', array() ) );
+		$theme_plugins = array_merge( $default_plugins, Helpers::apply_filters( 'inspiro_starter_sites/register_plugins', array() ) );
 
 		return $this->filter_plugins( $theme_plugins );
 	}
@@ -75,7 +75,7 @@ class PluginInstaller {
 	 * Has to contain the `slug` POST parameter.
 	 */
 	public function install_plugin_callback() {
-		check_ajax_referer( 'iss-ajax-verification', 'security' );
+		check_ajax_referer( 'inspiro-starter-sites-ajax-verification', 'security' );
 
 		// Check if user has the WP capability to install plugins.
 		if ( ! current_user_can( 'install_plugins' ) ) {
@@ -244,11 +244,11 @@ class PluginInstaller {
 	 * @return null|WP_Error Null on success, WP_Error on invalid file.
 	 */
 	private function activate_plugin( $plugin_filename, $slug ) {
-		Helpers::do_action( 'iss/plugin_intaller_before_plugin_activation', $slug );
+		Helpers::do_action( 'inspiro_starter_sites/plugin_intaller_before_plugin_activation', $slug );
 
 		$activated = activate_plugin( $plugin_filename );
 
-		Helpers::do_action( 'iss/plugin_intaller_after_plugin_activation', $slug );
+		Helpers::do_action( 'inspiro_starter_sites/plugin_intaller_after_plugin_activation', $slug );
 
 		return $activated;
 	}
@@ -259,7 +259,7 @@ class PluginInstaller {
 	 * @return bool
 	 */
 	private function filesystem_permissions_allowed() {
-		$iss  = WpzoomImporter::get_instance();
+		$iss  = InspiroStarterSitesImporter::get_instance();
 		$url   = esc_url_raw( $iss->get_plugin_settings_url() );
 		$creds = request_filesystem_credentials( $url, '', false, false, null );
 

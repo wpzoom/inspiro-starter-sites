@@ -21,7 +21,7 @@ class InspiroThemeInstaller {
 	 */
 	public function handle_theme() {
 
-		check_ajax_referer( 'iss-ajax-verification', 'security' );
+		check_ajax_referer( 'inspiro-starter-sites-ajax-verification', 'security' );
 
 		// Verify user permissions
 		if ( ! current_user_can( 'install_themes' ) || ! current_user_can( 'switch_themes' ) ) {

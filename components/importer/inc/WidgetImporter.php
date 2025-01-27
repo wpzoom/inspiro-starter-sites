@@ -18,7 +18,7 @@ class WidgetImporter {
 	 */
 	public static function import( $widget_import_file_path ) {
 		$results       = array();
-		$iss          = WpzoomImporter::get_instance();
+		$iss          = InspiroStarterSitesImporter::get_instance();
 		$log_file_path = $iss->get_log_file_path();
 
 		// Import widgets and return result.
@@ -120,8 +120,8 @@ class WidgetImporter {
 		}
 
 		// Hook before import.
-		Helpers::do_action( 'iss/widget_importer_before_widgets_import' );
-		$data = Helpers::apply_filters( 'iss/before_widgets_import_data', $data );
+		Helpers::do_action( 'inspiro_starter_sites/widget_importer_before_widgets_import' );
+		$data = Helpers::apply_filters( 'inspiro_starter_sites/before_widgets_import_data', $data );
 
 		// Get all available widgets site supports.
 		$available_widgets = self::available_widgets();
@@ -181,7 +181,7 @@ class WidgetImporter {
 				// Filter to modify settings object before conversion to array and import.
 				// Leave this filter here for backwards compatibility with manipulating objects (before conversion to array below).
 				// Ideally the newer wie_widget_settings_array below will be used instead of this.
-				$widget = Helpers::apply_filters( 'iss/widget_settings', $widget ); // Object.
+				$widget = Helpers::apply_filters( 'inspiro_starter_sites/widget_settings', $widget ); // Object.
 
 				// Convert multidimensional objects to multidimensional arrays.
 				// Some plugins like Jetpack Widget Visibility store settings as multidimensional arrays.
@@ -193,7 +193,7 @@ class WidgetImporter {
 				// Filter to modify settings array.
 				// This is preferred over the older wie_widget_settings filter above.
 				// Do before identical check because changes may make it identical to end result (such as URL replacements).
-				$widget = Helpers::apply_filters( 'iss/widget_settings_array', $widget );
+				$widget = Helpers::apply_filters( 'inspiro_starter_sites/widget_settings_array', $widget );
 
 				// Does widget with identical settings already exist in same sidebar?
 				if ( ! $fail && isset( $widget_instances[ $id_base ] ) ) {
@@ -268,7 +268,7 @@ class WidgetImporter {
 						'widget_id_num'     => $new_instance_id_number,
 						'widget_id_num_old' => $instance_id_number,
 					);
-					Helpers::do_action( 'iss/widget_importer_after_single_widget_import', $after_widget_import );
+					Helpers::do_action( 'inspiro_starter_sites/widget_importer_after_single_widget_import', $after_widget_import );
 
 					// Success message.
 					if ( $sidebar_available ) {
@@ -291,10 +291,10 @@ class WidgetImporter {
 		}
 
 		// Hook after import.
-		Helpers::do_action( 'iss/widget_importer_after_widgets_import' );
+		Helpers::do_action( 'inspiro_starter_sites/widget_importer_after_widgets_import' );
 
 		// Return results.
-		return Helpers::apply_filters( 'iss/widget_import_results', $results );
+		return Helpers::apply_filters( 'inspiro_starter_sites/widget_import_results', $results );
 	}
 
 
@@ -319,7 +319,7 @@ class WidgetImporter {
 			}
 		}
 
-		return Helpers::apply_filters( 'iss/available_widgets', $available_widgets );
+		return Helpers::apply_filters( 'inspiro_starter_sites/available_widgets', $available_widgets );
 	}
 
 

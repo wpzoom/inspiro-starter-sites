@@ -71,7 +71,7 @@ class Helpers {
 		);
 		$downloader = new Downloader();
 
-		$import_file_info = self::apply_filters('iss/pre_download_import_files', $import_file_info);
+		$import_file_info = self::apply_filters('inspiro_starter_sites/pre_download_import_files', $import_file_info);
 
 		// ----- Set content file path -----
 		// Check if 'import_file_url' is not defined. That would mean a local file.
@@ -82,7 +82,7 @@ class Helpers {
 		}
 		else {
 			// Set the filename string for content import file.
-			$content_filename = self::apply_filters( 'iss/downloaded_content_file_prefix', 'demo-content-import-file_' ) . self::$demo_import_start_time . self::apply_filters( 'iss/downloaded_content_file_suffix_and_file_extension', '.xml' );
+			$content_filename = self::apply_filters( 'inspiro_starter_sites/downloaded_content_file_prefix', 'demo-content-import-file_' ) . self::$demo_import_start_time . self::apply_filters( 'inspiro_starter_sites/downloaded_content_file_suffix_and_file_extension', '.xml' );
 
 			// Download the content import file.
 			$downloaded_files['content'] = $downloader->download_file( $import_file_info['import_file_url'], $content_filename );
@@ -97,7 +97,7 @@ class Helpers {
 		// Get widgets file as well. If defined!
 		if ( ! empty( $import_file_info['import_widget_file_url'] ) ) {
 			// Set the filename string for widgets import file.
-			$widget_filename = self::apply_filters( 'iss/downloaded_widgets_file_prefix', 'demo-widgets-import-file_' ) . self::$demo_import_start_time . self::apply_filters( 'iss/downloaded_widgets_file_suffix_and_file_extension', '.json' );
+			$widget_filename = self::apply_filters( 'inspiro_starter_sites/downloaded_widgets_file_prefix', 'demo-widgets-import-file_' ) . self::$demo_import_start_time . self::apply_filters( 'inspiro_starter_sites/downloaded_widgets_file_suffix_and_file_extension', '.json' );
 
 			// Download the widgets import file.
 			$downloaded_files['widgets'] = $downloader->download_file( $import_file_info['import_widget_file_url'], $widget_filename );
@@ -117,7 +117,7 @@ class Helpers {
 		// Get customizer import file as well. If defined!
 		if ( ! empty( $import_file_info['import_customizer_file_url'] ) ) {
 			// Setup filename path to save the customizer content.
-			$customizer_filename = self::apply_filters( 'iss/downloaded_customizer_file_prefix', 'demo-customizer-import-file_' ) . self::$demo_import_start_time . self::apply_filters( 'iss/downloaded_customizer_file_suffix_and_file_extension', '.dat' );
+			$customizer_filename = self::apply_filters( 'inspiro_starter_sites/downloaded_customizer_file_prefix', 'demo-customizer-import-file_' ) . self::$demo_import_start_time . self::apply_filters( 'inspiro_starter_sites/downloaded_customizer_file_suffix_and_file_extension', '.dat' );
 
 			// Download the customizer import file.
 			$downloaded_files['customizer'] = $downloader->download_file( $import_file_info['import_customizer_file_url'], $customizer_filename );
@@ -140,7 +140,7 @@ class Helpers {
 
 			// Setup filename paths to save the Redux content.
 			foreach ( $import_file_info['import_redux'] as $index => $redux_item ) {
-				$redux_filename = self::apply_filters( 'iss/downloaded_redux_file_prefix', 'demo-redux-import-file_' ) . $index . '-' . self::$demo_import_start_time . self::apply_filters( 'iss/downloaded_redux_file_suffix_and_file_extension', '.json' );
+				$redux_filename = self::apply_filters( 'inspiro_starter_sites/downloaded_redux_file_prefix', 'demo-redux-import-file_' ) . $index . '-' . self::$demo_import_start_time . self::apply_filters( 'inspiro_starter_sites/downloaded_redux_file_suffix_and_file_extension', '.json' );
 
 				// Download the Redux import file.
 				$file_path = $downloader->download_file( $redux_item['file_url'], $redux_filename );
@@ -178,7 +178,7 @@ class Helpers {
 		// Get WPForms import file as well. If defined!
 		if ( ! empty( $import_file_info['import_wpforms_file_url'] ) ) {
 			// Setup filename path to save the WPForms content.
-			$wpforms_filename = self::apply_filters( 'iss/downloaded_wpforms_file_prefix', 'demo-wpforms-import-file_' ) . self::$demo_import_start_time . self::apply_filters( 'iss/downloaded_wpforms_file_suffix_and_file_extension', '.json' );
+			$wpforms_filename = self::apply_filters( 'inspiro_starter_sites/downloaded_wpforms_file_prefix', 'demo-wpforms-import-file_' ) . self::$demo_import_start_time . self::apply_filters( 'inspiro_starter_sites/downloaded_wpforms_file_suffix_and_file_extension', '.json' );
 
 			// Download the customizer import file.
 			$downloaded_files['wpforms'] = $downloader->download_file( $import_file_info['import_wpforms_file_url'], $wpforms_filename );
@@ -359,9 +359,9 @@ class Helpers {
 	 */
 	public static function get_log_path() {
 		$upload_dir  = wp_upload_dir();
-		$upload_path = self::apply_filters( 'iss/upload_file_path', trailingslashit( $upload_dir['path'] ) );
+		$upload_path = self::apply_filters( 'inspiro_starter_sites/upload_file_path', trailingslashit( $upload_dir['path'] ) );
 
-		$log_path = $upload_path . self::apply_filters( 'iss/log_file_prefix', 'log_file_' ) . self::$demo_import_start_time . self::apply_filters( 'iss/log_file_suffix_and_file_extension', '.txt' );
+		$log_path = $upload_path . self::apply_filters( 'inspiro_starter_sites/log_file_prefix', 'log_file_' ) . self::$demo_import_start_time . self::apply_filters( 'inspiro_starter_sites/log_file_suffix_and_file_extension', '.txt' );
 
 		self::register_file_as_media_attachment( $log_path );
 
@@ -378,13 +378,13 @@ class Helpers {
 	public static function register_file_as_media_attachment( $log_path ) {
 		// Check the type of file.
 		$log_mimes = array( 'txt' => 'text/plain' );
-		$filetype  = wp_check_filetype( basename( $log_path ), self::apply_filters( 'iss/file_mimes', $log_mimes ) );
+		$filetype  = wp_check_filetype( basename( $log_path ), self::apply_filters( 'inspiro_starter_sites/file_mimes', $log_mimes ) );
 
 		// Prepare an array of post data for the attachment.
 		$attachment = array(
 			'guid'           => self::get_log_url( $log_path ),
 			'post_mime_type' => $filetype['type'],
-			'post_title'     => self::apply_filters( 'iss/attachment_prefix', esc_html__( 'WPZOOM Importer - ', 'inspiro-starter-sites' ) ) . preg_replace( '/\.[^.]+$/', '', basename( $log_path ) ),
+			'post_title'     => self::apply_filters( 'inspiro_starter_sites/attachment_prefix', esc_html__( 'WPZOOM Importer - ', 'inspiro-starter-sites' ) ) . preg_replace( '/\.[^.]+$/', '', basename( $log_path ) ),
 			'post_content'   => '',
 			'post_status'    => 'inherit',
 		);
@@ -402,7 +402,7 @@ class Helpers {
 	 */
 	public static function get_log_url( $log_path ) {
 		$upload_dir = wp_upload_dir();
-		$upload_url = self::apply_filters( 'iss/upload_file_url', trailingslashit( $upload_dir['url'] ) );
+		$upload_url = self::apply_filters( 'inspiro_starter_sites/upload_file_url', trailingslashit( $upload_dir['url'] ) );
 
 		return $upload_url . basename( $log_path );
 	}
@@ -412,7 +412,7 @@ class Helpers {
 	 * Check if the AJAX call is valid.
 	 */
 	public static function verify_ajax_call() {
-		check_ajax_referer( 'iss-ajax-verification', 'security' );
+		check_ajax_referer( 'inspiro-starter-sites-ajax-verification', 'security' );
 
 		// Check if user has the WP capability to import data.
 		if ( ! current_user_can( 'import' ) ) {
@@ -480,7 +480,7 @@ class Helpers {
 	 * Set the $demo_import_start_time class variable with the current date and time string.
 	 */
 	public static function set_demo_import_start_time() {
-		self::$demo_import_start_time = gmdate( self::apply_filters( 'iss/date_format_for_file_names', 'Y-m-d__H-i-s' ) );
+		self::$demo_import_start_time = gmdate( self::apply_filters( 'inspiro_starter_sites/date_format_for_file_names', 'Y-m-d__H-i-s' ) );
 	}
 
 
@@ -538,14 +538,14 @@ class Helpers {
 	 *
 	 * @param array $data Data to be saved to the transient.
 	 */
-	public static function set_iss_import_data_transient( $data ) {
-		set_transient( 'iss_importer_data', $data, 0.1 * HOUR_IN_SECONDS );
+	public static function set_inspiro_starter_sites_import_data_transient( $data ) {
+		set_transient( 'inspiro_starter_sites_importer_data', $data, 0.1 * HOUR_IN_SECONDS );
 	}
 
 
 	/**
 	 * Backwards compatible apply_filters helper.
-	 * With 3.0 we changed the filter prefix from 'pt-iss/' to just 'iss/',
+	 * With 3.0 we changed the filter prefix from 'pt-inspiro_starter_sites/' to just 'inspiro_starter_sites/',
 	 * but we needed to make sure backwards compatibility is in place.
 	 * This method should be used for all apply_filters calls.
 	 *
@@ -566,7 +566,7 @@ class Helpers {
 
 	/**
 	 * Backwards compatible do_action helper.
-	 * With 3.0 we changed the action prefix from 'pt-iss/' to just 'iss/',
+	 * With 3.0 we changed the action prefix from 'pt-inspiro_starter_sites/' to just 'inspiro_starter_sites/',
 	 * but we needed to make sure backwards compatibility is in place.
 	 * This method should be used for all do_action calls.
 	 *
@@ -582,7 +582,7 @@ class Helpers {
 
 	/**
 	 * Backwards compatible has_action helper.
-	 * With 3.0 we changed the action prefix from 'pt-iss/' to just 'iss/',
+	 * With 3.0 we changed the action prefix from 'pt-inspiro_starter_sites/' to just 'inspiro_starter_sites/',
 	 * but we needed to make sure backwards compatibility is in place.
 	 * This method should be used for all has_action calls.
 	 *
@@ -609,7 +609,7 @@ class Helpers {
 	 * @return array
 	 */
 	public static function get_plugin_page_setup_data() {
-		return Helpers::apply_filters( 'iss/plugin_page_setup', array(
+		return Helpers::apply_filters( 'inspiro_starter_sites/plugin_page_setup', array(
 			'parent_slug' => 'themes.php',
 			'page_title'  => esc_html__( 'Inspiro Starter Sites' , 'inspiro-starter-sites' ),
 			'menu_title'  => esc_html__( 'Inspiro Starter Sites' , 'inspiro-starter-sites' ),
@@ -627,7 +627,7 @@ class Helpers {
 	 */
 	public static function get_failed_attachment_imports() {
 
-		return get_transient( 'iss_importer_data_failed_attachment_imports' );
+		return get_transient( 'inspiro_starter_sites_importer_data_failed_attachment_imports' );
 	}
 
 	/**
@@ -650,7 +650,7 @@ class Helpers {
 
 		$failed_media_imports[] = $attachment_url;
 
-		set_transient( 'iss_importer_data_failed_attachment_imports', $failed_media_imports, HOUR_IN_SECONDS );
+		set_transient( 'inspiro_starter_sites_importer_data_failed_attachment_imports', $failed_media_imports, HOUR_IN_SECONDS );
 	}
 
 	/**
