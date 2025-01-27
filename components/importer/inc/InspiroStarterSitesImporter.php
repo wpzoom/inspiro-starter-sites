@@ -287,7 +287,7 @@ class InspiroStarterSitesImporter {
 	 */
 	public function import_demo_data_ajax_callback() {
 		// Try to update PHP memory limit (so that it does not run out of it).
-		//ini_set( 'memory_limit', Helpers::apply_filters( 'inspiro_starter_sites/import_memory_limit', '350M' ) );
+		ini_set( 'memory_limit', Helpers::apply_filters( 'inspiro_starter_sites/import_memory_limit', '350M' ) );
 
 		// Verify if the AJAX call is valid (checks nonce and current_user_can).
 		Helpers::verify_ajax_call();
