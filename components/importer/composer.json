@@ -1,0 +1,25 @@
+{
+    "name":         "inspiro-starter-sites/importer",
+    "description":  "The importer for Inspiro Starter Sites.",
+    "license":      "GPL-3.0+",
+    "type":         "wordpress-plugin",
+    "repositories": [
+      {
+        "type": "vcs",
+        "url":  "https://github.com/awesomemotive/WordPress-Importer.git"
+      }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Inspiro\\Starter_Sites\\": "inc/"
+        }
+    },
+    "require": {
+        "awesomemotive/wp-content-importer-v2": "^3.0.5"
+    },
+    "config": {
+        "platform": {
+            "php": "7.4"
+         }
+   }
+}

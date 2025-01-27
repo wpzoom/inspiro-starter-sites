@@ -1,4 +1,12 @@
 <?php
+/**
+ * The Premium Demos page view.
+ *
+ * @package Inspiro\Starter_Sites
+ */
+
+// Exit if accessed directly
+defined( 'ABSPATH' ) || exit;
 
 $premium_demos = apply_filters( 'inspiro_starter_sites_premium_demos', array() );
 	
@@ -6,11 +14,11 @@ $premium_demos = apply_filters( 'inspiro_starter_sites_premium_demos', array() )
 
 <?php foreach ( $premium_demos as $index => $demo_section ) : ?>
 	<div class="theme-info-wrap">
-		<h3 class="wpz-onboard_content-main-title"><?php echo esc_html( $demo_section['name'] ); ?> <?php echo esc_html__( 'Demos', 'inspiro-starter-sites' ); ?> <?php echo '(' . count( $demo_section['demos'] ) . ')' ?></h3>
-		<p class="wpz-onboard_content-main-intro"><?php echo wp_kses_post( $demo_section['desc'] ); ?></p>
-		<ol class="wpz-onboard_content-main-steps">
-			<li id="step-choose-design" class="wpz-onboard_content-main-step step-1 step-choose-design">
-				<div class="wpz-onboard_content-main-step-content">
+		<h3 class="iss-onboard_content-main-title"><?php echo esc_html( $demo_section['name'] ); ?> <?php echo esc_html__( 'Demos', 'inspiro-starter-sites' ); ?> <?php echo '(' . count( $demo_section['demos'] ) . ')' ?></h3>
+		<p class="iss-onboard_content-main-intro"><?php echo wp_kses_post( $demo_section['desc'] ); ?></p>
+		<ol class="iss-onboard_content-main-steps">
+			<li id="step-choose-design" class="iss-onboard_content-main-step step-1 step-choose-design">
+				<div class="iss-onboard_content-main-step-content">
 					<form method="post" action="#">
 						<ul>
 							<?php foreach ( $demo_section['demos'] as $demo ) {  ?>

@@ -6,7 +6,7 @@
  * @package WPZOOM_Inspiro_Starter_Sites
  */
 
-namespace WPZI;
+namespace Inspiro\Starter_Sites;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -18,13 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Inspiro_Starter_Sites_Admin_Menu {
 
-	/**
-	 * Go Pro link.
-	 *
-	 * @var string
-	 */
-	private static $goProLink = '#link_to_pro_version';
-
+	
 	/**
 	 * The Constructor.
 	 */
@@ -167,33 +161,6 @@ class Inspiro_Starter_Sites_Admin_Menu {
 				self::$goProLink 
 			);
 		}
-	}
-
-	/**
-	 * Add CSS to Go Pro link.
-	 */
-	public function add_css_go_pro_menu() {
-		?>
-		<style>
-			#adminmenu #toplevel_page_inspiro-starter-sites-demo-import a[href="<?php echo esc_url( self::$goProLink ); ?>"] {
-				color: #0BB4AA;
-				font-weight: bold;
-			}
-		</style>
-		<?php
-	}
-
-	/**
-	 * Add target="_blank" to Go Pro link.
-	 */
-	public function add_target_blank_go_pro_menu() {
-		?>
-		<script>
-			jQuery( document ).ready( function( $ ) {
-				$('a[href$="<?php echo esc_url( self::$goProLink ); ?>"]').attr('target', '_blank');				
-			});
-		</script>
-		<?php
 	}
 
 }

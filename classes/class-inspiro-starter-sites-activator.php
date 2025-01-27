@@ -12,7 +12,7 @@
  * @since 1.0.0
  */
 
-namespace WPZI;
+namespace Inspiro\Starter_Sites;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -46,15 +46,15 @@ final class Inspiro_Starter_Sites_Activator {
 	/**
 	 * Execute this on activation of the plugin.
 	 *
-	 * @since 1.2.0
+	 * @since 1.0.0
 	 */
 	public static function activate() {
 		/**
 		 * Allow developers to hook activation.
 		 *
-		 * @see wpzoom_inspiro_starter_sites_activate
+		 * @see inspiro_starter_sites_activate
 		 */
-		$activate = apply_filters( 'wpzoom_inspiro_starter_sites_activate', true );
+		$activate = apply_filters( 'inspiro_starter_sites_activate', true );
 
 		if ( $activate ) {
 			update_option( 'inspiro_starter_sites_activation_redirect', true );
@@ -70,9 +70,9 @@ final class Inspiro_Starter_Sites_Activator {
 		/**
 		 * Allow developers to hook deactivation.
 		 *
-		 * @see wpzoom_inspiro_starter_sites_deactivate
+		 * @see inspiro_starter_sites_deactivate
 		 */
-		$deactivate = apply_filters( 'wpzoom_inspiro_starter_sites_deactivate', true );
+		$deactivate = apply_filters( 'inspiro_starter_sites_deactivate', true );
 
 		if ( $deactivate ) {
 			delete_option( 'inspiro_starter_sites_activation_redirect' );

@@ -3,7 +3,7 @@
  * Register demo importer setup class.
  *
  * @since   1.0.0
- * @package WPZOOM_Inspiro_Starter_Sites
+ * @package Inspiro_Starter_Sites
  */
 
 // Exit if accessed directly.
@@ -44,19 +44,19 @@ class Inspiro_Starter_Sites_Importer_Setup {
 		$current_theme = wp_get_theme();
 		$theme_name    = $current_theme->get( 'Name' );
 
-		add_filter( 'wpzi/register_plugins', array( $this, 'wpzi_register_plugins' ) );
-		add_filter( 'wpzi/import_files', array( $this, 'wpzi_import_files' ) );
-		add_action( 'wpzi/after_import', array( $this, 'wpzi_after_import_setup' ) );
+		add_filter( 'iss/register_plugins', array( $this, 'iss_register_plugins' ) );
+		add_filter( 'iss/import_files', array( $this, 'iss_import_files' ) );
+		add_action( 'iss/after_import', array( $this, 'iss_after_import_setup' ) );
 
 		add_filter( 'inspiro_starter_sites_premium_demos', array( $this, 'premium_demos' ) );
 
 		if ( 'Inspiro' == $theme_name && ! class_exists( 'WPZOOM' ) ) {
-			add_filter( 'wpzi/plugin_page_setup', array( $this, 'wpzi_new_menu' ) );
+			add_filter( 'iss/plugin_page_setup', array( $this, 'iss_new_menu' ) );
 		}
 		
 	}
 
-	public function wpzi_register_plugins( $plugins ) {
+	public function iss_register_plugins( $plugins ) {
 		$theme_plugins = [
 			[
 				'name'     => 'Instagram Widget by WPZOOM',
@@ -128,14 +128,17 @@ class Inspiro_Starter_Sites_Importer_Setup {
 	  
 	}
 
-	public function wpzi_import_files() {
+	public function iss_import_files() {
+
+		$demos_preview_url = INSPIRO_STARTER_SITES_URL .'assets/images/preview-demos/';
+
 		return [
 			[	'import_id'                  => 'inspiro-lite-blocks',
 				'import_file_name'           => 'Inspiro Lite - Gutenberg Blocks',
 				'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-blocks.xml',
 				'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-widgets.wie',
 				'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-customizer.dat',
-				'import_preview_image_url'   => 'https://www.wpzoom.com/wp-content/uploads/2024/10/inspiro-lite-block.png',
+				'import_preview_image_url'   => $demos_preview_url . 'inspiro-lite-block.png',
 				'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-blocks/',
 			],
 			[	
@@ -144,7 +147,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite.xml',
 				'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-widgets.wie',
 				'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-customizer.dat',
-				'import_preview_image_url'   => 'https://www.wpzoom.com/wp-content/uploads/2021/10/inspiro-lite-elementor-1.png',
+				'import_preview_image_url'   => $demos_preview_url .  'inspiro-lite-elementor-1.png',
 				'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite/',
 			],
 			[	
@@ -153,7 +156,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-woo.xml',
 				'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-woo-widgets.wie',
 				'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-woo.dat',
-				'import_preview_image_url'   => 'https://www.wpzoom.com/wp-content/uploads/2024/10/inspiro-lite-woo.png',
+				'import_preview_image_url'   => $demos_preview_url .  'inspiro-lite-woo.png',
 				'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-woo/',
 			],
 		];
@@ -329,7 +332,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 	}
 
 
-	public function wpzi_after_import_setup() {
+	public function iss_after_import_setup() {
 		// Assign menus to their locations.
 		$main_menu = get_term_by( 'name', 'Main', 'nav_menu' );
 
@@ -376,7 +379,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 	/*
 	 * Register new menu for the demo importer
 	*/
-	public function wpzi_new_menu() {
+	public function iss_new_menu() {
 		
 		return array(
 			'parent_slug' => 'inspiro',
