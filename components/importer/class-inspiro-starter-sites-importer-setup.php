@@ -68,7 +68,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'name'     => 'WPZOOM Forms',
 				'slug'     => 'wpzoom-forms',
 				'desc'     => 'Helps you create customizable contact forms and integrate them seamlessly into your WordPress site.',
-				'required' => true,
+				'required' => false,
 			],
 		];
 
@@ -85,13 +85,13 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'name'     => 'Video Popup Block by WPZOOM',
 				'slug'     => 'wpzoom-video-popup-block',
 				'desc'     => 'Enables you to embed engaging video popups on your WordPress site effortlessly.',
-				'required' => true,
+				'required' => false,
 			];
 			$theme_plugins[] =  [
 				'name'     => 'WPZOOM Portfolio',
 				'slug'     => 'wpzoom-portfolio',
 				'desc'     => 'Showcases your projects in a professional and visually appealing portfolio layout.',
-				'required' => true,
+				'required' => false,
 			];
 		} elseif ( $import_step === '1' ) {
 
@@ -100,19 +100,19 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'name'     => 'Elementor',
 				'slug'     => 'elementor',
 				'desc'     => 'The most popular page builder for WordPress that allows users to design custom layouts with a drag-and-drop interface.',
-				'required' => true,
+				'required' => false,
 			];
 			$theme_plugins[] = [
 			'name'     => 'Elementor Addons by WPZOOM',
 			'slug'     => 'wpzoom-elementor-addons',
 			'desc'     => 'Enhances Elementor with additional widgets and features for expanded design functionality.',
-			'required' => true,
+			'required' => false,
 			];
 			$theme_plugins[] =  [
 				'name'     => 'WPZOOM Portfolio',
 				'slug'     => 'wpzoom-portfolio',
 				'desc'     => 'Showcases your projects in a professional and visually appealing portfolio layout.',
-				'required' => true,
+				'required' => false,
 			];
 		} elseif ( $import_step === '2' ) {
 
@@ -120,7 +120,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'name'     => 'WooCommerce',
 				'slug'     => 'woocommerce',
 				'desc'     => 'The leading e-commerce plugin for WordPress, enabling users to build and manage online stores effortlessly.',
-				'required' => true,
+				'required' => false,
 			];
 			}
 		}
