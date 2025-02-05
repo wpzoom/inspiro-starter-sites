@@ -31,18 +31,16 @@ class Inspiro_Starter_Sites_Importer {
 		// Instantiate the demo importer class.
 		$inspiro_starter_sites_import = Inspiro\Starter_Sites\InspiroStarterSitesImporter::get_instance();
 
-
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
-		if ( 'Inspiro' == $theme_name && ! class_exists( 'WPZOOM' ) ) {
+		if( 'Inspiro' == $theme_name && ! class_exists( 'WPZOOM' ) ) {
 			add_action( 'admin_menu', array( $this, 'add_prevent_conflict_menu_item' ) );
         	add_action( 'admin_init', array( $this, 'redirect_page' ) );
-			add_action( 'admin_print_styles', array( $this, 'add_css_hide_duplicate_menu' ) );
 		}
 
 	}
 
-	public function enqueue_scripts( $hook ) {		
+	public function enqueue_scripts( $hook ) {
 
 		if ( 'inspiro_page_inspiro-demo' !== $hook && 'appearance_page_inspiro-starter-sites' !== $hook ) {
 			return;
@@ -57,6 +55,7 @@ class Inspiro_Starter_Sites_Importer {
 			array(),
 			INSPIRO_STARTER_SITES_VERSION 
 		);
+
 	}
 
 	/**
@@ -91,21 +90,6 @@ class Inspiro_Starter_Sites_Importer {
             exit; // Prevent further execution.
         }
     }
-
-
-	/**
-	 * Add CSS to hide duplicate menu
-	 */
-	public function add_css_hide_duplicate_menu() {
-		?>
-		<style>
-			#menu-appearance a[href="themes.php?page=inspiro-starter-sites"] {
-				display: none;
-			}
-		</style>
-		<?php
-	}
-
 
 }
 

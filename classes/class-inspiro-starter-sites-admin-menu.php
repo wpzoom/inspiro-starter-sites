@@ -24,11 +24,18 @@ class Inspiro_Starter_Sites_Admin_Menu {
 	 */
 	public function __construct() {
 
+		$current_theme = wp_get_theme();
+		$theme_name    = $current_theme->get( 'Name' );
+
 		// Remove Inspiro Lite Demo menu item
 		add_action( 'admin_menu', array( $this, 'remove_inspiro_demo_page' ), 999 );
 
 		// Add plugin action links
 		add_action( 'plugin_action_links_' . INSPIRO_STARTER_SITES_PLUGIN_BASE, array( $this, 'plugin_action_links' ) );
+
+		if( 'Inspiro' == $theme_name && ! class_exists( 'WPZOOM' ) ) {
+			add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+		}
 
 	}
 
@@ -75,6 +82,21 @@ class Inspiro_Starter_Sites_Admin_Menu {
 	public function about_the_plugin_page() {
 		do_action( 'inspiro_starter_sites_about_page' );
 	}
+
+	/**
+	 * Enqueue scripts.
+	 *
+	 * @since 1.0.0
+	 */
+	public function enqueue_scripts( $hook ) {
+		wp_enqueue_style( 
+			'inspiro-starter-sites-admin-menu', 
+			INSPIRO_STARTER_SITES_URL . 'components/importer/assets/css/menu.css', 
+			array(),
+			INSPIRO_STARTER_SITES_VERSION 
+		);
+
+	}	
 
 	/**
 	 * Remove Inspiro Lite Demo page.

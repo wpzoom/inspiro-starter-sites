@@ -1,0 +1,4 @@
+/* Hide the "Starter Sites" menu item */
+#menu-appearance a[href="themes.php?page=inspiro-starter-sites"] {
+    display: none;
+}
