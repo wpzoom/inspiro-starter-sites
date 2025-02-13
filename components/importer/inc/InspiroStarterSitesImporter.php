@@ -199,21 +199,29 @@ class InspiroStarterSitesImporter {
 	 * Output (HTML) is in another file.
 	 */
 	public function display_plugin_page() {
+
+		$current_theme = wp_get_theme();
+		$theme_name    = $current_theme->get( 'Name' );
+		$inspiro_view = '';
+
+		if( 'Inspiro' == $theme_name && ! class_exists( 'WPZOOM' ) ) {
+			$inspiro_view = 'inspiro';
+		}
 		
 		if ( isset( $_GET['step'] ) && 'import' === $_GET['step'] ) {
 			check_admin_referer( 'importer_step' );
-			require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/views/import.php';
+			require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/views/' . $inspiro_view . '/import.php';
 			return;
 		}
 
 		if ( isset( $_GET['step'] ) && 'delete_import' === $_GET['step'] ) {
 			check_admin_referer( 'importer_step' );
-			require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/views/delete-import.php';
+			require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/views/' . $inspiro_view . '/delete-import.php';
 			return;
 		}
 
 
-		require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/views/importer-page.php';
+		require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/views/' . $inspiro_view . '/importer-page.php';
 	}
 
 

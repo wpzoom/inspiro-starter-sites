@@ -1,5 +1,5 @@
-// Overriding WordPress native styles.
-#wpcontent {
+
+body:not(.inspiro_page_inspiro-demo) #wpcontent {
 	padding-left: 0;
 }
 
@@ -219,7 +219,7 @@
 	line-height: inherit;
 }
 
-.iss {
+.inspiro-starter-sites {
 
 	&__title-container {
 		height: 30px;
