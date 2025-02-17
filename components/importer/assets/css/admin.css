@@ -47,6 +47,7 @@
 /* NEW */
 :root {
     --inspiro-primary-color: #3496ff;
+    --inspiro-secondary-color: #242628;
 }
 
 /* utility classes */
@@ -71,7 +72,6 @@
 
 /* Plugin Importer Page */
 .plugin-info-wrap {
-    margin: 0 0 25px;
     position: relative;
     padding: 35px 30px;
 }
@@ -307,12 +307,50 @@
     }
 }
 .inspiro-starter-sites-onboard_wrapper {
-    padding: 30px 20px 0 20px !important;
+    padding: 10px 20px 0 20px !important;
     font-size: 14px;
 }
 .inspiro-starter-sites-onboard_wrapper p {
     font-size: 14px;
 }
+
+.inspiro-starter-sites-onboard_wrapper .ui-tabs {
+    display:grid;
+    gap: 20px;
+    grid-template-columns: 276px auto;
+}
+
+.inspiro-starter-sites-onboard_tabs {
+    display: flex;
+    padding: 0;
+    margin: 0;
+    flex-wrap: wrap;
+}
+.inspiro-starter-sites-onboard_tabs li {
+    position: relative;
+    padding:12px;
+    width: 190px;
+}
+.inspiro-starter-sites-onboard_tabs .ui-state-active {
+    background-color: #F2F4F5;
+    border-radius: 4px;
+}
+.inspiro-starter-sites-onboard_tabs li a {
+    font-size: 16px;
+    font-weight:500;
+    line-height: 1.8;
+    text-decoration: none;
+    color:#1d2327;
+    text-shadow: none;
+    white-space: nowrap;
+}
+.inspiro-starter-sites-onboard_tabs li a svg {
+    display: inline-block;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+
 
 .appearance_page_inspiro div#setting-error-tgmpa,
 .appearance_page_inspiro .update-nag,
@@ -331,7 +369,7 @@
 }
 .wp-core-ui .inspiro-starter-sites-onboard_wrapper input[type=text]:hover,
 .wp-core-ui .inspiro-starter-sites-onboard_wrapper textarea:hover {
-    border-color: var(--inspiro-primary-color);
+    border-color: var(--inspiro-secondary-color);
     box-shadow: none;
 }
 .wp-core-ui .inspiro-starter-sites-onboard_wrapper input[type=email] {
@@ -343,9 +381,9 @@
     align-items: center;
     font-weight: 600;
     color: #fff;
-    background-color: var(--inspiro-primary-color);
+    background-color: var(--inspiro-secondary-color);
     padding: 3px 13px;
-    border: 1px solid var(--inspiro-primary-color);
+    border: 1px solid var(--inspiro-secondary-color);
     transition: all 0.3s ease;
     margin-right: 5px;
     margin-bottom: 8px;
@@ -385,6 +423,38 @@
     width: 0;
     overflow: hidden;
 }
+.inspiro-starter-sites-onboard_side_nav {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 35px 30px;
+    background-color: #fff;
+    border:1px solid #dddddd;
+    border-radius: 0px;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1019607843);
+}
+
+.inspiro-starter-sites-onboard_side_nav .wpz-onboard_title-wrapper {
+    display: flex;
+    align-items: baseline;
+    margin-bottom: 50px;
+}
+.inspiro-starter-sites-onboard_side_nav .wpz-onboard_title-wrapper .wpz-onboard_title {
+    display: flex;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+    gap: 10px;
+    font-size: 24px;
+}
+.inspiro-starter-sites-onboard_side_nav .wpz-onboard_title-wrapper .wpz-onboard_title svg {
+    display: inline-block;
+    margin-right: 5px;
+}
+.inspiro-starter-sites-onboard_side_nav .wpz-onboard_title-wrapper .wpz-onboard_title span {
+    color:#81909c;
+}
+
 
 .inspiro-starter-sites-onboard_wrapper .delete-imported-demo-content,
 .wpz-onboard_content-main-step .delete-imported-demo-content {
@@ -416,13 +486,29 @@
     box-shadow: 0 3px 2px -2px rgba(36, 38, 40, 0.08);
 }
 .inspiro-starter-sites-onboard_wrapper .inspiro-starter-sites-onboard_header {
-    padding: 5px 30px 0;
+    padding: 30px 25px;
     margin: 0 0 30px;
+    box-shadow: none;
+    border: none;
 }
 .inspiro-starter-sites-onboard_wrapper .inspiro-starter-sites-onboard_header .inspiro-starter-sites-onboard_title-wrapper {
     display: flex;
     align-items: baseline;
     line-height: 1.8;
+    justify-content: space-between;
+}
+.inspiro-starter-sites-onboard_wrapper .inspiro-starter-sites-onboard_header .wpz-onboard_content-main-intro {
+    margin: 0 4px;
+    color: #5e6164;
+    opacity: 0.8;
+    font-size: 16px;
+}
+.inspiro-starter-sites-onboard_wrapper .inspiro-starter-sites-onboard_header .inspiro-starter-sites-onboard_title-wrapper h3 {
+    display: flex;
+    font-size: 20px;
+    line-height: 1.3;
+    padding: 0;
+    margin: 0 0 17px;
 }
 .inspiro-starter-sites-onboard_wrapper .inspiro-starter-sites-onboard_header .inspiro-starter-sites-onboard_title-wrapper .inspiro-starter-sites-onboard_title {
     flex-grow: 1;
@@ -458,6 +544,7 @@
 .inspiro-starter-sites-onboard_wrapper .inspiro-starter-sites-onboard_header .inspiro-starter-sites-onboard_title-wrapper .inspiro-starter-sites-onboard_framework-version {
     padding: 0;
     margin: 0;
+    
 }
 .inspiro-starter-sites-onboard_wrapper .inspiro-starter-sites-onboard_header .inspiro-starter-sites-onboard_tabs {
     display: flex;
@@ -856,6 +943,13 @@
 .inspiro-starter-sites-onboard_wrapper .inspiro-starter-sites-onboard_footer .inspiro-starter-sites-onboard_footer-links li a:hover {
     color: #2271b1;
 }
+.inspiro-starter-sites-onboard_footer .wpz-onboard_footer-social {
+    margin-left: auto;
+}
+.inspiro-starter-sites-onboard_footer .wpz-onboard_footer-social a {
+    text-decoration: none;
+}
+
 @keyframes rotation {
     from {
         transform: rotate(0deg);
@@ -887,7 +981,6 @@
         flex-wrap: wrap;
         gap: 30px;
         grid-column: 1;
-        grid-row: 1;
     }
     .inspiro-starter-sites-onboard_wrapper .inspiro-starter-sites-onboard_content-wrapper .inspiro-starter-sites-onboard_content .inspiro-starter-sites-onboard_content-main,
     .inspiro-starter-sites-onboard_wrapper .inspiro-starter-sites-onboard_content-wrapper .inspiro-starter-sites-onboard_content .inspiro-starter-sites-onboard_content-side {
