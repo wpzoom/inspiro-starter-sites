@@ -176,10 +176,4 @@ if( isset( $plugin_import_page['parent_slug'] ) && 'inspiro' == $plugin_import_p
 			</div>
 		</div>
 	</div>
-	<div class="inspiro-starter-sites__content-container-content--side">
-		<?php
-			$selected = isset( $_GET['import'] ) ? (int) $_GET['import'] : null;
-			echo wp_kses_post( ViewHelpers::small_theme_card( $selected ) );
-		?>
-	</div>
 </div>
