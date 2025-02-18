@@ -30,7 +30,7 @@ class WidgetImporter {
 		if ( is_wp_error( $results ) ) {
 			$error_message = $results->get_error_message();
 
-			// Add any error messages to the frontend_error_messages variable in WPZI main class.
+			// Add any error messages to the frontend_error_messages variable in inspiro_starter_sites main class.
 			$iss->append_to_frontend_error_messages( $error_message );
 
 			// Write error to log file.

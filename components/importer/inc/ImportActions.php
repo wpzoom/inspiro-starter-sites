@@ -3,7 +3,7 @@
  * Class for the import actions used in the Inspiro\Starter_Sites Importer.
  * Register default WP actions for Inspiro\Starter_Sites Importer.
  *
- * @package wpzi
+ * @package inspiro_starter_sites
  */
 
 namespace Inspiro\Starter_Sites;
@@ -14,22 +14,22 @@ class ImportActions {
 	 */
 	public function register_hooks() {
 		// Before content import.
-		add_action( 'wpzi/before_content_import_execution', array( $this, 'before_content_import_action' ), 10, 3 );
+		add_action( 'inspiro_starter_sites/before_content_import_execution', array( $this, 'before_content_import_action' ), 10, 3 );
 
 		// After content import.
-		add_action( 'wpzi/after_content_import_execution', array( $this, 'before_widget_import_action' ), 10, 3 );
-		add_action( 'wpzi/after_content_import_execution', array( $this, 'widgets_import' ), 20, 3 );
-		add_action( 'wpzi/after_content_import_execution', array( $this, 'wpforms_import' ), 40, 3 );
+		add_action( 'inspiro_starter_sites/after_content_import_execution', array( $this, 'before_widget_import_action' ), 10, 3 );
+		add_action( 'inspiro_starter_sites/after_content_import_execution', array( $this, 'widgets_import' ), 20, 3 );
+		add_action( 'inspiro_starter_sites/after_content_import_execution', array( $this, 'wpforms_import' ), 40, 3 );
 
 		// Customizer import.
-		add_action( 'wpzi/customizer_import_execution', array( $this, 'customizer_import' ), 10, 1 );
+		add_action( 'inspiro_starter_sites/customizer_import_execution', array( $this, 'customizer_import' ), 10, 1 );
 
 		// After full import action.
-		add_action( 'wpzi/after_all_import_execution', array( $this, 'after_import_action' ), 10, 3 );
+		add_action( 'inspiro_starter_sites/after_all_import_execution', array( $this, 'after_import_action' ), 10, 3 );
 
 		// Special widget import cases.
-		if ( Helpers::apply_filters( 'wpzi/enable_custom_menu_widget_ids_fix', true ) ) {
-			add_action( 'wpzi/widget_settings_array', array( $this, 'fix_custom_menu_widget_ids' ) );
+		if ( Helpers::apply_filters( 'inspiro_starter_sites/enable_custom_menu_widget_ids_fix', true ) ) {
+			add_action( 'inspiro_starter_sites/widget_settings_array', array( $this, 'fix_custom_menu_widget_ids' ) );
 		}
 	}
 
@@ -48,8 +48,8 @@ class ImportActions {
 		}
 
 		// Get import data, with new menu IDs.
-		$wpzi                = InspiroStarterSitesImporter::get_instance();
-		$content_import_data = $wpzi->importer->get_importer_data();
+		$inspiro_starter_sites                = InspiroStarterSitesImporter::get_instance();
+		$content_import_data = $inspiro_starter_sites->importer->get_importer_data();
 		$term_ids            = $content_import_data['mapping']['term_id'];
 
 		// Set the new menu ID for the widget.
@@ -63,7 +63,7 @@ class ImportActions {
 	 * Execute the widgets import.
 	 *
 	 * @param array $selected_import_files Actual selected import files (content, widgets, customizer, redux).
-	 * @param array $import_files          The filtered import files defined in `wpzi/import_files` filter.
+	 * @param array $import_files          The filtered import files defined in `inspiro_starter_sites/import_files` filter.
 	 * @param int   $selected_index        Selected index of import.
 	 */
 	public function widgets_import( $selected_import_files, $import_files, $selected_index ) {
@@ -76,7 +76,7 @@ class ImportActions {
 	 * Execute the WPForms import.
 	 *
 	 * @param array $selected_import_files Actual selected import files (content, widgets, customizer, redux).
-	 * @param array $import_files          The filtered import files defined in `wpzi/import_files` filter.
+	 * @param array $import_files          The filtered import files defined in `inspiro_starter_sites/import_files` filter.
 	 * @param int   $selected_index        Selected index of import.
 	 */
 	public function wpforms_import( $selected_import_files, $import_files, $selected_index ) {
@@ -89,7 +89,7 @@ class ImportActions {
 	 * Execute the customizer import.
 	 *
 	 * @param array $selected_import_files Actual selected import files (content, widgets, customizer, redux).
-	 * @param array $import_files          The filtered import files defined in `wpzi/import_files` filter.
+	 * @param array $import_files          The filtered import files defined in `inspiro_starter_sites/import_files` filter.
 	 * @param int   $selected_index        Selected index of import.
 	 */
 	public function customizer_import( $selected_import_files ) {
@@ -100,38 +100,38 @@ class ImportActions {
 
 
 	/**
-	 * Execute the action: 'wpzi/before_content_import'.
+	 * Execute the action: 'inspiro_starter_sites/before_content_import'.
 	 *
 	 * @param array $selected_import_files Actual selected import files (content, widgets, customizer, redux).
-	 * @param array $import_files          The filtered import files defined in `wpzi/import_files` filter.
+	 * @param array $import_files          The filtered import files defined in `inspiro_starter_sites/import_files` filter.
 	 * @param int   $selected_index        Selected index of import.
 	 */
 	public function before_content_import_action( $selected_import_files, $import_files, $selected_index ) {
-		$this->do_import_action( 'wpzi/before_content_import', $import_files[ $selected_index ] );
+		$this->do_import_action( 'inspiro_starter_sites/before_content_import', $import_files[ $selected_index ] );
 	}
 
 
 	/**
-	 * Execute the action: 'wpzi/before_widgets_import'.
+	 * Execute the action: 'inspiro_starter_sites/before_widgets_import'.
 	 *
 	 * @param array $selected_import_files Actual selected import files (content, widgets, customizer, redux).
-	 * @param array $import_files          The filtered import files defined in `wpzi/import_files` filter.
+	 * @param array $import_files          The filtered import files defined in `inspiro_starter_sites/import_files` filter.
 	 * @param int   $selected_index        Selected index of import.
 	 */
 	public function before_widget_import_action( $selected_import_files, $import_files, $selected_index ) {
-		$this->do_import_action( 'wpzi/before_widgets_import', $import_files[ $selected_index ] );
+		$this->do_import_action( 'inspiro_starter_sites/before_widgets_import', $import_files[ $selected_index ] );
 	}
 
 
 	/**
-	 * Execute the action: 'wpzi/after_import'.
+	 * Execute the action: 'inspiro_starter_sites/after_import'.
 	 *
 	 * @param array $selected_import_files Actual selected import files (content, widgets, customizer, redux).
-	 * @param array $import_files          The filtered import files defined in `wpzi/import_files` filter.
+	 * @param array $import_files          The filtered import files defined in `inspiro_starter_sites/import_files` filter.
 	 * @param int   $selected_index        Selected index of import.
 	 */
 	public function after_import_action( $selected_import_files, $import_files, $selected_index ) {
-		$this->do_import_action( 'wpzi/after_import', $import_files[ $selected_index ] );
+		$this->do_import_action( 'inspiro_starter_sites/after_import', $import_files[ $selected_index ] );
 	}
 
 
@@ -139,12 +139,12 @@ class ImportActions {
 	 * Register the do_action hook, so users can hook to these during import.
 	 *
 	 * @param string $action          The action name to be executed.
-	 * @param array  $selected_import The data of selected import from `wpzi/import_files` filter.
+	 * @param array  $selected_import The data of selected import from `inspiro_starter_sites/import_files` filter.
 	 */
 	private function do_import_action( $action, $selected_import ) {
 		if ( false !== Helpers::has_action( $action ) ) {
-			$wpzi          = InspiroStarterSitesImporter::get_instance();
-			$log_file_path = $wpzi->get_log_file_path();
+			$inspiro_starter_sites          = InspiroStarterSitesImporter::get_instance();
+			$log_file_path = $inspiro_starter_sites->get_log_file_path();
 
 			ob_start();
 				Helpers::do_action( $action, $selected_import );

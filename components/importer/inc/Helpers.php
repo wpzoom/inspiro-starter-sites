@@ -534,7 +534,7 @@ class Helpers {
 
 
 	/**
-	 * Set the WPZI transient with the current importer data.
+	 * Set the inspiro_starter_sites transient with the current importer data.
 	 *
 	 * @param array $data Data to be saved to the transient.
 	 */

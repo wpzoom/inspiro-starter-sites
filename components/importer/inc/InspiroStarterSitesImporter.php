@@ -22,7 +22,7 @@ class InspiroStarterSitesImporter {
 	private static $instance;
 
 	/**
-	 * The instance of the WPZI\Importer class.
+	 * The instance of the inspiro_starter_sites\Importer class.
 	 *
 	 * @var object
 	 */
@@ -36,14 +36,14 @@ class InspiroStarterSitesImporter {
 	public $elementor_pages = [];
 
 	/**
-	 * The instance of the WPZI\InspiroThemeInstaller class.
+	 * The instance of the inspiro_starter_sites\InspiroThemeInstaller class.
 	 *
 	 * @var InspiroThemeInstaller object
 	 */
 	public $theme_installer;
 
 	/**
-	 * The instance of the WPZI\PluginInstaller class.
+	 * The instance of the inspiro_starter_sites\PluginInstaller class.
 	 *
 	 * @var PluginInstaller object
 	 */
@@ -639,7 +639,7 @@ class InspiroStarterSitesImporter {
 	}
 
 	/**
-	 * Output the begining of the container div for all notices, but only on WPZI pages.
+	 * Output the begining of the container div for all notices, but only on inspiro_starter_sites pages.
 	 */
 	public function start_notice_output_capturing() {
 		$screen = get_current_screen();
@@ -652,7 +652,7 @@ class InspiroStarterSitesImporter {
 	}
 
 	/**
-	 * Output the ending of the container div for all notices, but only on WPZI pages.
+	 * Output the ending of the container div for all notices, but only on inspiro_starter_sites pages.
 	 */
 	public function finish_notice_output_capturing() {
 		if ( is_network_admin() ) {

@@ -17,8 +17,8 @@ class CustomizerImporter {
 	 * @param string $customizer_import_file_path path to the customizer import file.
 	 */
 	public static function import( $customizer_import_file_path ) {
-		$wpzi          = InspiroStarterSitesImporter::get_instance();
-		$log_file_path = $wpzi->get_log_file_path();
+		$inspiro_starter_sites          = InspiroStarterSitesImporter::get_instance();
+		$log_file_path = $inspiro_starter_sites->get_log_file_path();
 
 		// Try to import the customizer settings.
 		$results = self::import_customizer_options( $customizer_import_file_path );
@@ -28,7 +28,7 @@ class CustomizerImporter {
 			$error_message = $results->get_error_message();
 
 			// Add any error messages to the frontend_error_messages variable in Inspiro\Starter_Sites main class.
-			$wpzi->append_to_frontend_error_messages( $error_message );
+			$inspiro_starter_sites->append_to_frontend_error_messages( $error_message );
 
 			// Write error to log file.
 			Helpers::append_to_file(
@@ -101,7 +101,7 @@ class CustomizerImporter {
 		}
 
 		// Import images.
-		if ( Helpers::apply_filters( 'wpzi/customizer_import_images', true ) ) {
+		if ( Helpers::apply_filters( 'inspiro_starter_sites/customizer_import_images', true ) ) {
 			$data['mods'] = self::import_customizer_images( $data['mods'] );
 		}
 
@@ -124,7 +124,7 @@ class CustomizerImporter {
 		}
 
 		// Should the customizer import use the WP customize_save* hooks?
-		$use_wp_customize_save_hooks = Helpers::apply_filters( 'wpzi/enable_wp_customize_save_hooks', false );
+		$use_wp_customize_save_hooks = Helpers::apply_filters( 'inspiro_starter_sites/enable_wp_customize_save_hooks', false );
 
 		if ( $use_wp_customize_save_hooks ) {
 			do_action( 'customize_save', $wp_customize );

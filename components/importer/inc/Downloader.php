@@ -62,7 +62,7 @@ class Downloader {
 		// Get file content from the server.
 		$response = wp_remote_get(
 			$url,
-			array( 'timeout' => Helpers::apply_filters( 'wpzi/timeout_for_downloading_import_file', 20 ) )
+			array( 'timeout' => Helpers::apply_filters( 'inspiro_starter_sites/timeout_for_downloading_import_file', 20 ) )
 		);
 
 		// Test if the get request was not successful.
@@ -81,7 +81,7 @@ class Downloader {
 					$response_error['error_code'],
 					$response_error['error_message']
 				) . '<br>' .
-				Helpers::apply_filters( 'wpzi/message_after_file_fetching_error', '' )
+				Helpers::apply_filters( 'inspiro_starter_sites/message_after_file_fetching_error', '' )
 			);
 		}
 
@@ -132,7 +132,7 @@ class Downloader {
 		}
 		else {
 			$upload_dir = wp_upload_dir();
-			$this->download_directory_path = Helpers::apply_filters( 'wpzi/upload_file_path', trailingslashit( $upload_dir['path'] ) );
+			$this->download_directory_path = Helpers::apply_filters( 'inspiro_starter_sites/upload_file_path', trailingslashit( $upload_dir['path'] ) );
 		}
 	}
 }

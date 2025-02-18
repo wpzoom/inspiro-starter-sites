@@ -56,7 +56,7 @@ class Importer {
 			$this->set_logger( $this->logger );
 		}
 
-		// Get the WPZI (main plugin class) instance.
+		// Get the inspiro_starter_sites (main plugin class) instance.
 		$this->iss = InspiroStarterSitesImporter::get_instance();
 	}
 
@@ -171,7 +171,7 @@ class Importer {
 			// Add any output to the log file and clear the buffers.
 			$message = ob_get_clean();
 
-			// Add any error messages to the frontend_error_messages variable in WPZI main class.
+			// Add any error messages to the frontend_error_messages variable in inspiro_starter_sites main class.
 			if ( ! empty( $message ) ) {
 				$this->iss->append_to_frontend_error_messages( $message );
 			}

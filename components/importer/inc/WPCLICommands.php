@@ -50,7 +50,7 @@ class WPCLICommands extends \WP_CLI_Command {
 	}
 
 	/**
-	 * Import content/widgets/customizer settings with the WPZI plugin.
+	 * Import content/widgets/customizer settings with the inspiro_starter_sites plugin.
 	 *
 	 * ## OPTIONS
 	 *
@@ -113,13 +113,13 @@ class WPCLICommands extends \WP_CLI_Command {
 	}
 
 	/**
-	 * Import the predefined demo content/widgets/customizer settings with WPZI.
+	 * Import the predefined demo content/widgets/customizer settings with inspiro_starter_sites.
 	 *
-	 * @param int $predefined_index Index of a WPZI predefined demo import.
+	 * @param int $predefined_index Index of a inspiro_starter_sites predefined demo import.
 	 */
 	private function import_predefined( $predefined_index ) {
 		if ( ! is_numeric( $predefined_index ) ) {
-			WP_CLI::error( esc_html__( 'The "predefined" parameter should be a number (an index of the WPZI predefined demo import)!', 'inspiro-starter-sites' ) );
+			WP_CLI::error( esc_html__( 'The "predefined" parameter should be a number (an index of the inspiro_starter_sites predefined demo import)!', 'inspiro-starter-sites' ) );
 		}
 
 		$predefined_index = absint( $predefined_index );
@@ -174,7 +174,7 @@ class WPCLICommands extends \WP_CLI_Command {
 	}
 
 	/**
-	 * Import the content with WPZI.
+	 * Import the content with inspiro_starter_sites.
 	 *
 	 * @param string $relative_file_path Relative file path to the content import file.
 	 */
@@ -212,7 +212,7 @@ class WPCLICommands extends \WP_CLI_Command {
 	}
 
 	/**
-	 * Import the widgets with WPZI.
+	 * Import the widgets with inspiro_starter_sites.
 	 *
 	 * @param string $relative_file_path Relative file path to the widgets import file.
 	 */
@@ -243,7 +243,7 @@ class WPCLICommands extends \WP_CLI_Command {
 	}
 
 	/**
-	 * Import the customizer settings with WPZI.
+	 * Import the customizer settings with inspiro_starter_sites.
 	 *
 	 * @param string $relative_file_path Relative file path to the customizer import file.
 	 */

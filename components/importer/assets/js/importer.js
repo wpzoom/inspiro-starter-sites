@@ -363,7 +363,7 @@ jQuery( function ( $ ) {
 				$( '.js-inspiro-starter-sites-importing' ).hide();
 				$( '.js-inspiro-starter-sites-imported' ).show();
 
-				// Trigger custom event, when WPZI import is complete.
+				// Trigger custom event, when inspiro_starter_sites import is complete.
 				$( document ).trigger( 'issImportComplete' );
 			}
 			else {
