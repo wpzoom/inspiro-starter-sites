@@ -39,7 +39,7 @@ if( isset( $plugin_import_page['parent_slug'] ) && 'inspiro' == $plugin_import_p
 
         <?php require_once INSPIRO_STARTER_SITES_PATH . 'components/admin/parts/side-nav.php'; ?>
 
-        <div class="inspiro-starter-sites-onboard_content-wrapper">
+    <div class="inspiro-starter-sites-onboard_content-wrapper">
 
         <div class="inspiro-starter-sites-onboard_header">
             <!-- Onboard title -->
@@ -207,8 +207,10 @@ if( isset( $plugin_import_page['parent_slug'] ) && 'inspiro' == $plugin_import_p
 			</div>
 		</div>
 
-	    </div>
-        </div>
+    </div>
+    
+    </div>
+    
     </div>
 	<?php require_once INSPIRO_STARTER_SITES_PATH . 'components/admin/parts/footer.php'; ?>
 </div>
