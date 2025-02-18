@@ -46,7 +46,7 @@
 
 /* NEW */
 :root {
-    --inspiro-primary-color: #3496ff;
+    --inspiro-primary-color: #242628;
     --inspiro-secondary-color: #242628;
 }
 
@@ -317,7 +317,7 @@
 .inspiro-starter-sites-onboard_wrapper .ui-tabs {
     display:grid;
     gap: 20px;
-    grid-template-columns: 276px auto;
+    grid-template-columns: 300px auto;
 }
 
 .inspiro-starter-sites-onboard_tabs {
@@ -329,7 +329,7 @@
 .inspiro-starter-sites-onboard_tabs li {
     position: relative;
     padding:12px;
-    width: 190px;
+    width: 100%;
 }
 .inspiro-starter-sites-onboard_tabs .ui-state-active {
     background-color: #F2F4F5;
@@ -395,9 +395,10 @@
     background-color: #d84b4b !important;
 }
 
-.wp-core-ui .inspiro-starter-sites-onboard_wrapper .button:hover, .wp-core-ui .inspiro-starter-sites-onboard_wrapper .button:active {
+.wp-core-ui .inspiro-starter-sites-onboard_wrapper .button:hover,
+.wp-core-ui .inspiro-starter-sites-onboard_wrapper .button:active {
     color: #fff;
-    background-color: #67b0ff;
+    background-color: #444;
 }
 .wp-core-ui .inspiro-starter-sites-onboard_wrapper .button.button-secondary {
     color: var(--inspiro-primary-color);
