@@ -461,7 +461,7 @@
 .wpz-onboard_content-main-step .delete-imported-demo-content {
     position: absolute;
     right: 0;
-    bottom:13px;
+    top: 42%;
     width: 24px;
     height: 24px;
 }
