@@ -58,19 +58,19 @@ if( isset( $plugin_import_page['parent_slug'] ) && 'inspiro' == $plugin_import_p
 				</svg>
 				<?php esc_html_e( 'Starter Sites Importer', 'inspiro-starter-sites' ); ?>
             </a>    
-        </li><!-- /.tab-demos -->
-                <li class="inspiro-starter-sites-onboard_tab inspiro-starter-sites-onboard_tab-premium-demos">
+        </li>
+        <li class="inspiro-starter-sites-onboard_tab inspiro-starter-sites-onboard_tab-premium-demos">
 
-                    <a href="<?php echo esc_url( $import_page_url ); ?>#premium-demos" title="Premium Demos">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path fill-rule="evenodd" clip-rule="evenodd" d="M4.64479 10.9348L6.77737 11.7451C8.38017 12.3542 9.64583 13.6198 10.2549 15.2226L11.0652 17.3552C11.2127 17.7434 11.5847 18 12 18C12.4152 18 12.7873 17.7434 12.9348 17.3552L13.7451 15.2226C14.3542 13.6198 15.6198 12.3542 17.2226 11.7451L19.3552 10.9348C19.7434 10.7873 20 10.4152 20 9.99999C20 9.58475 19.7434 9.21271 19.3552 9.06521L17.2226 8.25487C15.6198 7.64582 14.3542 6.38016 13.7451 4.77736L12.9348 2.64479C12.7873 2.25662 12.4152 2 12 2C11.5847 2 11.2127 2.25662 11.0652 2.64479L10.2549 4.77736C9.64583 6.38016 8.38017 7.64582 6.77737 8.25487L4.64479 9.06521C4.25662 9.21271 4 9.58475 4 9.99999C4 10.4152 4.25662 10.7873 4.64479 10.9348Z" stroke="#242628" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M4 19V15" stroke="#242628" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M2 17H6" stroke="#242628" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M3 5V1" stroke="#242628" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M1 3H5" stroke="#242628" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        <?php esc_html_e( 'Premium Starter Sites', 'inspiro-starter-sites' ); ?>
-                    </a>
-                </li>
+            <a href="<?php echo esc_url( $import_page_url ); ?>#premium-demos" title="Premium Demos">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M4.64479 10.9348L6.77737 11.7451C8.38017 12.3542 9.64583 13.6198 10.2549 15.2226L11.0652 17.3552C11.2127 17.7434 11.5847 18 12 18C12.4152 18 12.7873 17.7434 12.9348 17.3552L13.7451 15.2226C14.3542 13.6198 15.6198 12.3542 17.2226 11.7451L19.3552 10.9348C19.7434 10.7873 20 10.4152 20 9.99999C20 9.58475 19.7434 9.21271 19.3552 9.06521L17.2226 8.25487C15.6198 7.64582 14.3542 6.38016 13.7451 4.77736L12.9348 2.64479C12.7873 2.25662 12.4152 2 12 2C11.5847 2 11.2127 2.25662 11.0652 2.64479L10.2549 4.77736C9.64583 6.38016 8.38017 7.64582 6.77737 8.25487L4.64479 9.06521C4.25662 9.21271 4 9.58475 4 9.99999C4 10.4152 4.25662 10.7873 4.64479 10.9348Z" stroke="#242628" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M4 19V15" stroke="#242628" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 17H6" stroke="#242628" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M3 5V1" stroke="#242628" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M1 3H5" stroke="#242628" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <?php esc_html_e( 'Premium Starter Sites', 'inspiro-starter-sites' ); ?>
+            </a>
+        </li>
     </ul>
 </div>

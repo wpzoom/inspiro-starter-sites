@@ -249,9 +249,10 @@ body:not(.inspiro_page_inspiro-demo) #wpcontent {
 
 			&--main {
 				flex: 1;
-				margin-right: 30px;
+				margin-right: 0;
 				background: #ffffff;
 				box-sizing: border-box;
+                border-radius: 4px;
 				border: 1px solid #dddddd;
 				box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.07);
 			}

@@ -174,25 +174,70 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'purchase' => 'https://www.wpzoom.com/themes/inspiro/',
 				'demos' => array(
 					array(
-						'import_file_name'           => 'Agency / Business (new)',
-						'import_preview_image_url'   => $demos_preview_url . 'site-layout_agency-dark.png',
-						'preview_url'                => 'https://demo.wpzoom.com/inspiro-agency2/',
-					),
-					array(
-						'import_file_name'           => 'Premium Demo',
+						'import_file_name'           => 'Business / Portfolio',
 						'import_preview_image_url'   => $demos_preview_url .  'home-thumb.png',
 						'preview_url'                => 'https://demo.wpzoom.com/inspiro/',
 					),
+                    array(
+                        'import_file_name'           => 'Business / Portfolio (Blocks)',
+                        'import_preview_image_url'   => 'https://www.wpzoom.com/wp-content/uploads/2024/12/inspiro-pp-blocks-1.png',
+                        'preview_url'                => 'https://demo.wpzoom.com/inspiro-premium-blocks/',
+                    ),
+                    array(
+                        'import_file_name'           => 'Persona',
+                        'import_preview_image_url'   => 'https://wpzoom.s3.us-east-1.amazonaws.com/elementor/templates/assets/thumbs/inspiro/inspiro-persona/home-thumb.png',
+                        'preview_url'                => 'https://demo.wpzoom.com/inspiro-persona/',
+                    ),
 					array(
 						'import_file_name'           => 'Video Production',
 						'import_preview_image_url'   => $demos_preview_url . 'home-video-thumb.png',
 						'preview_url'                => 'https://demo.wpzoom.com/inspiro-video/',
 					),
+                    array(
+                        'import_file_name'           => 'Video Portfolio (Blocks)',
+                        'import_preview_image_url'   => 'https://www.wpzoom.com/wp-content/uploads/2025/02/inspiro-video-blocks.png',
+                        'preview_url'                => 'https://demo.wpzoom.com/inspiro-video-blocks/',
+                    ),
 					array(
 						'import_file_name'           => 'Video Production #2',
 						'import_preview_image_url'   => $demos_preview_url . 'home-video2-thumb.png',
 						'preview_url'                => 'https://demo.wpzoom.com/inspiro-video2/',
 					),
+                    array(
+                        'import_file_name'           => 'Agency / Business',
+                        'import_preview_image_url'   => $demos_preview_url . 'home-agency-thumb.png',
+                        'preview_url'                => 'https://demo.wpzoom.com/inspiro-agency/',
+                    ),
+                    array(
+                        'import_file_name'           => 'Agency / Business #2',
+                        'import_preview_image_url'   => $demos_preview_url . 'site-layout_agency-dark.png',
+                        'preview_url'                => 'https://demo.wpzoom.com/inspiro-agency2/',
+                    ),
+                    array(
+                        'import_file_name'           => 'Finance / Tech',
+                        'import_preview_image_url'   => 'https://wpzoom.s3.us-east-1.amazonaws.com/elementor/templates/assets/thumbs/inspiro/inspiro-finance/home-thumb.png',
+                        'preview_url'                => 'https://demo.wpzoom.com/inspiro-finance/',
+                    ),
+                    array(
+                        'import_file_name'           => 'Shop / WooCommerce',
+                        'import_preview_image_url'   => $demos_preview_url .  'shop-home-thumb.png',
+                        'preview_url'                => 'https://demo.wpzoom.com/inspiro-shop/',
+                    ),
+                    array(
+                        'import_file_name'           => 'Jewelry Shop / WooCommerce',
+                        'import_preview_image_url'   => $demos_preview_url . 'home-thumb5.png',
+                        'preview_url'                => 'https://demo.wpzoom.com/inspiro-jewelry2/',
+                    ),
+                    array(
+                        'import_file_name'           => 'Wellness / Spa',
+                        'import_preview_image_url'   => $demos_preview_url . 'home-thumb6.png',
+                        'preview_url'                => 'https://demo.wpzoom.com/inspiro-wellness/',
+                    ),
+                    array(
+                        'import_file_name'           => 'Medical / Doctor',
+                        'import_preview_image_url'   => 'https://wpzoom.s3.us-east-1.amazonaws.com/elementor/templates/assets/thumbs/inspiro/inspiro-medical/home-thumb.png',
+                        'preview_url'                => 'https://demo.wpzoom.com/inspiro-medical/',
+                    ),
 					array(
 						'import_file_name'           => 'Kids Summer Camp',
 						'import_preview_image_url'   => $demos_preview_url . 'home-thumb2.png',
@@ -213,25 +258,25 @@ class Inspiro_Starter_Sites_Importer_Setup {
 						'import_preview_image_url'   => $demos_preview_url . 'home-photography-thumb.png',
 						'preview_url'                => 'https://demo.wpzoom.com/inspiro-photography/',
 					),
-					array(
-						'import_file_name'           => 'Agency / Business',
-						'import_preview_image_url'   => $demos_preview_url . 'home-agency-thumb.png',
-						'preview_url'                => 'https://demo.wpzoom.com/inspiro-agency/',
-					),
+                    array(
+                        'import_file_name'           => 'Food Blog',
+                        'import_preview_image_url'   => 'https://www.wpzoom.com/wp-content/uploads/2024/12/inspiro-recipe-1.png',
+                        'preview_url'                => 'https://demo.wpzoom.com/inspiro-recipe/',
+                    ),
+                    array(
+                        'import_file_name'           => 'Coffee Shop',
+                        'import_preview_image_url'   => 'https://wpzoom.s3.us-east-1.amazonaws.com/elementor/templates/assets/thumbs/inspiro/inspiro-coffee/home-thumb.png',
+                        'preview_url'                => 'https://demo.wpzoom.com/inspiro-coffee-shop/',
+                    ),
+                    array(
+                        'import_file_name'           => 'Winery',
+                        'import_preview_image_url'   => 'https://demo.wpzoom.com/inspiro-pro-demo/wp-content/themes/inspiro-pro-select/images/site-layout_winery.png',
+                        'preview_url'                => 'https://demo.wpzoom.com/inspiro-pro-winery/',
+                    ),
 					array(
 						'import_file_name'           => 'Hotel / Real Estate',
 						'import_preview_image_url'   => $demos_preview_url . 'home-hotel-thumb.png',
 						'preview_url'                => 'https://demo.wpzoom.com/inspiro-hotel/',
-					),
-					array(
-						'import_file_name'           => 'Shop / WooCommerce',
-						'import_preview_image_url'   => $demos_preview_url .  'shop-home-thumb.png',
-						'preview_url'                => 'https://demo.wpzoom.com/inspiro-shop/',
-					),
-					array(
-						'import_file_name'           => 'Jewelry Shop / WooCommerce',
-						'import_preview_image_url'   => $demos_preview_url . 'home-thumb5.png',
-						'preview_url'                => 'https://demo.wpzoom.com/inspiro-jewelry2/',
 					),
 					array(
 						'import_file_name'           => 'Restaurant',
@@ -242,11 +287,6 @@ class Inspiro_Starter_Sites_Importer_Setup {
 						'import_file_name'           => 'Events / Conference',
 						'import_preview_image_url'   => $demos_preview_url . 'demo-events.png',
 						'preview_url'                => 'https://demo.wpzoom.com/inspiro-event/',
-					),
-					array(
-						'import_file_name'           => 'Wellness / Spa',
-						'import_preview_image_url'   => $demos_preview_url . 'home-thumb6.png',
-						'preview_url'                => 'https://demo.wpzoom.com/inspiro-wellness/',
 					),
 					array(
 						'import_file_name'           => 'Magazine',
@@ -268,6 +308,11 @@ class Inspiro_Starter_Sites_Importer_Setup {
 						'import_preview_image_url'   => $demos_preview_url . 'home-thumb9.png',
 						'preview_url'                => 'https://demo.wpzoom.com/inspiro-church/',
 					),
+                    array(
+                        'import_file_name'           => 'Charity / NGO',
+                        'import_preview_image_url'   => 'https://demo.wpzoom.com/inspiro-pro-demo/wp-content/themes/inspiro-pro-select/images/inspiro-pro-char.png',
+                        'preview_url'                => 'https://demo.wpzoom.com/inspiro-pro-charity/',
+                    ),
 				),
 			),
 			'ispiro-pro' => array(

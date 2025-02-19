@@ -1,7 +1,6 @@
 /**
  * Load plugins.
  */
-import autoprefixer from 'gulp-autoprefixer';
 import debug from 'gulp-debug';
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
@@ -86,7 +85,6 @@ gulp.task( 'css', function () {
 		.pipe( cached( 'processCSS' ) )
 		.pipe( sourcemaps.init() )
 		.pipe( sass( { outputStyle: 'expanded' } ).on( 'error', sass.logError ) )
-		.pipe( autoprefixer() )
 		.pipe( rename( function ( path ) {
 			path.dirname = '/assets/css';
 			path.extname = '.css';
@@ -95,7 +93,6 @@ gulp.task( 'css', function () {
 		.pipe( gulp.dest( './' ) )
 		// Minified file.
 		.pipe( sass( { outputStyle: 'compressed' } ).on( 'error', sass.logError ) )
-		.pipe( autoprefixer() )
 		.pipe( rename( function ( path ) {
 			path.dirname = '/assets/css';
 			path.extname = '.min.css';

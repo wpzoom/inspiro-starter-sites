@@ -431,7 +431,7 @@
     padding: 35px 30px;
     background-color: #fff;
     border:1px solid #dddddd;
-    border-radius: 0px;
+    border-radius: 4px;
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1019607843);
 }
 
@@ -483,14 +483,13 @@
 .inspiro-starter-sites-onboard_wrapper .inspiro-starter-sites-onboard_footer {
     background-color: #fff;
     border: 1px solid #ddd;
-    border-radius: 3px;
+    border-radius: 4px;
     box-shadow: 0 3px 2px -2px rgba(36, 38, 40, 0.08);
 }
 .inspiro-starter-sites-onboard_wrapper .inspiro-starter-sites-onboard_header {
     padding: 30px 25px;
     margin: 0 0 30px;
-    box-shadow: none;
-    border: none;
+    border-radius: 4px;
 }
 .inspiro-starter-sites-onboard_wrapper .inspiro-starter-sites-onboard_header .inspiro-starter-sites-onboard_title-wrapper {
     display: flex;
@@ -606,6 +605,7 @@
 .inspiro-starter-sites-onboard_wrapper .inspiro-starter-sites-onboard_content-wrapper > div {
     position: relative;
     transition: all 0.3s ease;
+    border-radius: 4px;
 }
 .inspiro-starter-sites-onboard_wrapper .inspiro-starter-sites-onboard_content-wrapper > div.active {
     z-index: 2;
@@ -761,7 +761,7 @@
     font-size: 18px;
     font-weight: 600;
     white-space: nowrap;
-    margin: 0 0 10px;
+    margin: 0 0 20px;
 }
 .inspiro-starter-sites-onboard_wrapper .inspiro-starter-sites-onboard_content-wrapper .inspiro-starter-sites-onboard_content .inspiro-starter-sites-onboard_content-main .inspiro-starter-sites-onboard_content-main-steps .inspiro-starter-sites-onboard_content-main-step.step-choose-design form ul li figure figcaption p {
     display: flex;
