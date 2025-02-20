@@ -95,7 +95,6 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			];
 		} elseif ( $import_step === '1' ) {
 
-
 			$theme_plugins[] =  [
 				'name'     => 'Elementor',
 				'slug'     => 'elementor',
@@ -122,8 +121,32 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'desc'     => 'The leading e-commerce plugin for WordPress, enabling users to build and manage online stores effortlessly.',
 				'required' => true,
 			];
-			}
-		}
+
+		} elseif ( $import_step === '4' || $import_step === '5' ) {
+
+            $theme_plugins[] =  [
+                'name'     => 'WPZOOM Portfolio',
+                'slug'     => 'wpzoom-portfolio',
+                'desc'     => 'Showcases your projects in a professional and visually appealing portfolio layout.',
+                'required' => true,
+            ];
+
+            $theme_plugins[] =  [
+                'name'     => 'The Icon Block',
+                'slug'     => 'icon-block',
+                'desc'     => 'Easily add SVG icons and graphics to the WordPress block editor.',
+                'required' => true,
+            ];
+        } elseif ( $import_step === '3' ) {
+
+            $theme_plugins[] =  [
+                'name'     => 'The Icon Block',
+                'slug'     => 'icon-block',
+                'desc'     => 'Easily add SVG icons and graphics to the WordPress block editor.',
+                'required' => true,
+            ];
+        }
+    }
 		return array_merge( $plugins, $theme_plugins );
 	  
 	}
@@ -159,6 +182,33 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'import_preview_image_url'   => $demos_preview_url .  'inspiro-lite-woo.png',
 				'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-woo/',
 			],
+            [
+                'import_id'                  => 'inspiro-lite-medical',
+                'import_file_name'           => 'Medical / Doctor (Lite)',
+                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-medical.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/medical.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-medical.dat',
+                'import_preview_image_url'   => $demos_preview_url .  'medical.png',
+                'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-medical/',
+            ],
+            [
+                'import_id'                  => 'inspiro-lite-freelancer',
+                'import_file_name'           => 'Freelancer (One-Page)',
+                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-freelancer.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/freelancer.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-freelancer1.dat',
+                'import_preview_image_url'   => $demos_preview_url .  'freelancer.png',
+                'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-freelancer/',
+            ],
+            [
+                'import_id'                  => 'inspiro-lite-freelancer-grey',
+                'import_file_name'           => 'Freelancer #2 (One-Page)',
+                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-freelancer2.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/freelancer2.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-freelancer2.dat',
+                'import_preview_image_url'   => $demos_preview_url .  'freelancer2.png',
+                'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-freelancer-blocks/',
+            ],
 		];
 	}
 
