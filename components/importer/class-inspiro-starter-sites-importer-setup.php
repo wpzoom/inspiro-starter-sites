@@ -137,7 +137,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'desc'     => 'Easily add SVG icons and graphics to the WordPress block editor.',
                 'required' => true,
             ];
-        } elseif ( $import_step === '3' ) {
+        } elseif ( $import_step === '3' || $import_step === '6' ) {
 
             $theme_plugins[] =  [
                 'name'     => 'The Icon Block',
@@ -209,6 +209,15 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'import_preview_image_url'   => $demos_preview_url .  'freelancer2.png',
                 'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-freelancer-blocks/',
             ],
+            [
+                'import_id'                  => 'inspiro-lite-finance',
+                'import_file_name'           => 'Finance / Tech (Lite)',
+                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-finance.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/finance.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-finance.dat',
+                'import_preview_image_url'   => $demos_preview_url .  'finance.png',
+                'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-finance/',
+            ],
 		];
 	}
 
@@ -262,6 +271,11 @@ class Inspiro_Starter_Sites_Importer_Setup {
                         'import_file_name'           => 'Agency / Business #2',
                         'import_preview_image_url'   => $demos_preview_url . 'site-layout_agency-dark.png',
                         'preview_url'                => 'https://demo.wpzoom.com/inspiro-agency2/',
+                    ),
+                    array(
+                        'import_file_name'           => 'Construction',
+                        'import_preview_image_url'   => 'https://wpzoom.s3.us-east-1.amazonaws.com/elementor/templates/assets/thumbs/inspiro/inspiro-construction/home-thumb.png',
+                        'preview_url'                => 'https://demo.wpzoom.com/inspiro-construction/',
                     ),
                     array(
                         'import_file_name'           => 'Finance / Tech',

@@ -37,6 +37,13 @@ $imported_demo_id = get_option( 'inspiro_starter_sites_imported_demo_id', false 
                 <p class="wpz-onboard_content-main-intro">
                     <?php esc_html_e( 'Importing demo data is the fastest and easiest way to set up your new theme. Choose your desired template, click on \'Import Demo\' and start editing pre-designed content and layouts instead of building everything from scratch.', 'inspiro-starter-sites' ); ?>
                 </p>
+
+                <p class="section_footer">
+                    <a href="<?php echo esc_url( __( 'https://www.wpzoom.com/themes/inspiro/starter-sites/?utm_source=wpadmin&utm_medium=demos-starter-sites&utm_campaign=starter-sites-plugin', 'inspiro' ) ); ?>"
+                        target="_blank" class="button button-primary">
+                            <?php esc_html_e( 'View Premium Starter Sites &#8599;', 'inspiro' ); ?>
+                    </a>
+                </p>
             </div>
 
 

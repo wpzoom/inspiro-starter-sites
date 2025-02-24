@@ -49,7 +49,7 @@ $premium_demos = apply_filters( 'inspiro_starter_sites_premium_demos', array() )
 
 		<br/>
 		<br/>
-		<a href="<?php echo esc_url( $demo_section['purchase'] ); ?>" target="_blank" class="button button-large button-primary">
+		<a href="<?php echo esc_url( $demo_section['purchase'] ); ?>?utm_source=wpadmin&utm_medium=demos-starter-sites&utm_campaign=starter-sites-premium" target="_blank" class="button button-large button-primary">
 			<?php
 				// translators: %s: Demo name
 				printf( esc_html__( 'Get %s Today &rarr;', 'inspiro-starter-sites' ), esc_html( $demo_section['name'] ) );
