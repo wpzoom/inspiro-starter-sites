@@ -4,15 +4,6 @@
 /node_modules export-ignore
 /package-lock.json export-ignore
 /package.json export-ignore
-/src/wpzoom-blocks export-ignore
-/src/helpers export-ignore
-/src/utils export-ignore
-/src/blocks.js export-ignore
-/src/icon.js export-ignore
-/src/common.scss export-ignore
-/src/__mixins.scss export-ignore
-/src/amp.scss export-ignore
-/src/colors.scss export-ignore
 
 # Directories
 /.wordpress-org export-ignore
