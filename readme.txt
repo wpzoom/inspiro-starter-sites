@@ -19,6 +19,10 @@ Import starter templates with Gutenberg Blocks, Elementor, and WooCommerce to cr
 - **Gutenberg Blocks** | [View Demo](https://demo.wpzoom.com/inspiro-lite-blocks/)
 - **Elementor** | [View Demo](https://demo.wpzoom.com/inspiro-lite/)
 - **WooCommerce** | [View Demo](https://demo.wpzoom.com/inspiro-lite-woo/)
+- **Medical** | [View Demo](https://demo.wpzoom.com/inspiro-lite-medical/)
+- **Finance** | [View Demo](https://demo.wpzoom.com/inspiro-lite-finance/)
+- **Freelancer (One-page)** | [View Demo](https://demo.wpzoom.com/inspiro-lite-freelancer/)
+- **Freelancer (One-page) #2** | [View Demo](https://demo.wpzoom.com/inspiro-lite-freelancer-blocks/)
 
 Whether you're creating a blog, an online store, or a portfolio, Inspiro Starter Sites helps you get started with a professional design.
 
