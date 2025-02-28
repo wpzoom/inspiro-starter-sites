@@ -145,6 +145,14 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'desc'     => 'Easily add SVG icons and graphics to the WordPress block editor.',
                 'required' => true,
             ];
+        } elseif ( $import_step === '7' || $import_step === '8' ) {
+
+            $theme_plugins[] =  [
+                'name'     => 'Recipe Card Blocks',
+                'slug'     => 'recipe-card-blocks-by-wpzoom',
+                'desc'     => 'Beautiful Recipe Card Blocks for Food Bloggers with Schema Markup (JSON-LD) for the new WordPress editor (Gutenberg).',
+                'required' => true,
+            ];
         }
     }
 		return array_merge( $plugins, $theme_plugins );
