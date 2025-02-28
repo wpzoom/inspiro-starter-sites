@@ -25,6 +25,7 @@ class Inspiro_Starter_Sites_Admin_Helpers {
 
 		// Disable Elementor Welcome Redirect
 		add_action( 'admin_init', array( $this, 'disable_elementor_welcome_redirect' ) );
+        add_filter( 'wp_redirect', array( $this, 'disable_redirect_during_ajax' ), 10, 2 );
 
 		// Disable WooCommerce Wizard
 		add_filter( 'woocommerce_enable_setup_wizard', '__return_false' );
@@ -53,8 +54,17 @@ class Inspiro_Starter_Sites_Admin_Helpers {
 			update_option( 'woocommerce_task_list_welcome_modal_dismissed', 'yes' );
 			update_option( 'woocommerce_setup_wizard_options_update_once', 'completed' );
 		}
-
 	}
+
+	/**
+	 * Disable Redirect During Ajax
+	 */
+    function disable_redirect_during_ajax( $location, $status ) {
+        if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+            return false; // Prevent redirection
+        }
+        return $location;
+    }
 
 }
 
