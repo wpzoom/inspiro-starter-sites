@@ -145,6 +145,14 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'desc'     => 'Easily add SVG icons and graphics to the WordPress block editor.',
                 'required' => true,
             ];
+        } elseif ( $import_step === '7' || $import_step === '8' ) {
+
+            $theme_plugins[] =  [
+                'name'     => 'Recipe Card Blocks',
+                'slug'     => 'recipe-card-blocks-by-wpzoom',
+                'desc'     => 'Beautiful Recipe Card Blocks for Food Bloggers with Schema Markup (JSON-LD) for the new WordPress editor (Gutenberg).',
+                'required' => true,
+            ];
         }
     }
 		return array_merge( $plugins, $theme_plugins );
@@ -218,6 +226,24 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'import_preview_image_url'   => $demos_preview_url .  'finance.png',
                 'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-finance/',
             ],
+			[
+                'import_id'                  => 'inspiro-lite-recipe-blocks',
+                'import_file_name'           => 'Food Blog (Lite)',
+                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-recipe-blocks.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/recipe-blocks.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-recipe-blocks.dat',
+                'import_preview_image_url'   => $demos_preview_url .  'recipe-blocks.png',
+                'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-recipe-blocks/',
+            ],
+			// [
+            //     'import_id'                  => 'inspiro-lite-recipe',
+            //     'import_file_name'           => 'Recipe (Elementor)',
+            //     'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-recipe-elementor.xml',
+            //     'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/recipe-elementor.wie',
+            //     'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-recipe-elementor.dat',
+            //     'import_preview_image_url'   => $demos_preview_url .  'recipe-elementor.png',
+            //     'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-recipe/',
+            // ],
 		];
 	}
 
