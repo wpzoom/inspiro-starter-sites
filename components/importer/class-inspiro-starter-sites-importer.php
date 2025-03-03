@@ -22,8 +22,9 @@ class Inspiro_Starter_Sites_Importer {
 	 */
 	public function __construct() {
 
-		$current_theme = wp_get_theme();
-		$theme_name    = $current_theme->get( 'Name' );
+		$current_theme  = wp_get_theme();
+		$theme_name     = $current_theme->get( 'Name' );
+        $theme_template = get_template();
 
 		// Composer autoloader.
 		require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/vendor/autoload.php';
@@ -33,7 +34,7 @@ class Inspiro_Starter_Sites_Importer {
 
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
-		if( 'Inspiro' == $theme_name && ! class_exists( 'WPZOOM' ) ) {
+		if( 'Inspiro' == $theme_name || 'inspiro' == $theme_template ) {
 			add_action( 'admin_menu', array( $this, 'add_prevent_conflict_menu_item' ) );
         	add_action( 'admin_init', array( $this, 'redirect_page' ) );
 		}
@@ -85,8 +86,15 @@ class Inspiro_Starter_Sites_Importer {
             'inspiro-starter-sites' === sanitize_text_field( wp_unslash( $_GET['page'] ) ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         );
 
+        $redirect_url = 'admin.php?page=inspiro-demo';
+
+        //Check if is Inspiro Premium
+        if( class_exists( 'WPZOOM' ) ) {
+            $redirect_url = 'admin.php?page=wpzoom_license#quick-start';
+        }
+
         if ( $is_dashboard_page ) {
-            wp_redirect( admin_url( 'admin.php?page=inspiro-demo' ) );
+            wp_redirect( admin_url( $redirect_url ) );
             exit; // Prevent further execution.
         }
     }
