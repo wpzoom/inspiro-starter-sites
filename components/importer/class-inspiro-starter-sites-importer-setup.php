@@ -228,22 +228,22 @@ class Inspiro_Starter_Sites_Importer_Setup {
             ],
 			[
                 'import_id'                  => 'inspiro-lite-recipe-blocks',
-                'import_file_name'           => 'Recipe (Block Editor)',
+                'import_file_name'           => 'Food Blog (Lite)',
                 'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-recipe-blocks.xml',
                 'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/recipe-blocks.wie',
                 'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-recipe-blocks.dat',
                 'import_preview_image_url'   => $demos_preview_url .  'recipe-blocks.png',
                 'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-recipe-blocks/',
             ],
-			[
-                'import_id'                  => 'inspiro-lite-recipe',
-                'import_file_name'           => 'Recipe (Elementor)',
-                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-recipe-elementor.xml',
-                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/recipe-elementor.wie',
-                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-recipe-elementor.dat',
-                'import_preview_image_url'   => $demos_preview_url .  'recipe-elementor.png',
-                'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-recipe/',
-            ],
+			// [
+            //     'import_id'                  => 'inspiro-lite-recipe',
+            //     'import_file_name'           => 'Recipe (Elementor)',
+            //     'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-recipe-elementor.xml',
+            //     'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/recipe-elementor.wie',
+            //     'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-recipe-elementor.dat',
+            //     'import_preview_image_url'   => $demos_preview_url .  'recipe-elementor.png',
+            //     'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-recipe/',
+            // ],
 		];
 	}
 
