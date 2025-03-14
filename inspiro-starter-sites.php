@@ -14,7 +14,7 @@
  * Author:      WPZOOM
  * Author URI:  https://www.wpzoom.com
  * Text Domain: inspiro-starter-sites
- * Version:     1.0.5
+ * Version:     1.0.6
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * License:     GPLv2 or later
