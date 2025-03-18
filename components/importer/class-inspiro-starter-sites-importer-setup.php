@@ -122,7 +122,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'required' => true,
 			];
 
-		} elseif ( $import_step === '4' || $import_step === '5' ) {
+		} elseif ( $import_step === '4' || $import_step === '5' || $import_step === '9'  ) {
 
             $theme_plugins[] =  [
                 'name'     => 'WPZOOM Portfolio',
@@ -251,6 +251,15 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-magazine.dat',
                 'import_preview_image_url'   => $demos_preview_url .  'magazine.png',
                 'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-magazine/',
+            ],
+            [
+                'import_id'                  => 'inspiro-lite-persona',
+                'import_file_name'           => 'Persona Lite (Dark)',
+                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-persona.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-persona.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-persona.dat',
+                'import_preview_image_url'   => $demos_preview_url .  'persona.png',
+                'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-persona/',
             ],
 		];
 	}

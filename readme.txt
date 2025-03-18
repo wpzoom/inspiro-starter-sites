@@ -5,7 +5,7 @@ Author URI:			https://www.wpzoom.com/
 Requires at least: 	6.0
 Tested up to: 		6.7  
 Requires PHP: 		7.4  
-Stable tag: 		1.0.6
+Stable tag: 		1.0.7
 License: 			GPLv2 or later  
 License URI: 		https://www.gnu.org/licenses/gpl-2.0.html
 Tags: 				starter templates, Gutenberg, Elementor, WooCommerce
@@ -18,6 +18,7 @@ Import starter templates with Gutenberg Blocks, Elementor, and WooCommerce to cr
 
 - **Gutenberg Blocks** | [View Demo](https://demo.wpzoom.com/inspiro-lite-blocks/)
 - **Elementor** | [View Demo](https://demo.wpzoom.com/inspiro-lite/)
+- **Persona Lite (Dark)** | [View Demo](https://demo.wpzoom.com/inspiro-lite-persona/)
 - **WooCommerce** | [View Demo](https://demo.wpzoom.com/inspiro-lite-woo/)
 - **Medical** | [View Demo](https://demo.wpzoom.com/inspiro-lite-medical/)
 - **Finance** | [View Demo](https://demo.wpzoom.com/inspiro-lite-finance/)
@@ -84,6 +85,9 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 1. Demo Importer
 
 == Changelog ==
+
+= 1.0.7 =
+* New demo: Persona Lite (Dark)
 
 = 1.0.6 =
 * New demo: Magazine
