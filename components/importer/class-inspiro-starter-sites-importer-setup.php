@@ -43,6 +43,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 
 		$current_theme = wp_get_theme();
 		$theme_name    = $current_theme->get( 'Name' );
+		$theme_template = get_template();
 
 		add_filter( 'inspiro_starter_sites/register_plugins', array( $this, 'register_plugins' ) );
 		add_filter( 'inspiro_starter_sites/import_files', array( $this, 'import_files' ) );
@@ -50,7 +51,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 
 		add_filter( 'inspiro_starter_sites_premium_demos', array( $this, 'premium_demos' ) );
 
-		if ( 'Inspiro' == $theme_name && ! class_exists( 'WPZOOM' ) ) {
+		if ( ( 'Inspiro' == $theme_name || 'inspiro' == $theme_template ) && ! class_exists( 'WPZOOM' ) ) {
 			add_filter( 'inspiro_starter_sites/plugin_page_setup', array( $this, 'new_menu' ) );
 		}
 		

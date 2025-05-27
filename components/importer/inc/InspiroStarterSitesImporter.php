@@ -203,8 +203,9 @@ class InspiroStarterSitesImporter {
 		$current_theme = wp_get_theme();
 		$theme_name    = $current_theme->get( 'Name' );
 		$inspiro_view = '';
+		$theme_template = get_template();
 
-		if( 'Inspiro' == $theme_name && ! class_exists( 'WPZOOM' ) ) {
+		if( ( 'Inspiro' == $theme_name || 'inspiro' == $theme_template ) && ! class_exists( 'WPZOOM' ) ) {
 			$inspiro_view = 'inspiro';
 		}
 		
