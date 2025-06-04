@@ -88,6 +88,9 @@ final class Inspiro_Starter_Sites_Activator {
 		$import_page_url = 'themes.php?page=' . $plugin_import_page['menu_slug'];
 
 		if( isset( $plugin_import_page['parent_slug'] ) && 'inspiro' == $plugin_import_page['parent_slug'] ) {
+			if ( get_option( 'inspiro_starter_sites_activation_redirect', false ) ) {
+				delete_option( 'inspiro_starter_sites_activation_redirect' );
+			}
 			return;
 		}
 
