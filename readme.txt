@@ -3,9 +3,9 @@ Contributors: 		WPZOOM
 Donate link:		http://paypal.me/wpzm/10usd
 Author URI:			https://www.wpzoom.com/  
 Requires at least: 	6.0
-Tested up to: 		6.7  
+Tested up to: 		6.8
 Requires PHP: 		7.4  
-Stable tag: 		1.0.7
+Stable tag: 		1.0.8
 License: 			GPLv2 or later  
 License URI: 		https://www.gnu.org/licenses/gpl-2.0.html
 Tags: 				starter templates, Gutenberg, Elementor, WooCommerce
@@ -85,6 +85,9 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 1. Demo Importer
 
 == Changelog ==
+
+= 1.0.8 =
+* Minor bug fixes
 
 = 1.0.7 =
 * New demo: Persona Lite (Dark)
