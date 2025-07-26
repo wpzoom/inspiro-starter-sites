@@ -41,7 +41,7 @@ $imported_demo_id = get_option( 'inspiro_starter_sites_imported_demo_id', false 
                 <p class="section_footer">
                     <a href="<?php echo esc_url( __( 'https://www.wpzoom.com/themes/inspiro/starter-sites/?utm_source=wpadmin&utm_medium=demos-starter-sites&utm_campaign=starter-sites-plugin', 'inspiro' ) ); ?>"
                         target="_blank" class="button button-primary">
-                            <?php esc_html_e( 'View Premium Starter Sites &#8599;', 'inspiro' ); ?>
+                            <?php esc_html_e( 'View Premium Starter Sites &rarr;', 'inspiro' ); ?>
                     </a>
                 </p>
             </div>
