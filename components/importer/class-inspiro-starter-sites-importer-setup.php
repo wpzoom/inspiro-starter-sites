@@ -465,7 +465,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 	}
 
 
-	public function after_import_setup() {
+	public function after_import_setup( $selected_import ) {
 		// Assign menus to their locations.
 		$main_menu = get_term_by( 'name', 'Main', 'nav_menu' );
 
@@ -481,6 +481,76 @@ class Inspiro_Starter_Sites_Importer_Setup {
 		update_option( 'show_on_front', 'page' );
 		update_option( 'page_on_front', $front_page_id->ID );
 		update_option( 'page_for_posts', $blog_page_id->ID );
+
+		// Add custom CSS for Remix demo
+		if ( isset( $selected_import['import_id'] ) && $selected_import['import_id'] === 'inspiro-lite-remix' ) {
+			$custom_css = '
+/* White text for transparent headers - Remix Demo - only when at top (not scrolled) */
+.has-header-image .site-header.headroom--top .navbar-brand,
+.has-header-image .site-header.headroom--top .navbar-brand a,
+.has-header-image .site-header.headroom--top .navbar-nav > li > a,
+.has-header-image .site-header.headroom--top .nav-link,
+.has-header-image .site-header.headroom--top .btn-open-menu,
+.has-header-image .site-header.headroom--top .navbar-toggle .icon-bar,
+.has-header-video .site-header.headroom--top .navbar-brand,
+.has-header-video .site-header.headroom--top .navbar-brand a,
+.has-header-video .site-header.headroom--top .navbar-nav > li > a,
+.has-header-video .site-header.headroom--top .nav-link,
+.has-header-video .site-header.headroom--top .btn-open-menu,
+.has-header-video .site-header.headroom--top .navbar-toggle .icon-bar,
+.page-template-template-page-builder .site-header.headroom--top .navbar-brand,
+.page-template-template-page-builder .site-header.headroom--top .navbar-brand a,
+.page-template-template-page-builder .site-header.headroom--top .navbar-nav > li > a,
+.page-template-template-page-builder .site-header.headroom--top .nav-link,
+.page-template-template-page-builder .site-header.headroom--top .btn-open-menu,
+.page-template-template-page-builder .site-header.headroom--top .navbar-toggle .icon-bar {
+	color: #ffffff !important;
+}
+
+/* Search icon white */
+.has-header-image .site-header.headroom--top .search-form__toggle,
+.has-header-video .site-header.headroom--top .search-form__toggle,
+.page-template-template-page-builder .site-header.headroom--top .search-form__toggle {
+	color: #ffffff !important;
+}
+
+/* Search icon SVG fill */
+.has-header-image .site-header.headroom--top .sb-search-button-open .sb-icon-search .svg-icon,
+.has-header-video .site-header.headroom--top .sb-search-button-open .sb-icon-search .svg-icon,
+.page-template-template-page-builder .site-header.headroom--top .sb-search-button-open .sb-icon-search .svg-icon {
+	fill: #ffffff !important;
+}
+
+/* Hamburger menu icon white (for mobile) */
+.has-header-image .site-header.headroom--top .navbar-toggle .icon-bar,
+.has-header-video .site-header.headroom--top .navbar-toggle .icon-bar,
+.page-template-template-page-builder .site-header.headroom--top .navbar-toggle .icon-bar {
+	background-color: #ffffff !important;
+}
+
+/* Submenu dropdown arrow */
+.has-header-image .site-header.headroom--top .navbar-nav .menu-item-has-children .svg-icon,
+.has-header-video .site-header.headroom--top .navbar-nav .menu-item-has-children .svg-icon,
+.page-template-template-page-builder .site-header.headroom--top .navbar-nav .menu-item-has-children .svg-icon {
+	fill: #ffffff !important;
+}
+
+/* Custom logo text */
+.has-header-image .site-header.headroom--top a.custom-logo-text,
+.has-header-video .site-header.headroom--top a.custom-logo-text,
+.page-template-template-page-builder .site-header.headroom--top a.custom-logo-text {
+	color: #ffffff !important;
+}';
+
+			// Get existing custom CSS
+			$existing_css = wp_get_custom_css();
+			
+			// Append our CSS to existing custom CSS
+			$updated_css = $existing_css . "\n" . $custom_css;
+			
+			// Update custom CSS
+			wp_update_custom_css_post( $updated_css );
+		}
 
 	}
 
