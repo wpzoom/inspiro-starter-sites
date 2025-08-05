@@ -482,74 +482,51 @@ class Inspiro_Starter_Sites_Importer_Setup {
 		update_option( 'page_on_front', $front_page_id->ID );
 		update_option( 'page_for_posts', $blog_page_id->ID );
 
-		// Add custom CSS for Remix demo
-		if ( isset( $selected_import['import_id'] ) && $selected_import['import_id'] === 'inspiro-lite-remix' ) {
-			$custom_css = '
-/* White text for transparent headers - Remix Demo - only when at top (not scrolled) */
-.has-header-image .site-header.headroom--top .navbar-brand,
-.has-header-image .site-header.headroom--top .navbar-brand a,
-.has-header-image .site-header.headroom--top .navbar-nav > li > a,
-.has-header-image .site-header.headroom--top .nav-link,
-.has-header-image .site-header.headroom--top .btn-open-menu,
-.has-header-image .site-header.headroom--top .navbar-toggle .icon-bar,
-.has-header-video .site-header.headroom--top .navbar-brand,
-.has-header-video .site-header.headroom--top .navbar-brand a,
-.has-header-video .site-header.headroom--top .navbar-nav > li > a,
-.has-header-video .site-header.headroom--top .nav-link,
-.has-header-video .site-header.headroom--top .btn-open-menu,
-.has-header-video .site-header.headroom--top .navbar-toggle .icon-bar,
-.page-template-template-page-builder .site-header.headroom--top .navbar-brand,
-.page-template-template-page-builder .site-header.headroom--top .navbar-brand a,
-.page-template-template-page-builder .site-header.headroom--top .navbar-nav > li > a,
-.page-template-template-page-builder .site-header.headroom--top .nav-link,
-.page-template-template-page-builder .site-header.headroom--top .btn-open-menu,
-.page-template-template-page-builder .site-header.headroom--top .navbar-toggle .icon-bar {
-	color: #ffffff !important;
-}
-
-/* Search icon white */
-.has-header-image .site-header.headroom--top .search-form__toggle,
-.has-header-video .site-header.headroom--top .search-form__toggle,
-.page-template-template-page-builder .site-header.headroom--top .search-form__toggle {
-	color: #ffffff !important;
-}
-
-/* Search icon SVG fill */
-.has-header-image .site-header.headroom--top .sb-search-button-open .sb-icon-search .svg-icon,
-.has-header-video .site-header.headroom--top .sb-search-button-open .sb-icon-search .svg-icon,
-.page-template-template-page-builder .site-header.headroom--top .sb-search-button-open .sb-icon-search .svg-icon {
-	fill: #ffffff !important;
-}
-
-/* Hamburger menu icon white (for mobile) */
-.has-header-image .site-header.headroom--top .navbar-toggle .icon-bar,
-.has-header-video .site-header.headroom--top .navbar-toggle .icon-bar,
-.page-template-template-page-builder .site-header.headroom--top .navbar-toggle .icon-bar {
-	background-color: #ffffff !important;
-}
-
-/* Submenu dropdown arrow */
-.has-header-image .site-header.headroom--top .navbar-nav .menu-item-has-children .svg-icon,
-.has-header-video .site-header.headroom--top .navbar-nav .menu-item-has-children .svg-icon,
-.page-template-template-page-builder .site-header.headroom--top .navbar-nav .menu-item-has-children .svg-icon {
-	fill: #ffffff !important;
-}
-
-/* Custom logo text */
-.has-header-image .site-header.headroom--top a.custom-logo-text,
-.has-header-video .site-header.headroom--top a.custom-logo-text,
-.page-template-template-page-builder .site-header.headroom--top a.custom-logo-text {
-	color: #ffffff !important;
-}';
-
-			// Get existing custom CSS
-			$existing_css = wp_get_custom_css();
+		// Set demo layout option based on imported demo
+		if ( isset( $selected_import['import_id'] ) ) {
+			// Extract demo name from import_id (e.g., 'inspiro-lite-remix' -> 'remix')
+			$demo_layout = '';
 			
-			// Append our CSS to existing custom CSS
-			$updated_css = $existing_css . "\n" . $custom_css;
+			switch ( $selected_import['import_id'] ) {
+				case 'inspiro-lite-remix':
+					$demo_layout = 'remix';
+					break;
+				case 'inspiro-lite':
+					$demo_layout = 'business';
+					break;
+				case 'inspiro-lite-blocks':
+					$demo_layout = 'business-blocks';
+					break;
+				case 'inspiro-lite-woo':
+					$demo_layout = 'woocommerce';
+					break;
+				case 'inspiro-lite-medical':
+					$demo_layout = 'medical';
+					break;
+				case 'inspiro-lite-freelancer':
+					$demo_layout = 'freelancer';
+					break;
+				case 'inspiro-lite-freelancer-grey':
+					$demo_layout = 'freelancer-grey';
+					break;
+				case 'inspiro-lite-finance':
+					$demo_layout = 'finance';
+					break;
+				case 'inspiro-lite-recipe-blocks':
+					$demo_layout = 'recipe';
+					break;
+				case 'inspiro-lite-magazine':
+					$demo_layout = 'magazine';
+					break;
+				case 'inspiro-lite-persona':
+					$demo_layout = 'persona';
+					break;
+				// Add more demo mappings as needed
+			}
 			
-			// Update custom CSS
-			wp_update_custom_css_post( $updated_css );
+			if ( ! empty( $demo_layout ) ) {
+				update_option( 'inspiro_demo_layout', $demo_layout );
+			}
 		}
 
 	}
