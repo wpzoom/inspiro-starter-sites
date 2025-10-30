@@ -14,7 +14,7 @@
  * Author:      WPZOOM
  * Author URI:  https://www.wpzoom.com
  * Text Domain: inspiro-starter-sites
- * Version:     1.0.9
+ * Version:     1.0.10
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * License:     GPLv2 or later
@@ -59,5 +59,8 @@ function inspiro_starter_sites_classes() {
 	// Load the demo importer class
 	require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/class-inspiro-starter-sites-importer.php';
 	require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/class-inspiro-starter-sites-importer-setup.php';
+
+	// Load the starter content notice
+	require_once INSPIRO_STARTER_SITES_PATH . 'components/starter-content-notice.php';
 
 }

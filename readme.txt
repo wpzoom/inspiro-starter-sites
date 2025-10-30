@@ -5,7 +5,7 @@ Author URI:			https://www.wpzoom.com/
 Requires at least: 	6.0
 Tested up to: 		6.8
 Requires PHP: 		7.4  
-Stable tag: 		1.0.9
+Stable tag: 		1.0.10
 License: 			GPLv2 or later  
 License URI: 		https://www.gnu.org/licenses/gpl-2.0.html
 Tags: 				starter templates, Gutenberg, Elementor, WooCommerce
@@ -86,6 +86,9 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 1. Demo Importer
 
 == Changelog ==
+
+= 1.0.10 =
+* Detect & suggest to remove default starter content in Inspiro Lite
 
 = 1.0.9 =
 * New demo: Remix

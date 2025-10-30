@@ -44,7 +44,7 @@ $imported_demo_id = get_option( 'inspiro_starter_sites_imported_demo_id', false 
 					}
 
 				?>
-				<li data-name="<?php echo esc_attr( strtolower( $import_file['import_file_name'] ) ); ?>">
+				<li data-name="<?php echo esc_attr( strtolower( $import_file['import_file_name'] ) ); ?>" data-import-id="<?php echo esc_attr( $import_file['import_id'] ); ?>">
 					<figure title="<?php echo esc_attr( $import_file['import_file_name'] ); ?>">
 						<div class="preview-thumbnail inspiro-starter-sites-import" style="background-image:url('<?php echo esc_url( $img_src ) ?>')">
 							<a href="<?php echo esc_url( $import_file['preview_url'] ); ?>" target="_blank" class="button-select-template"><?php esc_html_e( 'View Demo', 'inspiro-starter-sites' ); ?></a></div>
