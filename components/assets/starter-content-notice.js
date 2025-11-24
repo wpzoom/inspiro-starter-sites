@@ -5,6 +5,18 @@
 	'use strict';
 
 	$(document).ready(function() {
+		// Function to dismiss the notice permanently
+		function dismissNotice() {
+			$.ajax({
+				url: inspiroStarterContent.ajaxurl,
+				type: 'POST',
+				data: {
+					action: 'inspiro_dismiss_starter_content_notice',
+					nonce: inspiroStarterContent.dismissNonce
+				}
+			});
+		}
+
 		// Handle delete button click
 		$('#inspiro-delete-starter-content').on('click', function(e) {
 			e.preventDefault();
@@ -38,6 +50,9 @@
 					if (response.success) {
 						$result.html('<span class="success" style="color: #46b450; font-weight: 600;">✓ ' + response.message + '</span>');
 
+						// Dismiss the notice permanently
+						dismissNotice();
+
 						// Hide the notice after 2 seconds
 						setTimeout(function() {
 							$notice.fadeOut(400, function() {
@@ -60,9 +75,21 @@
 		// Handle dismiss button click
 		$('.inspiro-dismiss-notice').on('click', function(e) {
 			e.preventDefault();
-			$('.inspiro-starter-content-notice').fadeOut(400, function() {
+			var $notice = $('.inspiro-starter-content-notice');
+
+			// Dismiss the notice permanently
+			dismissNotice();
+
+			// Hide the notice
+			$notice.fadeOut(400, function() {
 				$(this).remove();
 			});
+		});
+
+		// Handle WordPress's built-in dismiss button (X button)
+		$(document).on('click', '.inspiro-starter-content-notice .notice-dismiss', function(e) {
+			// Dismiss the notice permanently
+			dismissNotice();
 		});
 	});
 

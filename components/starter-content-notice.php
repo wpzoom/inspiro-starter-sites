@@ -26,6 +26,7 @@ class Starter_Content_Notice {
 	public function __construct() {
 		add_action( 'inspiro_starter_sites_admin_page', array( $this, 'display_notice' ), 5 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+		add_action( 'wp_ajax_inspiro_dismiss_starter_content_notice', array( $this, 'dismiss_notice' ) );
 	}
 
 	/**
@@ -35,6 +36,11 @@ class Starter_Content_Notice {
 		// Check if we're on the inspiro-demo page
 		$screen = get_current_screen();
 		if ( ! $screen || strpos( $screen->id, 'inspiro-demo' ) === false ) {
+			return;
+		}
+
+		// Check if notice has been dismissed
+		if ( get_user_meta( get_current_user_id(), 'inspiro_starter_content_notice_dismissed', true ) ) {
 			return;
 		}
 
@@ -118,13 +124,25 @@ class Starter_Content_Notice {
 			'inspiro-starter-content-notice',
 			'inspiroStarterContent',
 			array(
-				'nonce'    => wp_create_nonce( 'inspiro_delete_starter_content' ),
-				'ajaxurl'  => admin_url( 'admin-ajax.php' ),
-				'deleting' => esc_html__( 'Deleting starter content...', 'inspiro-starter-sites' ),
-				'success'  => esc_html__( 'Starter content deleted successfully!', 'inspiro-starter-sites' ),
-				'error'    => esc_html__( 'Error deleting starter content. Please try again.', 'inspiro-starter-sites' ),
+				'nonce'         => wp_create_nonce( 'inspiro_delete_starter_content' ),
+				'dismissNonce'  => wp_create_nonce( 'inspiro_dismiss_starter_content_notice' ),
+				'ajaxurl'       => admin_url( 'admin-ajax.php' ),
+				'deleting'      => esc_html__( 'Deleting starter content...', 'inspiro-starter-sites' ),
+				'success'       => esc_html__( 'Starter content deleted successfully!', 'inspiro-starter-sites' ),
+				'error'         => esc_html__( 'Error deleting starter content. Please try again.', 'inspiro-starter-sites' ),
 			)
 		);
+	}
+
+	/**
+	 * Handle notice dismissal
+	 */
+	public function dismiss_notice() {
+		check_ajax_referer( 'inspiro_dismiss_starter_content_notice', 'nonce' );
+
+		update_user_meta( get_current_user_id(), 'inspiro_starter_content_notice_dismissed', true );
+
+		wp_send_json_success();
 	}
 }
 
