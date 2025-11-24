@@ -54,7 +54,7 @@ This plugin incorporates code from the [One Click Demo Import](https://wordpress
 
 = 🙌 FOLLOW US =
 
-* 🐦 [Twitter](https://twitter.com/wpzoom)
+* 🐦 [X](https://x.com/wpzoom)
 * 📘 [Facebook](https://facebook.com/wpzoom)
 * 📘 [Facebook Group](https://www.facebook.com/groups/wpzoom)
 * 🌄 [Instagram](https://instagram.com/wpzoom)
