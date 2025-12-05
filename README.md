@@ -28,6 +28,7 @@ Whether you're creating a blog, an online store, or a portfolio, Inspiro Starter
 | **Magazine** | Blocks | [View Demo](https://demo.wpzoom.com/inspiro-lite-magazine/) |
 | **Freelancer (One-page)** | Elementor | [View Demo](https://demo.wpzoom.com/inspiro-lite-freelancer/) |
 | **Freelancer (One-page) #2** | Blocks | [View Demo](https://demo.wpzoom.com/inspiro-lite-freelancer-blocks/) |
+| **Green Energy** | Blocks | [View Demo](https://demo.wpzoom.com/inspiro-lite-green-energy/) |
 
 ## Features
 
