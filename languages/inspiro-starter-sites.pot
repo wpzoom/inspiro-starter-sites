@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Inspiro Starter Sites\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-01-27 19:18+0000\n"
+"POT-Creation-Date: 2025-12-13 12:31+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: \n"
@@ -16,22 +16,27 @@ msgstr ""
 "X-Loco-Version: 2.6.14; wp-6.7.1\n"
 "X-Domain: inspiro-starter-sites"
 
-#: components/importer/views/import.php:166
-#: components/importer/views/delete-import.php:87
+#: components/importer/views/import.php:158
+#: components/importer/views/delete-import.php:80
+#: components/importer/views/inspiro/import.php:135
+#: components/importer/views/inspiro/delete-import.php:55
 msgid "&larr; Go Back"
 msgstr ""
 
-#: components/importer/views/delete-import.php:113
+#: components/importer/views/delete-import.php:106
+#: components/importer/views/inspiro/delete-import.php:81
 msgid "&larr; Go back to all demos"
 msgstr ""
 
-#: components/importer/views/import.php:109
+#: components/importer/views/import.php:101
+#: components/importer/views/inspiro/import.php:78
 msgid ""
 "A free WordPress theme by WPZOOM, perfect for showcasing videos, photos, and "
 "creative projects."
 msgstr ""
 
-#: components/importer/views/import.php:130
+#: components/importer/views/import.php:122
+#: components/importer/views/inspiro/import.php:99
 msgid ""
 "All required/recommended plugins are already installed. You can import your "
 "demo content."
@@ -68,14 +73,15 @@ msgid ""
 "to: %1$s%2$s."
 msgstr ""
 
-#: components/importer/views/delete-import.php:74
+#: components/importer/views/delete-import.php:67
+#: components/importer/views/inspiro/delete-import.php:42
 msgid ""
 "Are you sure you want to delete the imported demo content? This action will "
 "permanently remove all imported pages and posts, including any edits made to "
 "them."
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:252
+#: components/importer/inc/InspiroStarterSitesImporter.php:261
 msgid "Are you sure?"
 msgstr ""
 
@@ -84,21 +90,25 @@ msgid ""
 "At least one of the possible options should be set! Check them with --help"
 msgstr ""
 
-#: components/importer/views/import.php:77
+#: components/importer/views/import.php:69
+#: components/importer/views/inspiro/import.php:46
 msgid "Before We Import Your Demo"
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:253
+#: components/importer/inc/InspiroStarterSitesImporter.php:262
 msgid "Cancel"
 msgstr ""
 
-#: components/importer/views/import.php:116
-#: components/importer/views/import.php:153
+#: components/importer/views/import.php:108
+#: components/importer/views/import.php:145
+#: components/importer/views/inspiro/import.php:85
+#: components/importer/views/inspiro/import.php:122
 msgid "Checkmark icon"
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:469
-#: components/importer/views/import.php:189
+#: components/importer/inc/InspiroStarterSitesImporter.php:478
+#: components/importer/views/import.php:181
+#: components/importer/views/inspiro/import.php:158
 msgid ""
 "Congratulations! Your demo has been imported successfully. You can now "
 "either customize your website or view it live."
@@ -131,7 +141,7 @@ msgid ""
 "Could not install the plugin. You don't have permission to install plugins."
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:1091
+#: components/importer/inc/InspiroStarterSitesImporter.php:1100
 msgid "Customize Theme"
 msgstr ""
 
@@ -147,36 +157,55 @@ msgstr ""
 msgid "Customizer settings imported successfully!"
 msgstr ""
 
-#: components/importer/views/delete-import.php:88
+#: components/starter-content-notice.php:60
+msgid "Default Starter Content Detected"
+msgstr ""
+
+#: components/importer/views/delete-import.php:81
+#: components/importer/views/inspiro/delete-import.php:56
 msgid "Delete"
 msgstr ""
 
-#: components/importer/views/delete-import.php:72
+#: components/importer/views/delete-import.php:65
+#: components/importer/views/inspiro/delete-import.php:40
 msgid "Delete Imported Demo Content"
 msgstr ""
 
-#: components/importer/views/importer-page.php:107
+#: components/importer/views/importer-page.php:97
+#: components/importer/views/inspiro/importer-page.php:62
 msgid "Delete imported demo content"
 msgstr ""
 
-#: components/importer/views/delete-import.php:99
+#: components/starter-content-notice.php:89
+msgid "Delete Starter Content"
+msgstr ""
+
+#: components/importer/views/delete-import.php:92
+#: components/importer/views/inspiro/delete-import.php:67
 msgid "Deleting animation"
 msgstr ""
 
-#: components/importer/views/delete-import.php:95
+#: components/importer/views/delete-import.php:88
+#: components/importer/views/inspiro/delete-import.php:63
 msgid "Deleting Demo Content"
 msgstr ""
 
-#: components/importer/views/delete-import.php:105
+#: components/starter-content-notice.php:130
+msgid "Deleting starter content..."
+msgstr ""
+
+#: components/importer/views/delete-import.php:98
+#: components/importer/views/inspiro/delete-import.php:73
 msgid "Demo Content Deleted Successfully"
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:468
-#: components/importer/views/import.php:186
+#: components/importer/inc/InspiroStarterSitesImporter.php:477
+#: components/importer/views/import.php:178
+#: components/importer/views/inspiro/import.php:155
 msgid "Demo Content Successfully Imported"
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:888
+#: components/importer/inc/InspiroStarterSitesImporter.php:897
 msgid "Demo data has been deleted successfully."
 msgstr ""
 
@@ -188,20 +217,22 @@ msgstr ""
 msgid "Demo import files retrieved successfully!"
 msgstr ""
 
-#: components/importer/views/import.php:51
-#: components/importer/views/delete-import.php:51
-#: components/importer/views/importer-page.php:41
-#: components/importer/views/importer-page.php:60
+#: components/admin/parts/side-nav.php:59
 msgid "Demo Importer"
 msgstr ""
 
 #: components/importer/views/premium-demos.php:17
+#: components/importer/views/inspiro/premium-demos.php:17
 msgid "Demos"
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:323
-#: components/importer/inc/InspiroStarterSitesImporter.php:334
+#: components/importer/inc/InspiroStarterSitesImporter.php:332
+#: components/importer/inc/InspiroStarterSitesImporter.php:343
 msgid "Downloaded files"
+msgstr ""
+
+#: components/starter-content-notice.php:132
+msgid "Error deleting starter content. Please try again."
 msgstr ""
 
 #. %s - file path
@@ -245,12 +276,17 @@ msgid ""
 "%4$s%1$sCustomizer file = %5$s%1$s"
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:479
+#: components/importer/inc/InspiroStarterSitesImporter.php:488
 msgid "for more information."
+msgstr ""
+
+#: components/starter-content-notice.php:85
+msgid "Front page settings will be reset"
 msgstr ""
 
 #. %s: Demo name
 #: components/importer/views/premium-demos.php:55
+#: components/importer/views/inspiro/premium-demos.php:55
 #, php-format
 msgid "Get %s Today &rarr;"
 msgstr ""
@@ -269,15 +305,16 @@ msgstr ""
 
 #. parent slug
 #. page title
-#: classes/class-inspiro-starter-sites-admin-menu.php:43
-#: classes/class-inspiro-starter-sites-admin-menu.php:44
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:390
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:391
-#: components/importer/views/importer-page.php:71
+#: classes/class-inspiro-starter-sites-admin-menu.php:51
+#: classes/class-inspiro-starter-sites-admin-menu.php:52
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:600
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:601
+#: components/importer/views/importer-page.php:61
+#: components/importer/views/inspiro/importer-page.php:26
 msgid "Import Demo"
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:261
+#: components/importer/inc/InspiroStarterSitesImporter.php:270
 msgid "Import Failed"
 msgstr ""
 
@@ -288,7 +325,8 @@ msgid ""
 msgstr ""
 
 #: components/importer/inc/WidgetImporter.php:276
-#: components/importer/views/importer-page.php:78
+#: components/importer/views/importer-page.php:68
+#: components/importer/views/inspiro/importer-page.php:33
 msgid "Imported"
 msgstr ""
 
@@ -296,11 +334,13 @@ msgstr ""
 msgid "Imported to Inactive"
 msgstr ""
 
-#: components/importer/views/import.php:180
+#: components/importer/views/import.php:172
+#: components/importer/views/inspiro/import.php:149
 msgid "Importing animation"
 msgstr ""
 
-#: components/importer/views/import.php:176
+#: components/importer/views/import.php:168
+#: components/importer/views/inspiro/import.php:145
 msgid "Importing Content"
 msgstr ""
 
@@ -321,7 +361,9 @@ msgstr ""
 msgid "Importing customizer settings..."
 msgstr ""
 
-#: components/importer/views/importer-page.php:63
+#: components/importer/views/import.php:51
+#: components/importer/views/delete-import.php:52
+#: components/importer/views/importer-page.php:38
 msgid ""
 "Importing demo data is the fastest and easiest way to set up your new theme. "
 "Choose your desired template, click on 'Import Demo' and start editing pre-"
@@ -343,7 +385,7 @@ msgid "Importing WPForms"
 msgstr ""
 
 #: components/importer/inc/WPCLICommands.php:153
-#: components/importer/inc/InspiroStarterSitesImporter.php:257
+#: components/importer/inc/InspiroStarterSitesImporter.php:266
 msgid "Importing..."
 msgstr ""
 
@@ -358,76 +400,89 @@ msgstr ""
 #: components/importer/class-inspiro-starter-sites-importer.php:69
 #: components/importer/inc/Helpers.php:614
 #: components/importer/inc/Helpers.php:615
-#: components/importer/views/import.php:43
-#: components/importer/views/delete-import.php:43
-#: components/importer/views/importer-page.php:32
 msgid "Inspiro Starter Sites"
 msgstr ""
 
-#: components/importer/views/import.php:167
+#: components/importer/views/import.php:159
+#: components/importer/views/inspiro/import.php:136
 msgid "Install & Import"
 msgstr ""
 
-#: components/importer/views/import.php:107
+#: components/importer/views/import.php:99
+#: components/importer/views/inspiro/import.php:76
 msgid "Install Inspiro Theme"
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:259
+#: components/importer/inc/InspiroStarterSitesImporter.php:268
 msgid "Install Plugin"
 msgstr ""
 
-#: components/importer/views/import.php:80
+#: components/importer/views/import.php:72
+#: components/importer/views/inspiro/import.php:49
 msgid "Install Recommended Plugins"
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:260
+#: components/importer/inc/InspiroStarterSitesImporter.php:269
 msgid "Installed"
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:256
+#: components/importer/inc/InspiroStarterSitesImporter.php:265
 msgid "Installing..."
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:266
+#: components/importer/inc/InspiroStarterSitesImporter.php:275
 msgid ""
 "Invalid file type detected! Please select a DAT file for the Customizer "
 "Import."
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:267
+#: components/importer/inc/InspiroStarterSitesImporter.php:276
 msgid ""
 "Invalid file type detected! Please select a JSON file for the Redux Import."
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:265
+#: components/importer/inc/InspiroStarterSitesImporter.php:274
 msgid ""
 "Invalid file type detected! Please select a JSON or WIE file for the Widgets "
 "Import."
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:264
+#: components/importer/inc/InspiroStarterSitesImporter.php:273
 msgid ""
 "Invalid file type detected! Please select an XML file for the Content Import."
 msgstr ""
 
+#: components/starter-content-notice.php:92
+msgid "Keep It & Continue"
+msgstr ""
+
 #: components/importer/views/premium-demos.php:34
+#: components/importer/views/inspiro/premium-demos.php:34
+#: components/importer/views/inspiro/premium-demos.php:34
 msgid "Live preview"
 msgstr ""
 
-#: components/importer/views/import.php:117
-#: components/importer/views/import.php:157
+#: components/importer/views/import.php:109
+#: components/importer/views/import.php:149
+#: components/importer/views/inspiro/import.php:86
+#: components/importer/views/inspiro/import.php:126
 msgid "Loading..."
 msgstr ""
 
-#: components/importer/views/import.php:155
+#: components/importer/views/import.php:147
+#: components/importer/views/inspiro/import.php:124
 msgid "Lock icon"
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:263
+#: components/importer/inc/InspiroStarterSitesImporter.php:272
 msgid ""
 "Looks like some of the plugins failed to install. Please try again. If this "
 "issue persists, please manually install the failing plugins and come back to "
 "this step to import the theme demo data."
+msgstr ""
+
+#: components/starter-content-notice.php:83
+msgid "Menu: Main Menu"
 msgstr ""
 
 #: components/importer/inc/Downloader.php:58
@@ -438,11 +493,11 @@ msgstr ""
 msgid "New AJAX call!"
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:339
+#: components/importer/inc/InspiroStarterSitesImporter.php:348
 msgid "No import files specified!"
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:251
+#: components/importer/inc/InspiroStarterSitesImporter.php:260
 msgid "No preview image defined for this import."
 msgstr ""
 
@@ -460,17 +515,23 @@ msgstr ""
 msgid "not defined!"
 msgstr ""
 
-#: classes/class-inspiro-starter-sites-admin-menu.php:133
+#: classes/class-inspiro-starter-sites-admin-menu.php:156
 msgid "Open Demo Importer"
 msgstr ""
 
-#: components/importer/views/delete-import.php:96
+#: components/starter-content-notice.php:82
+msgid "Pages: Homepage, About, Contact, Blog"
+msgstr ""
+
+#: components/importer/views/delete-import.php:89
+#: components/importer/views/inspiro/delete-import.php:64
 msgid ""
 "Please wait while the content is being imported. Avoid refreshing the page "
 "or clicking the back button to ensure the process runs smoothly."
 msgstr ""
 
-#: components/importer/views/import.php:177
+#: components/importer/views/import.php:169
+#: components/importer/views/inspiro/import.php:146
 msgid ""
 "Please wait while the content is being imported. Avoid refreshing the page "
 "or clicking the back button, as this may result in the demo content not "
@@ -497,21 +558,19 @@ msgstr ""
 msgid "Predefined import finished!"
 msgstr ""
 
-#: components/importer/views/import.php:57
-#: components/importer/views/delete-import.php:57
-#: components/importer/views/importer-page.php:47
-msgid "Premium Demos"
+#: components/admin/parts/side-nav.php:72
+msgid "Premium Starter Sites"
 msgstr ""
 
 #: components/importer/inc/WPCLICommands.php:143
 msgid "Preparing the demo import files..."
 msgstr ""
 
-#: classes/class-inspiro-starter-sites-admin-menu.php:145
+#: classes/class-inspiro-starter-sites-admin-menu.php:168
 msgid "PRO"
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:255
+#: components/importer/inc/InspiroStarterSitesImporter.php:264
 msgid "Selected demo import:"
 msgstr ""
 
@@ -529,33 +588,39 @@ msgstr ""
 msgid "Site does not support widget"
 msgstr ""
 
-#: components/importer/views/import.php:85
+#: components/starter-content-notice.php:131
+msgid "Starter content deleted successfully!"
+msgstr ""
+
+#: components/importer/views/import.php:77
+#: components/importer/views/inspiro/import.php:54
 msgid ""
 "Starter sites are optimized for the Inspiro theme. Install and activate it "
 "for a seamless setup and optimal performance."
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:470
+#: components/importer/inc/InspiroStarterSitesImporter.php:479
 msgid "Successful Import"
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:258
+#: components/importer/inc/InspiroStarterSitesImporter.php:267
 msgid "Successfully Imported!"
 msgstr ""
 
 #: components/importer/inc/WPCLICommands.php:122
 msgid ""
-"The \"predefined\" parameter should be a number (an index of the WPZI "
-"predefined demo import)!"
+"The \"predefined\" parameter should be a number (an index of the "
+"inspiro_starter_sites predefined demo import)!"
 msgstr ""
 
 #. %s - the name of the selected import.
-#: components/importer/inc/InspiroStarterSitesImporter.php:330
+#: components/importer/inc/InspiroStarterSitesImporter.php:339
 #, php-format
 msgid "The import files for: %s were successfully downloaded!"
 msgstr ""
 
-#: components/importer/views/delete-import.php:106
+#: components/importer/views/delete-import.php:99
+#: components/importer/views/inspiro/delete-import.php:74
 msgid ""
 "The imported demo content has been successfully deleted. You can now choose "
 "to install another demo or start building your website from scratch."
@@ -597,6 +662,13 @@ msgstr ""
 msgid "There were some issues while importing widgets!"
 msgstr ""
 
+#: components/starter-content-notice.php:72
+msgid ""
+"These pages will be permanently deleted even if you have modified their "
+"content. If you have made changes to any of these pages, please back them up "
+"before proceeding."
+msgstr ""
+
 #. %1$s and %2$s - strong HTML tags, %3$s - HTML link to a doc page.
 #: components/importer/inc/Helpers.php:322
 #, php-format
@@ -607,37 +679,55 @@ msgid ""
 "%3$s."
 msgstr ""
 
-#: components/importer/views/import.php:90
+#: components/importer/views/import.php:82
+#: components/importer/views/inspiro/import.php:59
 msgid ""
 "To get the best experience with your selected starter site, the plugins "
 "marked with a lock icon are required. Other plugins are optional but "
 "recommended if you want to add extra features to your website."
 msgstr ""
 
-#: classes/class-inspiro-starter-sites-admin-menu.php:159
+#: classes/class-inspiro-starter-sites-admin-menu.php:182
 msgid "UPGRADE &rarr;"
 msgstr ""
 
-#: components/importer/views/importer-page.php:95
+#: components/importer/views/importer-page.php:85
 #: components/importer/views/premium-demos.php:28
+#: components/importer/views/inspiro/importer-page.php:50
+#: components/importer/views/inspiro/premium-demos.php:28
 msgid "View Demo"
 msgstr ""
 
 #. %s - link to the log file.
-#: components/importer/inc/InspiroStarterSitesImporter.php:478
+#: components/importer/inc/InspiroStarterSitesImporter.php:487
 msgid "View error log"
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:1097
+#: components/importer/inc/InspiroStarterSitesImporter.php:1106
 msgid "View Site"
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:262
+#: components/starter-content-notice.php:63
+msgid ""
+"We detected that you have the default WordPress starter content installed "
+"(Homepage, About, Contact pages and widgets). Before importing a demo, we "
+"recommend removing this content to avoid conflicts and duplicate pages."
+msgstr ""
+
+#: components/starter-content-notice.php:79
+msgid "What will be deleted:"
+msgstr ""
+
+#: components/importer/inc/InspiroStarterSitesImporter.php:271
 msgid "Whoops, there was a problem importing your content."
 msgstr ""
 
 #: components/importer/inc/WidgetImporter.php:211
 msgid "Widget already exists"
+msgstr ""
+
+#: components/starter-content-notice.php:84
+msgid "Widgets from sidebar and footer areas"
 msgstr ""
 
 #: components/importer/inc/WPCLICommands.php:223
@@ -660,11 +750,11 @@ msgstr ""
 msgid "WPZOOM Importer - "
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:254
+#: components/importer/inc/InspiroStarterSitesImporter.php:263
 msgid "Yes, import!"
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:473
+#: components/importer/inc/InspiroStarterSitesImporter.php:482
 msgid "Your import completed, but some things may not have imported properly."
 msgstr ""
 
@@ -677,4 +767,8 @@ msgstr ""
 
 #: components/importer/inc/Helpers.php:347
 msgid "Your WordPress login credentials don't allow to use WP_Filesystem!"
+msgstr ""
+
+#: components/starter-content-notice.php:70
+msgid "⚠️ Important:"
 msgstr ""
