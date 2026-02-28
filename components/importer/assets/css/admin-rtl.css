@@ -576,6 +576,22 @@
     padding: 0;
     margin: 0;
 }
+.inspiro-starter-sites-demo-section {
+    margin: 0 0 32px;
+}
+.inspiro-starter-sites-demo-section-premium {
+    margin-top: 70px;
+}
+.inspiro-starter-sites-demo-section-title {
+    font-size: 28px;
+    line-height: 1.2;
+    margin: 0 0 12px;
+}
+.inspiro-starter-sites-demo-section-description {
+    font-size: 15px;
+    color: #5c6670;
+    margin: 0;
+}
 .iss-onboard_wrapper .iss-onboard_content-wrapper .iss-onboard_content .iss-onboard_content-main .iss-onboard_content-main-steps .iss-onboard_content-main-step.step-choose-design form ul {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -603,6 +619,35 @@
     overflow: hidden;
     margin: 0 0 20px;
     transition: all 0.2s ease;
+}
+.inspiro-starter-sites-demo-badge {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 74px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+    box-shadow: 0 6px 18px rgba(36, 38, 40, 0.16);
+}
+.inspiro-starter-sites-demo-badge-free {
+    color: #0a5c36;
+    background: rgba(232, 248, 239, 0.96);
+}
+.inspiro-starter-sites-demo-badge-premium {
+    color: #7a4b00;
+    background: rgba(255, 243, 205, 0.96);
+}
+.iss-onboard_wrapper .iss-onboard_content-wrapper .iss-onboard_content .iss-onboard_content-main .iss-onboard_content-main-steps .iss-onboard_content-main-step.step-choose-design form ul li figure .preview-thumbnail-demo {
+    position: relative;
 }
 .iss-onboard_wrapper .iss-onboard_content-wrapper .iss-onboard_content .iss-onboard_content-main .iss-onboard_content-main-steps .iss-onboard_content-main-step.step-choose-design form ul li figure .preview-thumbnail.iss-import {
     padding-top: 76.5%;

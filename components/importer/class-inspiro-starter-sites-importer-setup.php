@@ -349,7 +349,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			'inspiro-premium' => array(
 				'name'     => 'Inspiro Premium',
 				'desc'     => 'Below you can view demos available in the Inspiro Premium theme. You can get access to all of them by purchasing the Premium version of the theme.',
-				'purchase' => 'https://www.wpzoom.com/themes/inspiro/',
+				'purchase' => 'https://www.wpzoom.com/themes/inspiro-lite/upgrade/',
 				'demos'    => array(
 					array(
 						'import_file_name'         => 'Business / Portfolio',
