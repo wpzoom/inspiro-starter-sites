@@ -242,6 +242,15 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite/',
 			],
 			[	
+				'import_id'                  => 'inspiro-lite-business',
+				'import_file_name'           => 'Business (New)',
+				'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-business.xml',
+				'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-business.wie',
+				'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-business.dat',
+				'import_preview_image_url'   => $demos_preview_url .  'business.png',
+				'preview_url'                => 'https://inspiro.wpzoom.com/business/',
+			],
+			[	
 				'import_id'                  => 'inspiro-lite-woo',
 				'import_file_name'           => 'WooCommerce Shop',
 				'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-woo.xml',
