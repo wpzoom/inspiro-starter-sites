@@ -48,6 +48,8 @@ class Inspiro_Starter_Sites_Importer_Setup {
 		add_filter( 'inspiro_starter_sites/register_plugins', array( $this, 'register_plugins' ) );
 		add_filter( 'inspiro_starter_sites/import_files', array( $this, 'import_files' ) );
 		add_action( 'inspiro_starter_sites/after_import', array( $this, 'after_import_setup' ) );
+		add_filter( 'upload_mimes', array( $this, 'allow_svg_during_import' ) );
+		add_filter( 'wp_check_filetype_and_ext', array( $this, 'fix_svg_filetype_check' ), 10, 5 );
 
 		add_filter( 'inspiro_starter_sites_premium_demos', array( $this, 'premium_demos' ) );
 
@@ -55,6 +57,23 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			add_filter( 'inspiro_starter_sites/plugin_page_setup', array( $this, 'new_menu' ) );
 		}
 		
+	}
+
+	public function allow_svg_during_import( $mimes ) {
+		$mimes['svg']  = 'image/svg+xml';
+		$mimes['svgz'] = 'image/svg+xml';
+		return $mimes;
+	}
+
+	public function fix_svg_filetype_check( $data, $file, $filename, $mimes, $real_mime = '' ) {
+		if ( empty( $data['type'] ) ) {
+			$ext = strtolower( pathinfo( $filename, PATHINFO_EXTENSION ) );
+			if ( $ext === 'svg' || $ext === 'svgz' ) {
+				$data['type'] = 'image/svg+xml';
+				$data['ext']  = $ext;
+			}
+		}
+		return $data;
 	}
 
 	public function register_plugins( $plugins ) {
@@ -73,148 +92,166 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			],
 		];
 
-		// Check if user is on the theme recommeneded plugins step and a demo was selected.
+		// Check if user is on the theme recommended plugins step and a demo was selected.
 		if ( isset( $_GET['step'] ) && $_GET['step'] === 'import' && isset( $_GET['import'] ) ) {
-			
-			$import_step = sanitize_text_field( wp_unslash( $_GET['import'] ) );
+
+			$import_index = (int) sanitize_text_field( wp_unslash( $_GET['import'] ) );
 
 			check_admin_referer( 'importer_step' );
 
-		// Adding one additional plugin for the first demo import ('import' number = 0).
-		if ( $import_step === '0' ) {
-			$theme_plugins[] = [
-				'name'     => 'Video Popup Block by WPZOOM',
-				'slug'     => 'wpzoom-video-popup-block',
-				'desc'     => 'Enables you to embed engaging video popups on your WordPress site effortlessly.',
-				'required' => true,
-			];
-			$theme_plugins[] =  [
-				'name'     => 'WPZOOM Portfolio',
-				'slug'     => 'wpzoom-portfolio',
-				'desc'     => 'Showcases your projects in a professional and visually appealing portfolio layout.',
-				'required' => true,
-			];
-		} elseif ( $import_step === '1' ) {
+			$import_files = $this->import_files();
+			$import_id    = isset( $import_files[ $import_index ]['import_id'] ) ? $import_files[ $import_index ]['import_id'] : '';
 
-			$theme_plugins[] =  [
-				'name'     => 'Elementor',
-				'slug'     => 'elementor',
-				'desc'     => 'The most popular page builder for WordPress that allows users to design custom layouts with a drag-and-drop interface.',
-				'required' => true,
-			];
-			$theme_plugins[] = [
-			'name'     => 'Elementor Addons by WPZOOM',
-			'slug'     => 'wpzoom-elementor-addons',
-			'desc'     => 'Enhances Elementor with additional widgets and features for expanded design functionality.',
-			'required' => true,
-			];
-			$theme_plugins[] =  [
-				'name'     => 'WPZOOM Portfolio',
-				'slug'     => 'wpzoom-portfolio',
-				'desc'     => 'Showcases your projects in a professional and visually appealing portfolio layout.',
-				'required' => true,
-			];
-		} elseif ( $import_step === '2' ) {
+			switch ( $import_id ) {
+				case 'inspiro-lite-blocks':
+					$theme_plugins[] = [
+						'name'     => 'Video Popup Block by WPZOOM',
+						'slug'     => 'wpzoom-video-popup-block',
+						'desc'     => 'Enables you to embed engaging video popups on your WordPress site effortlessly.',
+						'required' => true,
+					];
+					$theme_plugins[] = [
+						'name'     => 'WPZOOM Portfolio',
+						'slug'     => 'wpzoom-portfolio',
+						'desc'     => 'Showcases your projects in a professional and visually appealing portfolio layout.',
+						'required' => true,
+					];
+					break;
 
-			$theme_plugins[] =  [
-				'name'     => 'WooCommerce',
-				'slug'     => 'woocommerce',
-				'desc'     => 'The leading e-commerce plugin for WordPress, enabling users to build and manage online stores effortlessly.',
-				'required' => true,
-			];
+				case 'inspiro-lite':
+					$theme_plugins[] = [
+						'name'     => 'Elementor',
+						'slug'     => 'elementor',
+						'desc'     => 'The most popular page builder for WordPress that allows users to design custom layouts with a drag-and-drop interface.',
+						'required' => true,
+					];
+					$theme_plugins[] = [
+						'name'     => 'Elementor Addons by WPZOOM',
+						'slug'     => 'wpzoom-elementor-addons',
+						'desc'     => 'Enhances Elementor with additional widgets and features for expanded design functionality.',
+						'required' => true,
+					];
+					$theme_plugins[] = [
+						'name'     => 'WPZOOM Portfolio',
+						'slug'     => 'wpzoom-portfolio',
+						'desc'     => 'Showcases your projects in a professional and visually appealing portfolio layout.',
+						'required' => true,
+					];
+					break;
 
-		} elseif ( $import_step === '4' || $import_step === '5' || $import_step === '9' || $import_step === '10' ) {
+				case 'inspiro-lite-woo':
+					$theme_plugins[] = [
+						'name'     => 'WooCommerce',
+						'slug'     => 'woocommerce',
+						'desc'     => 'The leading e-commerce plugin for WordPress, enabling users to build and manage online stores effortlessly.',
+						'required' => true,
+					];
+					break;
 
-            $theme_plugins[] =  [
-                'name'     => 'WPZOOM Portfolio',
-                'slug'     => 'wpzoom-portfolio',
-                'desc'     => 'Showcases your projects in a professional and visually appealing portfolio layout.',
-                'required' => true,
-            ];
+				case 'inspiro-lite-medical':
+				case 'inspiro-lite-finance':
+					$theme_plugins[] = [
+						'name'     => 'The Icon Block',
+						'slug'     => 'icon-block',
+						'desc'     => 'Easily add SVG icons and graphics to the WordPress block editor.',
+						'required' => true,
+					];
+					break;
 
-            $theme_plugins[] =  [
-                'name'     => 'The Icon Block',
-                'slug'     => 'icon-block',
-                'desc'     => 'Easily add SVG icons and graphics to the WordPress block editor.',
-                'required' => true,
-            ];
-        } elseif ( $import_step === '3' || $import_step === '6' ) {
+				case 'inspiro-lite-freelancer':
+				case 'inspiro-lite-freelancer-grey':
+				case 'inspiro-lite-persona':
+				case 'inspiro-lite-remix':
+					$theme_plugins[] = [
+						'name'     => 'WPZOOM Portfolio',
+						'slug'     => 'wpzoom-portfolio',
+						'desc'     => 'Showcases your projects in a professional and visually appealing portfolio layout.',
+						'required' => true,
+					];
+					$theme_plugins[] = [
+						'name'     => 'The Icon Block',
+						'slug'     => 'icon-block',
+						'desc'     => 'Easily add SVG icons and graphics to the WordPress block editor.',
+						'required' => true,
+					];
+					break;
 
-            $theme_plugins[] =  [
-                'name'     => 'The Icon Block',
-                'slug'     => 'icon-block',
-                'desc'     => 'Easily add SVG icons and graphics to the WordPress block editor.',
-                'required' => true,
-            ];
-        } elseif ( $import_step === '7' ) {
+				case 'inspiro-lite-recipe-blocks':
+					$theme_plugins[] = [
+						'name'     => 'Recipe Card Blocks',
+						'slug'     => 'recipe-card-blocks-by-wpzoom',
+						'desc'     => 'Beautiful Recipe Card Blocks for Food Bloggers with Schema Markup (JSON-LD) for the new WordPress editor (Gutenberg).',
+						'required' => true,
+					];
+					break;
 
-            $theme_plugins[] =  [
-                'name'     => 'Recipe Card Blocks',
-                'slug'     => 'recipe-card-blocks-by-wpzoom',
-                'desc'     => 'Beautiful Recipe Card Blocks for Food Bloggers with Schema Markup (JSON-LD) for the new WordPress editor (Gutenberg).',
-                'required' => true,
-            ];
-        } elseif ( $import_step === '8' ) {
+				case 'inspiro-lite-magazine':
+					$theme_plugins[] = [
+						'name'     => 'Makeiteasy Slider',
+						'slug'     => 'makeiteasy-slider',
+						'desc'     => 'Block based slider, leverages the speed and versatility of the Swiper slider.',
+						'required' => true,
+					];
+					break;
 
-            $theme_plugins[] =  [
-                'name'     => 'Makeiteasy Slider',
-                'slug'     => 'makeiteasy-slider',
-                'desc'     => 'Block based slider, leverages the speed and versatility of the Swiper slider.',
-                'required' => true,
-            ];
-        } elseif ( $import_step === '11' ) {
+				case 'inspiro-lite-energy':
+					$theme_plugins[] = [
+						'name'     => 'Image Slider Block',
+						'slug'     => 'slider-block',
+						'desc'     => 'Display Multiple Images In Beautiful Slider & Reduce Page Scroll.',
+						'required' => true,
+					];
+					$theme_plugins[] = [
+						'name'     => 'WPZOOM Portfolio',
+						'slug'     => 'wpzoom-portfolio',
+						'desc'     => 'Showcases your projects in a professional and visually appealing portfolio layout.',
+						'required' => true,
+					];
+					$theme_plugins[] = [
+						'name'     => 'The Icon Block',
+						'slug'     => 'icon-block',
+						'desc'     => 'Easily add SVG icons and graphics to the WordPress block editor.',
+						'required' => true,
+					];
+					break;
 
-            $theme_plugins[] =  [
-                'name'     => 'Image Slider Block',
-                'slug'     => 'slider-block',
-                'desc'     => 'Display Multiple Images In Beautiful Slider & Reduce Page Scroll.',
-                'required' => true,
-            ];
+				case 'inspiro-lite-video':
+					$theme_plugins[] = [
+						'name'     => 'Image Slider Block',
+						'slug'     => 'slider-block',
+						'desc'     => 'Display Multiple Images In Beautiful Slider & Reduce Page Scroll.',
+						'required' => true,
+					];
+					$theme_plugins[] = [
+						'name'     => 'WPZOOM Portfolio',
+						'slug'     => 'wpzoom-portfolio',
+						'desc'     => 'Showcases your projects in a professional and visually appealing portfolio layout.',
+						'required' => true,
+					];
+					$theme_plugins[] = [
+						'name'     => 'Video Popup Block by WPZOOM',
+						'slug'     => 'wpzoom-video-popup-block',
+						'desc'     => 'Enables you to embed engaging video popups on your WordPress site effortlessly.',
+						'required' => true,
+					];
+					$theme_plugins[] = [
+						'name'     => 'The Icon Block',
+						'slug'     => 'icon-block',
+						'desc'     => 'Easily add SVG icons and graphics to the WordPress block editor.',
+						'required' => true,
+					];
+					break;
 
-            $theme_plugins[] =  [
-                'name'     => 'WPZOOM Portfolio',
-                'slug'     => 'wpzoom-portfolio',
-                'desc'     => 'Showcases your projects in a professional and visually appealing portfolio layout.',
-                'required' => true,
-            ];
-
-            $theme_plugins[] =  [
-                'name'     => 'The Icon Block',
-                'slug'     => 'icon-block',
-                'desc'     => 'Easily add SVG icons and graphics to the WordPress block editor.',
-                'required' => true,
-            ];
-        } elseif ( $import_step === '12' ) {
-
-            $theme_plugins[] =  [
-                'name'     => 'Image Slider Block',
-                'slug'     => 'slider-block',
-                'desc'     => 'Display Multiple Images In Beautiful Slider & Reduce Page Scroll.',
-                'required' => true,
-            ];
-
-            $theme_plugins[] =  [
-                'name'     => 'WPZOOM Portfolio',
-                'slug'     => 'wpzoom-portfolio',
-                'desc'     => 'Showcases your projects in a professional and visually appealing portfolio layout.',
-                'required' => true,
-            ];
-
-            $theme_plugins[] = [
-                'name'     => 'Video Popup Block by WPZOOM',
-                'slug'     => 'wpzoom-video-popup-block',
-                'desc'     => 'Enables you to embed engaging video popups on your WordPress site effortlessly.',
-                'required' => true,
-            ];
-
-            $theme_plugins[] =  [
-                'name'     => 'The Icon Block',
-                'slug'     => 'icon-block',
-                'desc'     => 'Easily add SVG icons and graphics to the WordPress block editor.',
-                'required' => true,
-            ];
-        }
-    }
+				case 'inspiro-lite-business':
+					$theme_plugins[] = [
+						'name'     => 'Social Icons Widget & Block by WPZOOM',
+						'slug'     => 'social-icons-widget-by-wpzoom',
+						'desc'     => 'Displays social media icon links in a clean, customizable widget or block.',
+						'required' => true,
+					];
+					break;
+			}
+		}
 		return array_merge( $plugins, $theme_plugins );
 	  
 	}
@@ -245,8 +282,8 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'import_id'                  => 'inspiro-lite-business',
 				'import_file_name'           => 'Business (New)',
 				'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-business.xml',
-				'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-business.wie',
-				'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-business.dat',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-business.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-business.dat',
 				'import_preview_image_url'   => $demos_preview_url .  'business.png',
 				'preview_url'                => 'https://inspiro.wpzoom.com/business/',
 			],
@@ -349,6 +386,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'import_preview_image_url'   => $demos_preview_url .  'video.png',
                 'preview_url'                => 'https://inspiro.wpzoom.com/video/',
             ],
+
 		];
 	}
 
