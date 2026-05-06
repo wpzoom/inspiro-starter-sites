@@ -88,7 +88,7 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 == Changelog ==
 
 = 1.0.15 =
-* New demo: Video Business
+* New demo: Business
 
 = 1.0.14 =
 * Minor bug fixes
