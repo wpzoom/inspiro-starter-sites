@@ -207,6 +207,59 @@ body:not(.inspiro_page_inspiro-demo) #wpcontent {
 		position: absolute !important;
 		z-index: -1 !important;
 	}
+
+	.wpz-onboard_content-main-step.step-choose-design {
+		.preview-thumbnail.inspiro-starter-sites-import .inspiro-starter-sites-demo-badges {
+			position: absolute;
+			top: 14px;
+			inset-inline-start: 14px;
+			z-index: 4;
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			gap: 8px;
+			flex-wrap: wrap;
+			direction: ltr;
+
+			.inspiro-starter-sites-demo-badge {
+				position: static;
+			}
+		}
+
+		.inspiro-starter-sites-demo-badge {
+			position: absolute;
+			top: 14px;
+			inset-inline-start: 14px;
+			z-index: 4;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			min-width: 74px;
+			padding: 7px 12px;
+			border-radius: 999px;
+			font-size: 11px;
+			font-weight: 700;
+			letter-spacing: 0.08em;
+			line-height: 1;
+			text-transform: uppercase;
+			box-shadow: 0 6px 18px rgba(36, 38, 40, 0.16);
+
+			&-free {
+				color: #0a5c36;
+				background: rgba(232, 248, 239, 0.96);
+			}
+
+			&-premium {
+				color: #7a4b00;
+				background: rgba(255, 243, 205, 0.96);
+			}
+
+			&-new {
+				color: #434f69;
+				background: rgba(240, 248, 255, 1);
+			}
+		}
+	}
 }
 
 .feature-section + hr {

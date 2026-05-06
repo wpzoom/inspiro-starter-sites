@@ -17,7 +17,7 @@ $predefined_themes = $this->import_files;
 $imported_demo_id = get_option( 'inspiro_starter_sites_imported_demo_id', false );
 
 ?>
-<div class="inspiro-starter-sites-onboard_wrapper">
+<div class="inspiro-starter-sites inspiro-starter-sites-onboard_wrapper">
 
 <div class="inspiro-starter-sites__admin-notices js-inspiro-starter-sites-admin-notices-container"></div>
 
