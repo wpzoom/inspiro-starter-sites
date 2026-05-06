@@ -244,6 +244,12 @@ class Inspiro_Starter_Sites_Importer_Setup {
 
 				case 'inspiro-lite-business':
 					$theme_plugins[] = [
+						'name'     => 'WPZOOM Portfolio',
+						'slug'     => 'wpzoom-portfolio',
+						'desc'     => 'Showcases your projects in a professional and visually appealing portfolio layout.',
+						'required' => true,
+					];
+					$theme_plugins[] = [
 						'name'     => 'Social Icons Widget & Block by WPZOOM',
 						'slug'     => 'social-icons-widget-by-wpzoom',
 						'desc'     => 'Displays social media icon links in a clean, customizable widget or block.',
