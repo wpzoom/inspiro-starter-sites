@@ -19,6 +19,7 @@ $premium_section   = ! empty( $premium_demos['inspiro-premium'] ) ? $premium_dem
 $imported_demo_id = get_option( 'inspiro_starter_sites_imported_demo_id', false );
 
 ?>
+<div class="inspiro-starter-sites">
 <div class="inspiro-starter-sites-demo-section">
 	<h3 class="inspiro-starter-sites-demo-section-title"><?php esc_html_e( 'Free Starter Sites', 'inspiro-starter-sites' ); ?></h3>
 	<p class="inspiro-starter-sites-demo-section-description"><?php esc_html_e( 'Import any of these starter sites directly into Inspiro Lite.', 'inspiro-starter-sites' ); ?></p>
@@ -122,3 +123,4 @@ $imported_demo_id = get_option( 'inspiro_starter_sites_imported_demo_id', false 
 		</li>
 	</ol>
 <?php endif; ?>
+</div>
