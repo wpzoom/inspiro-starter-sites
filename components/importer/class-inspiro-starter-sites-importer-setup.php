@@ -243,6 +243,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 					break;
 
 				case 'inspiro-lite-business':
+				case 'inspiro-lite-charity':
 					$theme_plugins[] = [
 						'name'     => 'WPZOOM Portfolio',
 						'slug'     => 'wpzoom-portfolio',
@@ -394,6 +395,16 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-video.dat',
                 'import_preview_image_url'   => $demos_preview_url .  'video.png',
                 'preview_url'                => 'https://inspiro.wpzoom.com/video/',
+            ],
+			[
+                'import_id'                  => 'inspiro-lite-charity',
+                'import_file_name'           => 'Charity / NGO (Lite)',
+                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-charity.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-charity.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-charity.dat',
+                'import_preview_image_url'   => $demos_preview_url .  'charity.png',
+                'preview_url'                => 'https://inspiro.wpzoom.com/charity/',
+				'is_new'                     => true,
             ],
 
 		];
