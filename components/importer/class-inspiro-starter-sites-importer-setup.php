@@ -257,6 +257,14 @@ class Inspiro_Starter_Sites_Importer_Setup {
 						'required' => true,
 					];
 					break;
+				case 'events-conference':
+					$theme_plugins[] = [
+						'name'     => 'Social Icons Widget & Block by WPZOOM',
+						'slug'     => 'social-icons-widget-by-wpzoom',
+						'desc'     => 'Displays social media icon links in a clean, customizable widget or block.',
+						'required' => true,
+					];
+					break;
 			}
 		}
 		return array_merge( $plugins, $theme_plugins );
@@ -404,6 +412,16 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-charity.dat',
                 'import_preview_image_url'   => $demos_preview_url .  'charity.png',
                 'preview_url'                => 'https://inspiro.wpzoom.com/charity/',
+				'is_new'                     => true,
+            ],
+			[
+                'import_id'                  => 'events-conference',
+                'import_file_name'           => 'Events / Conference',
+                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-events.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-events.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-events.dat',
+                'import_preview_image_url'   => $demos_preview_url .  'event.png',
+                'preview_url'                => 'https://inspiro.wpzoom.com/event/',
 				'is_new'                     => true,
             ],
 
