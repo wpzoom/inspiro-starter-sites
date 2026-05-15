@@ -24,6 +24,47 @@ class WXRImporter extends \AwesomeMotive\WPContentImporter2\WXRImporter {
 		if ( class_exists( 'WooCommerce' ) ) {
 			add_filter( 'wxr_importer.pre_process.term', array( $this, 'woocommerce_product_attributes_registration' ), 10, 1 );
 		}
+
+		// Fill empty guids using the post's link URL so exports with blank guids import correctly.
+		add_filter( 'wxr_importer.pre_process.post', array( $this, 'fill_empty_guid_from_link' ), 10, 1 );
+	}
+
+	/**
+	 * When a post's guid is empty, use its permalink (link) as the guid so
+	 * duplicate-detection and post insertion both work correctly.
+	 *
+	 * @param array $data Post data.
+	 * @return array
+	 */
+	public function fill_empty_guid_from_link( $data ) {
+		if ( empty( $data['guid'] ) && ! empty( $data['link'] ) ) {
+			$data['guid'] = $data['link'];
+		}
+		return $data;
+	}
+
+	/**
+	 * Extends the parent parser to also capture the <link> tag so it is
+	 * available in post data (used by fill_empty_guid_from_link above).
+	 *
+	 * @param \DOMNode $node
+	 * @return array|\WP_Error
+	 */
+	protected function parse_post_node( $node ) {
+		$result = parent::parse_post_node( $node );
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		foreach ( $node->childNodes as $child ) {
+			if ( $child->nodeType === XML_ELEMENT_NODE && $child->tagName === 'link' ) {
+				$result['data']['link'] = $child->textContent;
+				break;
+			}
+		}
+
+		return $result;
 	}
 
 	/**
