@@ -8,6 +8,15 @@ namespace Inspiro\Starter_Sites;
 
 class WXRImporter extends \AwesomeMotive\WPContentImporter2\WXRImporter {
 	/**
+	 * GUIDs already encountered in the current import — used to detect and
+	 * rewrite duplicates so WXR's dedupe-by-guid doesn't drop legitimate
+	 * posts (notably nav_menu_items exported with identical date-only guids).
+	 *
+	 * @var array<string, true>
+	 */
+	private $seen_guids = array();
+
+	/**
 	 * Constructor method.
 	 *
 	 * @param array $options Importer options.
@@ -25,21 +34,33 @@ class WXRImporter extends \AwesomeMotive\WPContentImporter2\WXRImporter {
 			add_filter( 'wxr_importer.pre_process.term', array( $this, 'woocommerce_product_attributes_registration' ), 10, 1 );
 		}
 
-		// Fill empty guids using the post's link URL so exports with blank guids import correctly.
+		// Fix empty OR duplicate guids by substituting the post's permalink (link).
+		// Without this, WXR's dedupe-by-guid drops posts that share a guid
+		// (e.g. menu items exported with the same date-only guid).
 		add_filter( 'wxr_importer.pre_process.post', array( $this, 'fill_empty_guid_from_link' ), 10, 1 );
 	}
 
 	/**
-	 * When a post's guid is empty, use its permalink (link) as the guid so
-	 * duplicate-detection and post insertion both work correctly.
+	 * Fix empty or duplicate guids by substituting the post's permalink (link).
 	 *
 	 * @param array $data Post data.
 	 * @return array
 	 */
 	public function fill_empty_guid_from_link( $data ) {
-		if ( empty( $data['guid'] ) && ! empty( $data['link'] ) ) {
-			$data['guid'] = $data['link'];
+		$guid = isset( $data['guid'] ) ? (string) $data['guid'] : '';
+		$link = isset( $data['link'] ) ? (string) $data['link'] : '';
+
+		$is_empty     = ( '' === $guid );
+		$is_duplicate = ( '' !== $guid && isset( $this->seen_guids[ $guid ] ) );
+
+		if ( ( $is_empty || $is_duplicate ) && '' !== $link ) {
+			$data['guid'] = $link;
 		}
+
+		if ( ! empty( $data['guid'] ) ) {
+			$this->seen_guids[ $data['guid'] ] = true;
+		}
+
 		return $data;
 	}
 
