@@ -609,12 +609,18 @@ class Inspiro_Starter_Sites_Importer_Setup {
 		);
 
 		// Assign front page and posts page (blog page).
-		$front_page_id = self::get_page_by_title( 'Homepage' );
-		$blog_page_id  = self::get_page_by_title( 'Blog' );
+		$front_page = self::get_page_by_title( 'Homepage' );
+		$blog_page  = self::get_page_by_title( 'Blog' );
 
-		update_option( 'show_on_front', 'page' );
-		update_option( 'page_on_front', $front_page_id->ID );
-		update_option( 'page_for_posts', $blog_page_id->ID );
+		if ( $front_page || $blog_page ) {
+			update_option( 'show_on_front', 'page' );
+		}
+		if ( $front_page ) {
+			update_option( 'page_on_front', $front_page->ID );
+		}
+		if ( $blog_page ) {
+			update_option( 'page_for_posts', $blog_page->ID );
+		}
 
 		// Set demo layout option based on imported demo
 		if ( isset( $selected_import['import_id'] ) ) {
@@ -670,26 +676,29 @@ class Inspiro_Starter_Sites_Importer_Setup {
 
 	public static function get_page_by_title( $page_title ) {
 
+		// Prefer slug lookup — it's how the WXR importer identifies the page
+		// (e.g. Homepage → 'homepage'), and avoids matching against any
+		// stale starter-content page with the same title.
+		$slug = sanitize_title( $page_title );
+		$page = get_page_by_path( $slug );
+		if ( $page ) {
+			return $page;
+		}
+
 		$posts = get_posts(
 			array(
 				'post_type'              => 'page',
 				'title'                  => $page_title,
-				'post_status'            => 'all',
+				'post_status'            => 'publish',
 				'numberposts'            => 1,
 				'update_post_term_cache' => false,
-				'update_post_meta_cache' => false,           
+				'update_post_meta_cache' => false,
 				'orderby'                => 'post_date ID',
 				'order'                  => 'ASC',
 			)
 		);
-			
-		if ( ! empty( $posts ) ) {
-			$page_got_by_title = $posts[0];
-		} else {
-			$page_got_by_title = null;
-		}
 
-		return $page_got_by_title;
+		return ! empty( $posts ) ? $posts[0] : null;
 	}
 
 
