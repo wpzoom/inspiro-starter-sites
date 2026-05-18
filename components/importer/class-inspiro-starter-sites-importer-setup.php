@@ -195,7 +195,8 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			'inspiro-lite-video'           => [ 'slider-block', 'wpzoom-portfolio', 'wpzoom-video-popup-block', 'icon-block' ],
 			'inspiro-lite-business'        => [ 'wpzoom-portfolio', 'social-icons-widget-by-wpzoom', 'icon-block' ],
 			'inspiro-lite-charity'         => [ 'wpzoom-portfolio', 'social-icons-widget-by-wpzoom', 'carousel-block' ],
-			'events-conference'            => [ 'social-icons-widget-by-wpzoom' ],
+			'inspiro-lite-events'          => [ 'social-icons-widget-by-wpzoom' ],
+			'inspiro-lite-construction'    => [ 'social-icons-widget-by-wpzoom' ],
 		];
 	}
 
@@ -342,13 +343,23 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'is_new'                     => true,
             ],
 			[
-                'import_id'                  => 'events-conference',
+                'import_id'                  => 'inspiro-lite-events',
                 'import_file_name'           => 'Events / Conference',
                 'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-events.xml',
                 'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-events.wie',
                 'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-events.dat',
                 'import_preview_image_url'   => $demos_preview_url .  'event.png',
                 'preview_url'                => 'https://inspiro.wpzoom.com/event/',
+				'is_new'                     => true,
+            ],
+			[
+                'import_id'                  => 'inspiro-lite-construction',
+                'import_file_name'           => 'Construction / Building',
+                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-construction.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-construction.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-construction.dat',
+                'import_preview_image_url'   => $demos_preview_url .  'construction.png',
+                'preview_url'                => 'https://inspiro.wpzoom.com/construction/',
 				'is_new'                     => true,
             ],
 
