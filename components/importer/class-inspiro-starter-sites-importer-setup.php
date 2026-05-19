@@ -197,6 +197,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			'inspiro-lite-charity'         => [ 'wpzoom-portfolio', 'social-icons-widget-by-wpzoom', 'carousel-block' ],
 			'inspiro-lite-events'          => [ 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-construction'    => [ 'social-icons-widget-by-wpzoom' ],
+			'inspiro-lite-winery'    	   => [ 'social-icons-widget-by-wpzoom' ],
 		];
 	}
 
@@ -360,6 +361,16 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-construction.dat',
                 'import_preview_image_url'   => $demos_preview_url .  'construction.png',
                 'preview_url'                => 'https://inspiro.wpzoom.com/construction/',
+				'is_new'                     => true,
+            ],
+			[
+                'import_id'                  => 'inspiro-lite-winery',
+                'import_file_name'           => 'Winery (Lite)',
+                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-winery.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-winery.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-winery.dat',
+                'import_preview_image_url'   => $demos_preview_url .  'winery.png',
+                'preview_url'                => 'https://inspiro.wpzoom.com/winery/',
 				'is_new'                     => true,
             ],
 
