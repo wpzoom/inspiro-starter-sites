@@ -198,6 +198,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			'inspiro-lite-events'          => [ 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-construction'    => [ 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-winery'    	   => [ 'social-icons-widget-by-wpzoom' ],
+			'inspiro-lite-fitness'		   => [ 'social-icons-widget-by-wpzoom' ],
 		];
 	}
 
@@ -371,6 +372,16 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-winery.dat',
                 'import_preview_image_url'   => $demos_preview_url .  'winery.png',
                 'preview_url'                => 'https://inspiro.wpzoom.com/winery/',
+				'is_new'                     => true,
+            ],
+			[
+                'import_id'                  => 'inspiro-lite-fitness',
+                'import_file_name'           => 'Gym / Fitness (Lite)',
+                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-fitness.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-fitness.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-fitness.dat',
+                'import_preview_image_url'   => $demos_preview_url .  'fitness.png',
+                'preview_url'                => 'https://inspiro.wpzoom.com/fitness/',
 				'is_new'                     => true,
             ],
 
