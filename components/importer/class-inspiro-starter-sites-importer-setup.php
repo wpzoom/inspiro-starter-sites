@@ -390,12 +390,93 @@ class Inspiro_Starter_Sites_Importer_Setup {
 
 	public function premium_demos() {
 
+		// Pull the list from the remote endpoint so new premium demos appear
+		// automatically, without requiring a plugin update. Falls back to the
+		// bundled list when the remote list can't be fetched.
+		$demos = $this->get_remote_premium_demos();
+		if ( empty( $demos ) ) {
+			$demos = $this->get_fallback_premium_demos();
+		}
+
 		return array(
 			'inspiro-premium' => array(
 				'name'     => 'Inspiro Premium',
 				'desc'     => 'Below you can view demos available in the Inspiro Premium theme. You can get access to all of them by purchasing the Premium version of the theme.',
 				'purchase' => 'https://www.wpzoom.com/themes/inspiro-lite/upgrade/',
-				'demos'    => array(
+				'demos'    => $demos,
+			),
+		);
+	}
+
+	/**
+	 * Fetch the premium demos list from the remote endpoint, cached for a day.
+	 *
+	 * Returns an empty array on any failure (no connection, non-200, malformed
+	 * JSON) so premium_demos() can fall back to the bundled list.
+	 *
+	 * @return array
+	 */
+	private function get_remote_premium_demos() {
+		$cache_key = 'inspiro_starter_sites_remote_premium_demos';
+		$cached    = get_transient( $cache_key );
+
+		// A cached value (including an empty array from a recent failure) short-circuits.
+		if ( false !== $cached ) {
+			return is_array( $cached ) ? $cached : array();
+		}
+
+		$url = apply_filters(
+			'inspiro_starter_sites/premium_demos_remote_url',
+			'https://www.wpzoom.com/frame/inspiro-starter-sites.json'
+		);
+
+		$response = wp_remote_get( $url, array( 'timeout' => 10 ) );
+
+		if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+			// Cache the failure briefly so we don't hammer the endpoint on every page load.
+			set_transient( $cache_key, array(), HOUR_IN_SECONDS );
+			return array();
+		}
+
+		$data = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( empty( $data['demos'] ) || ! is_array( $data['demos'] ) ) {
+			set_transient( $cache_key, array(), HOUR_IN_SECONDS );
+			return array();
+		}
+
+		$demos = array();
+		foreach ( $data['demos'] as $demo ) {
+			if ( empty( $demo['title'] ) || empty( $demo['demo'] ) ) {
+				continue;
+			}
+			$demos[] = array(
+				'import_file_name'         => sanitize_text_field( $demo['title'] ),
+				'import_preview_image_url' => isset( $demo['image'] ) ? esc_url_raw( $demo['image'] ) : '',
+				'preview_url'              => esc_url_raw( $demo['demo'] ),
+			);
+		}
+
+		// Nothing usable parsed out — fall back rather than caching an empty list for a day.
+		if ( empty( $demos ) ) {
+			set_transient( $cache_key, array(), HOUR_IN_SECONDS );
+			return array();
+		}
+
+		$ttl = apply_filters( 'inspiro_starter_sites/premium_demos_cache_ttl', DAY_IN_SECONDS );
+		set_transient( $cache_key, $demos, $ttl );
+
+		return $demos;
+	}
+
+	/**
+	 * Bundled premium demos list, used as a fallback when the remote list
+	 * is unavailable.
+	 *
+	 * @return array
+	 */
+	private function get_fallback_premium_demos() {
+		return array(
 					array(
 						'import_file_name'         => 'Business / Portfolio',
 						'import_preview_image_url' => 'https://wpzoom.s3.us-east-1.amazonaws.com/elementor/templates/assets/thumbs/inspiro/home-thumb.png',
@@ -651,8 +732,6 @@ class Inspiro_Starter_Sites_Importer_Setup {
 						'import_preview_image_url' => 'https://wpzoom.s3.us-east-1.amazonaws.com/elementor/templates/assets/thumbs/inspiro/inspiro-freelancer/home-thumb.png',
 						'preview_url'              => 'https://demo.wpzoom.com/inspiro-freelancer2/',
 					),
-				),
-			),
 		);
 	}
 
