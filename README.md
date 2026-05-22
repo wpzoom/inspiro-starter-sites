@@ -9,26 +9,33 @@ Import starter templates with Gutenberg Blocks, Elementor, and WooCommerce to cr
 
 ## Description
 
-**Inspiro Starter Sites** is a free plugin designed to simplify the process of building a website with the [Inspiro Lite](https://wordpress.org/themes/inspiro/) theme. It provides access to a library of professionally designed starter templates.
+**Inspiro Starter Sites** is a free plugin designed to simplify the process of building a website with the [Inspiro Lite](https://wordpress.org/themes/inspiro/) theme. It provides access to a library of 19 professionally designed starter templates.
 
 Whether you're creating a blog, an online store, or a portfolio, Inspiro Starter Sites helps you get started with a professional design.
 
 ## Available Demos
 
-| Demo | Type | Preview |
-|------|------|---------|
-| **Gutenberg Blocks** | Blocks | [View Demo](https://demo.wpzoom.com/inspiro-lite-blocks/) |
-| **Elementor** | Elementor | [View Demo](https://demo.wpzoom.com/inspiro-lite/) |
-| **Remix** | Blocks | [View Demo](https://demo.wpzoom.com/inspiro-lite-remix/) |
-| **Persona Lite (Dark)** | Blocks | [View Demo](https://demo.wpzoom.com/inspiro-lite-persona/) |
-| **WooCommerce** | Elementor | [View Demo](https://demo.wpzoom.com/inspiro-lite-woo/) |
-| **Medical** | Elementor | [View Demo](https://demo.wpzoom.com/inspiro-lite-medical/) |
-| **Finance** | Elementor | [View Demo](https://demo.wpzoom.com/inspiro-lite-finance/) |
-| **Food Blog** | Blocks | [View Demo](https://demo.wpzoom.com/inspiro-lite-recipe-blocks/) |
-| **Magazine** | Blocks | [View Demo](https://demo.wpzoom.com/inspiro-lite-magazine/) |
-| **Freelancer (One-page)** | Elementor | [View Demo](https://demo.wpzoom.com/inspiro-lite-freelancer/) |
-| **Freelancer (One-page) #2** | Blocks | [View Demo](https://demo.wpzoom.com/inspiro-lite-freelancer-blocks/) |
-| **Green Energy** | Blocks | [View Demo](https://demo.wpzoom.com/inspiro-lite-green-energy/) |
+| Demo | Preview |
+|------|---------|
+| **Business / Portfolio** | [View Demo](https://demo.wpzoom.com/inspiro-lite-blocks/) |
+| **Business (Elementor)** | [View Demo](https://demo.wpzoom.com/inspiro-lite/) |
+| **Business** | [View Demo](https://inspiro.wpzoom.com/business/) |
+| **Video Production** | [View Demo](https://inspiro.wpzoom.com/video/) |
+| **Green Energy** | [View Demo](https://inspiro.wpzoom.com/energy/) |
+| **Charity / NGO** | [View Demo](https://inspiro.wpzoom.com/charity/) |
+| **Events / Conference** | [View Demo](https://inspiro.wpzoom.com/event/) |
+| **Construction** | [View Demo](https://inspiro.wpzoom.com/construction/) |
+| **Winery** | [View Demo](https://inspiro.wpzoom.com/winery/) |
+| **Gym / Fitness** | [View Demo](https://inspiro.wpzoom.com/fitness/) |
+| **Remix** | [View Demo](https://demo.wpzoom.com/inspiro-lite-remix/) |
+| **Persona Lite (Dark)** | [View Demo](https://demo.wpzoom.com/inspiro-lite-persona/) |
+| **Shop (WooCommerce)** | [View Demo](https://demo.wpzoom.com/inspiro-lite-woo/) |
+| **Medical / Doctor** | [View Demo](https://demo.wpzoom.com/inspiro-lite-medical/) |
+| **Finance / Tech** | [View Demo](https://demo.wpzoom.com/inspiro-lite-finance/) |
+| **Food Blog** | [View Demo](https://demo.wpzoom.com/inspiro-lite-recipe-blocks/) |
+| **Magazine** | [View Demo](https://demo.wpzoom.com/inspiro-lite-magazine/) |
+| **Freelancer (One-page)** | [View Demo](https://demo.wpzoom.com/inspiro-lite-freelancer/) |
+| **Freelancer (One-page) #2** | [View Demo](https://demo.wpzoom.com/inspiro-lite-freelancer-blocks/) |
 
 ## Features
 
