@@ -889,14 +889,67 @@ class InspiroStarterSitesImporter {
 			}
 		}
 
+		// Reset customizer settings so leftovers from the deleted demo
+		// (color scheme, fonts, nav menu locations, etc.) don't persist.
+		$this->reset_customizer_data();
+
 		// Delete the demo ID option.
 		delete_option( 'inspiro_starter_sites_imported_demo_id' );
 
 		// Send a JSON response with success message.
-		wp_send_json_success( 
-			esc_html__( 'Demo data has been deleted successfully.', 'inspiro-starter-sites' ) 
+		wp_send_json_success(
+			esc_html__( 'Demo data has been deleted successfully.', 'inspiro-starter-sites' )
 		);
 
+	}
+
+	/**
+	 * Reset the theme to its defaults after a demo is deleted.
+	 *
+	 * Removes all customizer theme mods, custom CSS, and the front-page /
+	 * demo-layout options set during import — otherwise settings from the
+	 * deleted demo (color scheme, fonts, nav menu locations, etc.) linger
+	 * and bleed into the next demo that doesn't explicitly override them.
+	 *
+	 * @return void
+	 */
+	public function reset_customizer_data() {
+		// Theme mods that should survive the reset. Demos never set these, so
+		// the current value is the user's own setting — wiping it would let it
+		// fall back to a config default that doesn't match the shipped state
+		// (e.g. `hero_enable` defaults to true in config but ships unchecked).
+		$preserve_keys = apply_filters( 'inspiro_starter_sites/preserve_theme_mods', array( 'hero_enable' ) );
+
+		$preserved = array();
+		foreach ( $preserve_keys as $key ) {
+			$value = get_theme_mod( $key, null );
+			if ( null !== $value ) {
+				$preserved[ $key ] = $value;
+			}
+		}
+
+		// Reset all WordPress theme modifications to defaults.
+		remove_theme_mods();
+
+		// Restore the preserved mods.
+		foreach ( $preserved as $key => $value ) {
+			set_theme_mod( $key, $value );
+		}
+
+		// Clear any custom CSS saved through the Customizer.
+		if ( function_exists( 'wp_update_custom_css_post' ) ) {
+			wp_update_custom_css_post( '' );
+		}
+
+		// Undo the static front page / blog page assignment made on import.
+		update_option( 'show_on_front', 'posts' );
+		delete_option( 'page_on_front' );
+		delete_option( 'page_for_posts' );
+
+		// Remove the demo layout body-class flag set in after_import_setup().
+		delete_option( 'inspiro_demo_layout' );
+
+		do_action( 'inspiro_starter_sites/after_reset_customizer_data' );
 	}
 
 	/**
