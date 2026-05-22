@@ -89,6 +89,45 @@ if( isset( $plugin_import_page['parent_slug'] ) && 'inspiro' == $plugin_import_p
         									<p><?php echo wp_kses_post( $import_notice['import_notice'] ); ?></p>
         								</div>
         							<?php endif; ?>
+
+        							<?php
+        								// Warn if a *different* demo was already imported and not deleted —
+        								// importing on top combines content, menus and widgets from both.
+        								$previously_imported_id = get_option( 'inspiro_starter_sites_imported_demo_id', false );
+        								$current_import_id       = isset( $this->import_files[ $_GET['import'] ]['import_id'] )
+        									? $this->import_files[ $_GET['import'] ]['import_id'] : '';
+
+        								if ( $previously_imported_id && $previously_imported_id !== $current_import_id ) :
+        									$previous_name  = $previously_imported_id;
+        									$previous_index = null;
+        									foreach ( $this->import_files as $prev_i => $prev_file ) {
+        										if ( isset( $prev_file['import_id'] ) && $prev_file['import_id'] === $previously_imported_id ) {
+        											$previous_name  = $prev_file['import_file_name'];
+        											$previous_index = $prev_i;
+        											break;
+        										}
+        									}
+        									$previous_delete_url = ( null !== $previous_index )
+        										? wp_nonce_url( $this->get_plugin_settings_url( [ 'step' => 'delete_import', 'imported_demo' => esc_attr( $previous_index ) ] ), 'importer_step' )
+        										: '';
+        								?>
+        								<div class="notice notice-warning inspiro-starter-sites-previous-demo-notice">
+        									<p>
+        										<?php
+        										printf(
+        											/* translators: %s: name of the previously imported demo. */
+        											wp_kses_post( __( 'The <strong>%s</strong> demo is already imported. Importing another demo without deleting it first will combine content, menus and widgets from both demos. We recommend deleting the previous demo first.', 'inspiro-starter-sites' ) ),
+        											esc_html( $previous_name )
+        										);
+        										?>
+        									</p>
+        									<?php if ( $previous_delete_url ) : ?>
+        										<p>
+        											<a href="<?php echo esc_url( $previous_delete_url ); ?>" class="button"><?php esc_html_e( 'Delete Previous Demo First', 'inspiro-starter-sites' ); ?></a>
+        										</p>
+        									<?php endif; ?>
+        								</div>
+        							<?php endif; ?>
         						</div>
 
         						<?php if( ! $is_theme_active ) : ?>
