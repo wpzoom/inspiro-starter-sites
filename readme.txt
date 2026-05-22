@@ -2,10 +2,10 @@
 Contributors: 		WPZOOM
 Donate link:		http://paypal.me/wpzm/10usd
 Author URI:			https://www.wpzoom.com/  
-Requires at least: 	6.4
-Tested up to: 		6.9
+Requires at least: 	6.5
+Tested up to: 		7.0
 Requires PHP: 		7.4  
-Stable tag: 		1.0.15
+Stable tag: 		1.1.0
 License: 			GPLv2 or later  
 License URI: 		https://www.gnu.org/licenses/gpl-2.0.html
 Tags: 				starter templates, Gutenberg, Elementor, WooCommerce
@@ -14,15 +14,23 @@ Import starter templates with Gutenberg Blocks, Elementor, and WooCommerce to cr
 
 == Description ==
 
-**Inspiro Starter Sites** is a free plugin designed to simplify the process of building a website with the [Inspiro](https://wordpress.org/themes/inspiro/) theme. It provides access to a library of professionally designed starter templates for:
+**Inspiro Starter Sites** is a free plugin designed to simplify the process of building a website with the [Inspiro](https://wordpress.org/themes/inspiro/) theme. It provides access to a library of 19 professionally designed starter templates:
 
-- **Gutenberg Blocks** | [View Demo](https://demo.wpzoom.com/inspiro-lite-blocks/)
-- **Elementor** | [View Demo](https://demo.wpzoom.com/inspiro-lite/)
+- **Business / Portfolio** | [View Demo](https://demo.wpzoom.com/inspiro-lite-blocks/)
+- **Business (Elementor)** | [View Demo](https://demo.wpzoom.com/inspiro-lite/)
+- **Business** | [View Demo](https://inspiro.wpzoom.com/business/)
+- **Video Production** | [View Demo](https://inspiro.wpzoom.com/video/)
+- **Green Energy** | [View Demo](https://inspiro.wpzoom.com/energy/)
+- **Charity / NGO** | [View Demo](https://inspiro.wpzoom.com/charity/)
+- **Events / Conference* | [View Demo](https://inspiro.wpzoom.com/event/)
+- **Construction* | [View Demo](https://inspiro.wpzoom.com/construction/)
+- **Winery* | [View Demo](https://inspiro.wpzoom.com/winery/)
+- **Gym / Fitness* | [View Demo](https://inspiro.wpzoom.com/fitness/)
 - **Remix** | [View Demo](https://demo.wpzoom.com/inspiro-lite-remix/)
 - **Persona Lite (Dark)** | [View Demo](https://demo.wpzoom.com/inspiro-lite-persona/)
-- **WooCommerce** | [View Demo](https://demo.wpzoom.com/inspiro-lite-woo/)
-- **Medical** | [View Demo](https://demo.wpzoom.com/inspiro-lite-medical/)
-- **Finance** | [View Demo](https://demo.wpzoom.com/inspiro-lite-finance/)
+- **Shop (WooCommerce)** | [View Demo](https://demo.wpzoom.com/inspiro-lite-woo/)
+- **Medical / Doctor** | [View Demo](https://demo.wpzoom.com/inspiro-lite-medical/)
+- **Finance / Tech** | [View Demo](https://demo.wpzoom.com/inspiro-lite-finance/)
 - **Food Blog** | [View Demo](https://demo.wpzoom.com/inspiro-lite-recipe-blocks/)
 - **Magazine** | [View Demo](https://demo.wpzoom.com/inspiro-lite-magazine/)
 - **Freelancer (One-page)** | [View Demo](https://demo.wpzoom.com/inspiro-lite-freelancer/)
@@ -87,8 +95,9 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 
 == Changelog ==
 
-= 1.0.15 =
-* New demo: Business
+= 1.1.0 =
+* New demos: Business, Charity, Events, Construction, Winery, Gym
+* Multiple improvements & fixes
 
 = 1.0.14 =
 * Minor bug fixes
