@@ -75,7 +75,7 @@ git clone https://github.com/wpzoom/inspiro-starter-sites.git
 
 ## Requirements
 
-- WordPress 6.0 or higher
+- WordPress 6.5 or higher
 - PHP 7.4 or higher
 - [Inspiro Lite](https://wordpress.org/themes/inspiro/) theme (recommended)
 
@@ -92,6 +92,58 @@ Templates built for Elementor or WooCommerce require these plugins to be install
 
 ### Can I customize the imported templates?
 Yes, all templates can be customized using either Gutenberg or Elementor, depending on the selected template.
+
+## Changelog
+
+### 1.1.0
+- New demos: Business, Charity, Events, Construction, Winery, Gym
+- Multiple improvements & fixes
+
+### 1.0.14
+- Minor bug fixes
+
+### 1.0.13
+- New demo: Video Production
+
+### 1.0.12
+- Minor bug fix
+
+### 1.0.11
+- New demo: Green Energy
+
+### 1.0.10
+- Detect & suggest to remove default starter content in Inspiro Lite
+
+### 1.0.9
+- New demo: Remix
+
+### 1.0.8
+- Minor bug fixes
+
+### 1.0.7
+- New demo: Persona Lite (Dark)
+
+### 1.0.6
+- New demo: Magazine
+
+### 1.0.5
+- New demo: Food Blog (Lite)
+
+### 1.0.4
+- New demo: Finance Lite
+- Minor bug fixes
+
+### 1.0.3
+- New demos
+
+### 1.0.2
+- Bug fixes
+
+### 1.0.1
+- Bug fixes
+
+### 1.0.0
+- Initial release
 
 ## Contributing
 
