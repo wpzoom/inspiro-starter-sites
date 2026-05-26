@@ -180,25 +180,26 @@ class Inspiro_Starter_Sites_Importer_Setup {
 	 */
 	private function demo_plugins() {
 		return [
-			'inspiro-lite-blocks'          => [ 'wpzoom-video-popup-block', 'wpzoom-portfolio' ],
-			'inspiro-lite'                 => [ 'elementor', 'wpzoom-elementor-addons', 'wpzoom-portfolio' ],
-			'inspiro-lite-woo'             => [ 'woocommerce' ],
-			'inspiro-lite-medical'         => [ 'icon-block' ],
-			'inspiro-lite-finance'         => [ 'icon-block' ],
-			'inspiro-lite-freelancer'      => [ 'wpzoom-portfolio', 'icon-block' ],
-			'inspiro-lite-freelancer-grey' => [ 'wpzoom-portfolio', 'icon-block' ],
-			'inspiro-lite-persona'         => [ 'wpzoom-portfolio', 'icon-block' ],
-			'inspiro-lite-remix'           => [ 'wpzoom-portfolio', 'icon-block' ],
-			'inspiro-lite-recipe-blocks'   => [ 'recipe-card-blocks-by-wpzoom' ],
-			'inspiro-lite-magazine'        => [ 'makeiteasy-slider' ],
-			'inspiro-lite-energy'          => [ 'slider-block', 'wpzoom-portfolio', 'icon-block' ],
-			'inspiro-lite-video'           => [ 'slider-block', 'wpzoom-portfolio', 'wpzoom-video-popup-block', 'icon-block' ],
-			'inspiro-lite-business'        => [ 'wpzoom-portfolio', 'social-icons-widget-by-wpzoom', 'icon-block' ],
-			'inspiro-lite-charity'         => [ 'wpzoom-portfolio', 'social-icons-widget-by-wpzoom', 'carousel-block' ],
-			'inspiro-lite-events'          => [ 'social-icons-widget-by-wpzoom' ],
-			'inspiro-lite-construction'    => [ 'social-icons-widget-by-wpzoom' ],
-			'inspiro-lite-winery'    	   => [ 'social-icons-widget-by-wpzoom' ],
-			'inspiro-lite-fitness'		   => [ 'social-icons-widget-by-wpzoom' ],
+			'inspiro-lite-blocks'         		 => [ 'wpzoom-video-popup-block', 'wpzoom-portfolio' ],
+			'inspiro-lite'                		 => [ 'elementor', 'wpzoom-elementor-addons', 'wpzoom-portfolio' ],
+			'inspiro-lite-woo'            		 => [ 'woocommerce' ],
+			'inspiro-lite-medical'        		 => [ 'icon-block' ],
+			'inspiro-lite-finance'        		 => [ 'icon-block' ],
+			'inspiro-lite-freelancer'     		 => [ 'wpzoom-portfolio', 'icon-block' ],
+			'inspiro-lite-freelancer-grey'		 => [ 'wpzoom-portfolio', 'icon-block' ],
+			'inspiro-lite-persona'        		 => [ 'wpzoom-portfolio', 'icon-block' ],
+			'inspiro-lite-remix'          		 => [ 'wpzoom-portfolio', 'icon-block' ],
+			'inspiro-lite-recipe-blocks'  		 => [ 'recipe-card-blocks-by-wpzoom' ],
+			'inspiro-lite-magazine'       		 => [ 'makeiteasy-slider' ],
+			'inspiro-lite-energy'         		 => [ 'slider-block', 'wpzoom-portfolio', 'icon-block' ],
+			'inspiro-lite-video'          		 => [ 'slider-block', 'wpzoom-portfolio', 'wpzoom-video-popup-block', 'icon-block' ],
+			'inspiro-lite-business'       		 => [ 'wpzoom-portfolio', 'social-icons-widget-by-wpzoom', 'icon-block' ],
+			'inspiro-lite-business-elementor'    => [ 'wpzoom-portfolio', 'social-icons-widget-by-wpzoom', 'icon-block' ],
+			'inspiro-lite-charity'         		 => [ 'wpzoom-portfolio', 'social-icons-widget-by-wpzoom', 'carousel-block' ],
+			'inspiro-lite-events'          		 => [ 'social-icons-widget-by-wpzoom' ],
+			'inspiro-lite-construction'    		 => [ 'social-icons-widget-by-wpzoom' ],
+			'inspiro-lite-winery'    	  		 => [ 'social-icons-widget-by-wpzoom' ],
+			'inspiro-lite-fitness'		   		 => [ 'social-icons-widget-by-wpzoom' ],
 		];
 	}
 
@@ -226,12 +227,22 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			],
 			[	
 				'import_id'                  => 'inspiro-lite-business',
-				'import_file_name'           => 'Business',
+				'import_file_name'           => 'Business (Block Editor)',
 				'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-business.xml',
                 'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-business.wie',
                 'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-business.dat',
 				'import_preview_image_url'   => $demos_preview_url .  'business.png',
 				'preview_url'                => 'https://inspiro.wpzoom.com/business/',
+				'is_new'                     => true,
+			],
+			[	
+				'import_id'                  => 'inspiro-lite-business-elementor',
+				'import_file_name'           => 'Business (Elementor)',
+				'import_file_url'          	 => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-business-elementor.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-business-elementor.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-business-elementor.dat',
+				'import_preview_image_url'   => $demos_preview_url .  'business-elementor.png',
+				'preview_url'                => 'https://inspiro.wpzoom.com/business-elementor/',
 				'is_new'                     => true,
 			],
 			[	
@@ -807,6 +818,10 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			if ( ! empty( $demo_layout ) ) {
 				update_option( 'inspiro_demo_layout', $demo_layout );
 			}
+		}
+
+		if ( did_action( 'elementor/loaded' ) ) {
+			\Elementor\Plugin::$instance->files_manager->clear_cache();
 		}
 
 	}
