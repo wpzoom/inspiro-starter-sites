@@ -10,6 +10,114 @@ jQuery( function ( $ ) {
 	// Move the admin notices inside the appropriate div.
 	$( '.js-inspiro-starter-sites-notice-wrapper' ).appendTo( '.js-inspiro-starter-sites-admin-notices-container' );
 
+	// Filter the free starter sites by editor type + category. State for the
+	// two filter rows lives on `demoFilterState` so each handler can read both.
+	var demoFilterState  = { type: 'all', category: 'all' };
+	var FILTER_OUT_MS    = 320;
+	var FILTER_STAGGER   = 22;
+
+	function applyDemoFilters() {
+		var $items = $( '.step-choose-design > form > ul > li[data-type]' );
+
+		// First pass: figure out which items match the active filters.
+		var toShow = [];
+		var toHide = [];
+		$items.each( function () {
+			var $item     = $( this );
+			var itemType  = String( $item.data( 'type' ) || '' );
+			var rawCats   = String( $item.attr( 'data-categories' ) || '' );
+			var itemCats  = rawCats ? rawCats.split( /\s+/ ) : [];
+			var typeMatch = 'all' === demoFilterState.type || itemType === demoFilterState.type;
+			var catMatch  = 'all' === demoFilterState.category || itemCats.indexOf( demoFilterState.category ) !== -1;
+
+			if ( typeMatch && catMatch ) {
+				toShow.push( $item );
+			} else {
+				toHide.push( $item );
+			}
+		} );
+
+		// Fade-out pass — already-hidden items skip the transition.
+		$.each( toHide, function ( _, $item ) {
+			if ( 'none' === $item.css( 'display' ) ) {
+				return;
+			}
+			$item.addClass( 'is-filtering-out' );
+		} );
+
+		// After the fade-out finishes, collapse out-of-view items and then
+		// stagger the fade-in for the new set so the grid feels like it
+		// shuffles in instead of popping.
+		window.setTimeout( function () {
+			$.each( toHide, function ( _, $item ) {
+				if ( $item.hasClass( 'is-filtering-out' ) ) {
+					$item.css( 'display', 'none' );
+				}
+			} );
+
+			$.each( toShow, function ( index, $item ) {
+				var wasHidden = 'none' === $item.css( 'display' );
+				$item.removeClass( 'is-filtering-out' );
+
+				if ( wasHidden ) {
+					$item.addClass( 'is-filtering-in' ).css( 'display', '' );
+					// Two rAFs guarantee the browser paints the starting state
+					// before we transition to the resting state.
+					window.requestAnimationFrame( function () {
+						window.requestAnimationFrame( function () {
+							window.setTimeout( function () {
+								$item.removeClass( 'is-filtering-in' );
+							}, index * FILTER_STAGGER );
+						} );
+					} );
+				}
+			} );
+		}, toHide.length ? FILTER_OUT_MS : 0 );
+
+		// Refresh visible counts on category buttons to reflect the active editor type.
+		var typeKey = 'count-' + ( demoFilterState.type === 'all' ? 'all' : demoFilterState.type );
+		$( '.inspiro-starter-sites-demo-category' ).each( function () {
+			var $btn   = $( this );
+			var $count = $btn.find( '.inspiro-starter-sites-demo-category__count' );
+			if ( ! $count.length ) {
+				return;
+			}
+			var value = parseInt( $count.attr( 'data-' + typeKey ), 10 );
+			if ( isNaN( value ) ) {
+				value = 0;
+			}
+			$count.text( value );
+
+			// Hide categories that have zero items under the active type, except the "all" pill.
+			if ( 'all' !== $btn.data( 'category' ) ) {
+				$btn.closest( 'li' ).toggleClass( 'is-cat-hidden', value <= 0 );
+			}
+		} );
+	}
+
+	$( '.inspiro-starter-sites-demo-filter' ).on( 'click', '.inspiro-starter-sites-demo-filter-btn', function () {
+		var $btn = $( this );
+		$btn.siblings( '.inspiro-starter-sites-demo-filter-btn' )
+			.removeClass( 'is-active' )
+			.attr( 'aria-pressed', 'false' );
+		$btn.addClass( 'is-active' ).attr( 'aria-pressed', 'true' );
+
+		demoFilterState.type = String( $btn.data( 'filter' ) );
+		applyDemoFilters();
+	} );
+
+	$( '.inspiro-starter-sites-demo-categories' ).on( 'click', '.inspiro-starter-sites-demo-category', function () {
+		var $btn = $( this );
+		$btn.closest( '.inspiro-starter-sites-demo-categories' )
+			.find( '.inspiro-starter-sites-demo-category' )
+			.removeClass( 'is-active' )
+			.attr( 'aria-pressed', 'false' );
+		$btn.addClass( 'is-active' ).attr( 'aria-pressed', 'true' );
+
+		demoFilterState.category = String( $btn.data( 'category' ) );
+		applyDemoFilters();
+	} );
+
 	/**
 	 * ---------------------------------------
 	 * ------------- Events ------------------
