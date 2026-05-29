@@ -1504,40 +1504,64 @@ body:not(.inspiro_page_inspiro-demo) #wpcontent {
 }
 
 
-/* "Suggest a new demo" — button + feedback survey modal. */
-.inspiro-starter-sites-demo-suggest {
-	margin: 2px 0 24px;
+/* "Suggest a new demo" — placeholder tile (last item in the demo grid) + modal. */
+.inspiro-starter-sites-demo-suggest-card {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex; // stretch the tile to the grid row height
 }
 
-.inspiro-starter-sites-demo-suggest-btn {
-	display: inline-flex;
+.inspiro-starter-sites-demo-suggest-tile {
+	appearance: none;
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
 	align-items: center;
-	gap: 8px;
-	padding: 10px 18px;
-	border: 1.5px dashed #c7ccd4;
-	border-radius: 999px;
-	background: #ffffff;
-	color: #1d1d1f;
-	font-size: 14px;
-	font-weight: 600;
+	justify-content: center;
+	gap: 10px;
+	width: 100%;
+	min-height: 220px;
+    max-height: 68.5%;
+	padding: 28px 24px;
+	border: 2px dashed #c7ccd4;
+	border-radius: 8px;
+	background: rgba(36, 38, 40, 0.015);
+	color: #6b7280;
 	cursor: pointer;
+	text-align: center;
 	transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 
 	&__icon {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 20px;
-		height: 20px;
+		width: 46px;
+		height: 46px;
 		border-radius: 50%;
 		background: #1d1d1f;
 		color: #ffffff;
-		font-size: 16px;
+		font-size: 28px;
 		line-height: 1;
+	}
+
+	&__label {
+		font-size: 15px;
+		font-weight: 700;
+		color: #1d1d1f;
+	}
+
+	&__hint {
+		font-size: 13px;
+		line-height: 1.4;
+		color: #8a8f98;
+		max-width: 210px;
 	}
 
 	&:hover {
 		border-color: #1d1d1f;
+		color: #1d1d1f;
+		background: rgba(36, 38, 40, 0.04);
 	}
 }
 
@@ -1602,9 +1626,9 @@ body.iss-feedback-open {
 }
 
 .iss-feedback-intro {
-	margin: 0 0 16px;
-	color: #6b7280;
-	font-size: 14px;
+	margin: 0 0 16px !important;
+	color: #6b7280 !important;
+	font-size: 14px !important;
 }
 
 .iss-feedback-progress {
@@ -1673,9 +1697,9 @@ body.iss-feedback-open {
 }
 
 .iss-feedback-hint {
-	margin: 8px 0 0;
-	color: #8a8f98;
-	font-size: 12.5px;
+	margin: 8px 0 !important;
+	color: #8a8f98 !important;
+	font-size: 12.5px !important;
 }
 
 .iss-feedback-nps {

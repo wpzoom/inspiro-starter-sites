@@ -242,11 +242,18 @@ class InspiroStarterSitesImporter {
 
 		if ( $this->plugin_page === $hook || 'inspiro_page_inspiro-demo' == $hook ) {
 			
-			wp_enqueue_script( 
-				'inspiro-starter-sites-importer-js', 
-				INSPIRO_STARTER_SITES_URL . 'components/importer/assets/js/importer.js', 
-				array( 'jquery' ), 
-				INSPIRO_STARTER_SITES_VERSION
+			// Cache-bust on file modification time so recompiled assets are
+			// always picked up (falls back to the plugin version).
+			$js_path  = INSPIRO_STARTER_SITES_PATH . 'components/importer/assets/js/importer.js';
+			$css_path = INSPIRO_STARTER_SITES_PATH . 'components/importer/assets/css/importer.css';
+			$js_ver   = file_exists( $js_path ) ? filemtime( $js_path ) : INSPIRO_STARTER_SITES_VERSION;
+			$css_ver  = file_exists( $css_path ) ? filemtime( $css_path ) : INSPIRO_STARTER_SITES_VERSION;
+
+			wp_enqueue_script(
+				'inspiro-starter-sites-importer-js',
+				INSPIRO_STARTER_SITES_URL . 'components/importer/assets/js/importer.js',
+				array( 'jquery' ),
+				$js_ver
 			);
 
 			// Get theme data.
@@ -339,11 +346,11 @@ class InspiroStarterSitesImporter {
 				)
 			);
 
-			wp_enqueue_style( 
-				'inspiro-starter-sites-importer-css', 
-				INSPIRO_STARTER_SITES_URL . 'components/importer/assets/css/importer.css', 
-				array(), 
-				INSPIRO_STARTER_SITES_VERSION 
+			wp_enqueue_style(
+				'inspiro-starter-sites-importer-css',
+				INSPIRO_STARTER_SITES_URL . 'components/importer/assets/css/importer.css',
+				array(),
+				$css_ver
 			);
 		}
 	}

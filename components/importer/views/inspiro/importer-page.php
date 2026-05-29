@@ -195,12 +195,6 @@ $platform_labels = array(
 			<?php endforeach; ?>
 		</ul>
 	<?php endif; ?>
-	<div class="inspiro-starter-sites-demo-suggest">
-		<button type="button" class="inspiro-starter-sites-demo-suggest-btn js-inspiro-starter-sites-suggest-demo">
-			<span class="inspiro-starter-sites-demo-suggest-btn__icon" aria-hidden="true">+</span>
-			<span><?php esc_html_e( 'Suggest a new demo', 'inspiro-starter-sites' ); ?></span>
-		</button>
-	</div>
 </div>
 
 <div class="inspiro-starter-sites-feedback-root js-inspiro-starter-sites-feedback-root" hidden></div>
@@ -375,6 +369,13 @@ $platform_labels = array(
 					</li>
 					<?php endif; ?>
 				<?php endforeach; ?>
+					<li class="inspiro-starter-sites-demo-suggest-card">
+						<button type="button" class="inspiro-starter-sites-demo-suggest-tile js-inspiro-starter-sites-suggest-demo">
+							<span class="inspiro-starter-sites-demo-suggest-tile__icon" aria-hidden="true">+</span>
+							<span class="inspiro-starter-sites-demo-suggest-tile__label"><?php esc_html_e( 'Suggest a new demo', 'inspiro-starter-sites' ); ?></span>
+							<span class="inspiro-starter-sites-demo-suggest-tile__hint"><?php esc_html_e( 'Tell us what you would like us to build next', 'inspiro-starter-sites' ); ?></span>
+						</button>
+					</li>
 			</ul>
 		</form>
 	</li>
