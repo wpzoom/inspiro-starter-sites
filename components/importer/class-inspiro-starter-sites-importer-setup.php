@@ -216,6 +216,8 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'import_preview_image_url'   => $demos_preview_url . 'inspiro-lite-block.png',
 				'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-blocks/',
 				'type'                       => 'blocks',
+				'group'                      => 'business-portfolio',
+				'group_label'                => 'Business / Portfolio',
 				'categories'                 => [ 'business', 'portfolio' ],
 			],
 			[
@@ -227,6 +229,8 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'import_preview_image_url'   => $demos_preview_url .  'inspiro-lite-elementor-1.png',
 				'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite/',
 				'type'                       => 'elementor',
+				'group'                      => 'business-portfolio',
+				'group_label'                => 'Business / Portfolio',
 				'categories'                 => [ 'business', 'portfolio' ],
 			],
 			[
@@ -237,6 +241,9 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-business.dat',
 				'import_preview_image_url'   => $demos_preview_url .  'business.png',
 				'preview_url'                => 'https://inspiro.wpzoom.com/business/',
+				'type'                       => 'blocks',
+				'group'                      => 'business',
+				'group_label'                => 'Business',
 				'is_new'                     => true,
 				'categories'                 => [ 'business' ],
 			],
@@ -249,7 +256,10 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'import_preview_image_url'   => $demos_preview_url .  'business-elementor.png',
 				'preview_url'                => 'https://inspiro.wpzoom.com/business-elementor/',
                 'type'                       => 'elementor',
+				'group'                      => 'business',
+				'group_label'                => 'Business',
 				'is_new'                     => true,
+				'categories'                 => [ 'business' ],
 			],
 			[	
 				'import_id'                  => 'inspiro-lite-woo',
@@ -259,6 +269,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-woo.dat',
 				'import_preview_image_url'   => $demos_preview_url .  'inspiro-lite-woo.png',
 				'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-woo/',
+				'platform'                   => 'woocommerce',
 				'categories'                 => [ 'woocommerce' ],
 			],
             [

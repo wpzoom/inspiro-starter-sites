@@ -268,21 +268,15 @@ body:not(.inspiro_page_inspiro-demo) #wpcontent {
 	}
 
 	&-demo-categories {
-		column-count: 6;
-		column-gap: 32px;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+		gap: 0 32px;
 		list-style: none;
 		margin: 0 0 28px;
 		padding: 0;
 
-		@media (max-width: 1500px) { column-count: 5; }
-		@media (max-width: 1200px) { column-count: 4; }
-		@media (max-width: 900px)  { column-count: 3; }
-		@media (max-width: 600px)  { column-count: 2; }
-
 		li {
-			break-inside: avoid;
-			page-break-inside: avoid;
-			-webkit-column-break-inside: avoid;
 			margin: 0 0 10px;
 			padding: 0;
 
@@ -334,7 +328,7 @@ body:not(.inspiro_page_inspiro-demo) #wpcontent {
 
 	&-demo-availability {
 		display: flex;
-		align-items: center;
+		align-items: center !important;
 		gap: 10px;
 		margin: 6px 0 16px;
 		color: #6b7280;
@@ -357,6 +351,7 @@ body:not(.inspiro_page_inspiro-demo) #wpcontent {
 				display: block;
 				width: 100%;
 				height: 100%;
+                margin-left: 2px !important;
 			}
 
 			// Block Editor: the glyph uses currentColor, so render it white
@@ -374,10 +369,87 @@ body:not(.inspiro_page_inspiro-demo) #wpcontent {
 				border-radius: 50%;
 				overflow: hidden;
 			}
+
+			// WooCommerce: a horizontal wordmark, not a circular glyph.
+			&--woocommerce {
+				width: auto;
+				height: 16px;
+
+				svg {
+					width: auto;
+				}
+			}
+		}
+	}
+
+	// Segmented Block Editor / Elementor toggle on grouped demo cards.
+	&-demo-variants {
+		display: inline-flex;
+		gap: 4px;
+		margin: 6px 0 14px;
+		padding: 4px;
+		background: #f1f2f4;
+		border-radius: 999px;
+	}
+
+	&-demo-variant-btn {
+		appearance: none;
+		border: 0;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 6px 14px;
+		border-radius: 999px;
+		background: transparent;
+		color: #6b7280;
+		font-size: 13px;
+		font-weight: 500;
+		line-height: 1;
+		transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+
+		&__icon {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 18px;
+			height: 18px;
+
+			svg {
+				display: block;
+				width: 100%;
+				height: 100%;
+			}
+		}
+
+		&:hover {
+			color: #1d1d1f;
+		}
+
+		&:focus-visible {
+			outline: 2px solid rgba(34, 113, 177, 0.4);
+			outline-offset: 2px;
+		}
+
+		&.is-active {
+			background: #ffffff;
+			color: #1d1d1f;
+			box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+		}
+
+		// Keep the Elementor brand colour on its glyph when active.
+		&--elementor.is-active {
+			color: #b6224c;
 		}
 	}
 
 	.wpz-onboard_content-main-step.step-choose-design {
+
+        form ul li figure .preview-thumbnail {
+            padding-top: 118.5% !important;
+        }
+
+
 		.preview-thumbnail.inspiro-starter-sites-import .inspiro-starter-sites-demo-badges {
 			position: absolute;
 			top: 14px;

@@ -24,13 +24,18 @@ jQuery( function ( $ ) {
 		var toHide = [];
 		$items.each( function () {
 			var $item     = $( this );
-			var itemType  = String( $item.data( 'type' ) || '' );
+			var rawType   = String( $item.attr( 'data-type' ) || '' );
+			var itemTypes = rawType ? rawType.split( /\s+/ ) : [];
 			var rawCats   = String( $item.attr( 'data-categories' ) || '' );
 			var itemCats  = rawCats ? rawCats.split( /\s+/ ) : [];
-			var typeMatch = 'all' === demoFilterState.type || itemType === demoFilterState.type;
+			var typeMatch = 'all' === demoFilterState.type || itemTypes.indexOf( demoFilterState.type ) !== -1;
 			var catMatch  = 'all' === demoFilterState.category || itemCats.indexOf( demoFilterState.category ) !== -1;
 
 			if ( typeMatch && catMatch ) {
+				// When filtering by a specific editor, flip grouped cards to that variant.
+				if ( 'all' !== demoFilterState.type && itemTypes.length > 1 ) {
+					switchCardVariant( $item, demoFilterState.type );
+				}
 				toShow.push( $item );
 			} else {
 				toHide.push( $item );
@@ -116,6 +121,46 @@ jQuery( function ( $ ) {
 
 		demoFilterState.category = String( $btn.data( 'category' ) );
 		applyDemoFilters();
+	} );
+
+	/**
+	 * Switch a grouped demo card to a given editor variant (blocks/elementor),
+	 * updating the toggle state, thumbnail, "View Demo" link, New badge and the
+	 * active Import button.
+	 */
+	function switchCardVariant( $card, variant ) {
+		var $btn = $card.find( '.inspiro-starter-sites-demo-variant-btn[data-variant="' + variant + '"]' );
+		if ( ! $btn.length || $btn.hasClass( 'is-active' ) ) {
+			return;
+		}
+
+		$card.find( '.inspiro-starter-sites-demo-variant-btn' )
+			.removeClass( 'is-active' )
+			.attr( 'aria-pressed', 'false' );
+		$btn.addClass( 'is-active' ).attr( 'aria-pressed', 'true' );
+
+		var img = $btn.data( 'img' );
+		if ( img ) {
+			$card.find( '.js-inspiro-starter-sites-variant-thumb' ).css( 'background-image', "url('" + img + "')" );
+		}
+
+		var preview = $btn.data( 'preview' );
+		if ( preview ) {
+			$card.find( '.js-inspiro-starter-sites-variant-preview' ).attr( 'href', preview );
+		}
+
+		$card.find( '.js-inspiro-starter-sites-variant-new' ).toggle( String( $btn.data( 'is-new' ) ) === '1' );
+
+		$card.find( '.js-inspiro-starter-sites-variant-action' )
+			.hide()
+			.filter( '[data-variant="' + variant + '"]' )
+			.show();
+
+		$card.attr( 'data-active-variant', variant );
+	}
+
+	$( '.step-choose-design' ).on( 'click', '.inspiro-starter-sites-demo-variant-btn', function () {
+		switchCardVariant( $( this ).closest( 'li' ), String( $( this ).data( 'variant' ) ) );
 	} );
 
 	/**
