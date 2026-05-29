@@ -248,6 +248,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-business-elementor.dat',
 				'import_preview_image_url'   => $demos_preview_url .  'business-elementor.png',
 				'preview_url'                => 'https://inspiro.wpzoom.com/business-elementor/',
+                'type'                       => 'elementor',
 				'is_new'                     => true,
 			],
 			[	

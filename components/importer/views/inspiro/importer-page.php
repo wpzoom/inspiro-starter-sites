@@ -140,6 +140,21 @@ $total_demos = count( $predefined_themes );
 						<figcaption>
 							<h5><?php echo esc_html( $import_file['import_file_name'] ); ?></h5>
 
+							<p class="inspiro-starter-sites-demo-availability">
+								<span class="inspiro-starter-sites-demo-availability__label"><?php esc_html_e( 'Available for', 'inspiro-starter-sites' ); ?></span>
+								<?php if ( 'elementor' === $demo_type ) : ?>
+									<span class="inspiro-starter-sites-demo-availability__icon inspiro-starter-sites-demo-availability__icon--elementor" title="<?php esc_attr_e( 'Elementor', 'inspiro-starter-sites' ); ?>" aria-hidden="true">
+										<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" focusable="false"><circle cx="16" cy="16" r="16" fill="#B6224C"/><rect x="10" y="9.5" width="2.4" height="13" rx="0.4" fill="#fff"/><rect x="14.6" y="9.5" width="7.4" height="2.4" rx="0.4" fill="#fff"/><rect x="14.6" y="14.8" width="7.4" height="2.4" rx="0.4" fill="#fff"/><rect x="14.6" y="20.1" width="7.4" height="2.4" rx="0.4" fill="#fff"/></svg>
+									</span>
+									<span class="screen-reader-text"><?php esc_html_e( 'Elementor', 'inspiro-starter-sites' ); ?></span>
+								<?php else : ?>
+									<span class="inspiro-starter-sites-demo-availability__icon inspiro-starter-sites-demo-availability__icon--blocks" title="<?php esc_attr_e( 'Block Editor', 'inspiro-starter-sites' ); ?>" aria-hidden="true">
+										<svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15.3194 6.26524C15.5486 5.92364 16.0111 5.83121 16.349 6.06028C16.7029 6.28935 16.7954 6.7515 16.53 7.08506C15.4682 8.68452 13.787 9.3637 12.5523 9.66108L12.5121 13.9169C12.307 15.1105 11.7117 16.075 10.7063 16.8064C9.60427 17.6062 8.23683 18 6.57981 18C4.61311 18 3.02447 17.349 1.8179 16.063C0.611332 14.777 0 13.0529 0 10.8989H0.0120664L0 7.08908C0 6.95244 0.0120664 6.81982 0.0120664 6.68318C0.0804385 4.73007 0.679705 3.14266 1.8179 1.93704C3.02447 0.651036 4.61311 0 6.57981 0C8.23683 0 9.60427 0.393835 10.7022 1.2016C11.8002 2.00134 12.4116 3.05827 12.5483 4.40053V4.49699C12.5483 5.01139 12.126 5.43335 11.6112 5.43335C11.0964 5.43335 10.6741 5.01139 10.6741 4.49699V4.40053C10.6057 3.50435 10.1995 2.81313 9.47959 2.31078C8.75967 1.80844 7.79844 1.55124 6.61601 1.55124C5.20432 1.55124 4.06613 2.03751 3.1974 3.00201C2.39302 3.88212 1.97475 5.11587 1.90638 6.67515L1.89431 10.9069C1.89431 12.6711 2.32867 14.0375 3.1974 15.002C4.05004 15.9665 5.20432 16.4528 6.61601 16.4528C7.79844 16.4528 8.75967 16.1956 9.47959 15.6932C10.1754 15.207 10.5655 14.5559 10.662 13.7281V9.89015C8.28911 10.0228 7.36408 12.0844 7.35201 12.1125C7.22733 12.3979 6.95787 12.5586 6.67231 12.5586C6.57981 12.5586 6.47122 12.5305 6.37469 12.4903C6.0087 12.3255 5.83576 11.8915 5.99664 11.5137C6.04892 11.3932 7.39223 8.39518 10.9074 8.39518H10.9757C11.1245 8.39518 13.9761 8.28667 15.3194 6.26524Z" fill="currentColor"/></svg>
+									</span>
+									<span class="screen-reader-text"><?php esc_html_e( 'Block Editor', 'inspiro-starter-sites' ); ?></span>
+								<?php endif; ?>
+							</p>
+
 							<?php
 								$step_url        =  wp_nonce_url( $this->get_plugin_settings_url( [ 'step' => 'import', 'import' => esc_attr( $index ) ] ), 'importer_step' );
 								$delete_step_url = wp_nonce_url( $this->get_plugin_settings_url( [ 'step' => 'delete_import', 'imported_demo' => esc_attr( $index ) ] ), 'importer_step' );

@@ -24,6 +24,7 @@ composer.json
 composer.lock
 dependencies.yml
 Gruntfile.js
+gulpfile.js
 package.json
 package-lock.json
 phpunit.xml

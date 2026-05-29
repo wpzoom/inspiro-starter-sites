@@ -11,59 +11,23 @@ const gulp = require( 'gulp' ),
 	sourcemaps = require( 'gulp-sourcemaps' ),
 	rename = require( 'gulp-rename' ),
 	uglify = require( 'gulp-uglify' ),
-	copy = require( 'gulp-copy' ),
 	readme = require( 'gulp-readme-to-markdown' ),
 	replace = require( 'gulp-replace' ),
 	packageJSON = require( './package.json' ),
 	exec = require( 'child_process' ).exec;
 
+// The gulpfile runs from the plugin root. The importer component's frontend
+// assets live under components/importer/assets, so source/output paths are
+// scoped there explicitly.
+const importerAssets = 'components/importer/assets';
+
 const plugin = {
-	name: 'Inspiro Starter Sites',
-	slug: 'inspiro-starter-sites',
-	files: [
-		'**',
-		// Exclude all the files/dirs below. Note the double negate (when ! is used inside the exclusion) - we may actually need some things.
-		'!bin/**',
-		'!bin/',
-		'!docs/**',
-		'!docs/',
-		'!node_modules/**',
-		'!node_modules/',
-		'!tests/**',
-		'!tests/',
-		'!**/*.map',
-		'!LICENSE',
-		'!assets/**/*.scss',
-		'!**/bin/**',
-		'!**/bin',
-		'!**/tests/**',
-		'!**/*.md',
-		'!**/*.sh',
-		'!**/*.rst',
-		'!**/*.xml',
-		'!**/*.yml',
-		'!**/*.dist',
-		'!**/*.json',
-		'vendor/**/*.json',
-		'vendor/**/*.md',
-		'vendor/**/LICENSE',
-		'!**/*.lock',
-		'!**/gulpfile.js',
-		'!**/.eslintrc.js',
-		'!**/.eslintignore.js',
-		'!**/.editorconfig',
-		'!**/.gitignore',
-		'!**/AUTHORS',
-		'!**/Copying',
-		'!**/Dockerfile',
-		'!**/Makefile',
-	],
 	scss: [
-		'assets/css/**/*.scss',
+		importerAssets + '/css/**/*.scss',
 	],
 	js: [
-		'assets/js/*.js',
-		'!assets/js/*.min.js',
+		importerAssets + '/js/*.js',
+		'!' + importerAssets + '/js/*.min.js',
 	],
 	files_replace_ver: [
 		"**/*.php",
@@ -71,7 +35,7 @@ const plugin = {
 		"!**/*.min.js",
 		"!languages/**",
 		"!node_modules/**",
-		"!vendor/**",
+		"!**/vendor/**",
 		"!gulpfile.js",
 	],
 };
@@ -86,7 +50,7 @@ gulp.task( 'css', function () {
 		.pipe( sourcemaps.init() )
 		.pipe( sass( { outputStyle: 'expanded' } ).on( 'error', sass.logError ) )
 		.pipe( rename( function ( path ) {
-			path.dirname = '/assets/css';
+			path.dirname = '/' + importerAssets + '/css';
 			path.extname = '.css';
 		} ) )
 		.pipe( sourcemaps.write() )
@@ -94,7 +58,7 @@ gulp.task( 'css', function () {
 		// Minified file.
 		.pipe( sass( { outputStyle: 'compressed' } ).on( 'error', sass.logError ) )
 		.pipe( rename( function ( path ) {
-			path.dirname = '/assets/css';
+			path.dirname = '/' + importerAssets + '/css';
 			path.extname = '.min.css';
 		} ) )
 		.pipe( gulp.dest( './' ) )
@@ -109,7 +73,7 @@ gulp.task( 'js', function () {
 		.pipe( cached( 'processJS' ) )
 		.pipe( uglify() ).on( 'error', console.log )
 		.pipe( rename( function ( path ) {
-			path.dirname = '/assets/js';
+			path.dirname = '/' + importerAssets + '/js';
 			path.basename += '.min';
 		} ) )
 		.pipe( gulp.dest( '.' ) )
@@ -121,7 +85,7 @@ gulp.task( 'js', function () {
  */
 gulp.task( 'pot', function ( cb ) {
 	exec(
-		'wp i18n make-pot ./ ./languages/inspiro-starter-sites.pot --slug="inspiro-starter-sites" --domain="inspiro-starter-sites" --package-name="One Click Demo Import" --file-comment="" --exclude="node_modules,vendor,tests,bin,docs"',
+		'wp i18n make-pot ./ ./languages/inspiro-starter-sites.pot --slug="inspiro-starter-sites" --domain="inspiro-starter-sites" --package-name="Inspiro Starter Sites" --file-comment="" --exclude="node_modules,vendor,tests,bin,docs"',
 		function ( err, stdout, stderr ) {
 			console.log( stdout );
 			console.log( stderr );
@@ -142,27 +106,18 @@ gulp.task('readme', function() {
 });
 
 /**
- * Copy production ready plugin folder.
- */
-gulp.task( 'copy', function () {
-	return gulp.src( plugin.files, { base: '.' } )
-		// .pipe( rename( function ( file ) {
-		// 	file.dirname = plugin.slug + '/' + file.dirname;
-		// } ) )
-		.pipe(copy('inspiro-starter-sites'))
-		.pipe( debug( { title: '[copy]' } ) );
-} );
-
-/**
  * Replace plugin version with one from package.json in the main plugin file.
  */
 gulp.task( 'replace_plugin_file_ver', function () {
 	return gulp.src( [ 'inspiro-starter-sites.php' ] )
 		.pipe(
-			// File header.
+			// File header. Function replacement avoids `$`-group ambiguity
+			// (e.g. `$1` + a version starting with a digit becoming `$11`).
 			replace(
-				/Version: ((\*)|([0-9]+(\.((\*)|([0-9]+(\.((\*)|([0-9]+)))?)))?))/gm,
-				'Version: ' + packageJSON.version
+				/(Version:\s*)[0-9*][0-9.*]*/gm,
+				function ( match, prefix ) {
+					return prefix + packageJSON.version;
+				}
 			)
 		)
 		.pipe( gulp.dest( './' ) );
@@ -186,8 +141,12 @@ gulp.task( 'replace_ver', gulp.series( 'replace_plugin_file_ver', 'replace_since
 
 /**
  * Task: build.
+ *
+ * Compiles assets, generates the .pot file and stamps the version. Packaging
+ * the distributable zip is handled separately by `wp dist-archive` (driven by
+ * .distignore), so it is not part of this task.
  */
-gulp.task( 'build', gulp.series( gulp.parallel( 'css', 'js', 'pot' ), 'replace_ver', 'copy' ) );
+gulp.task( 'build', gulp.series( gulp.parallel( 'css', 'js', 'pot' ), 'replace_ver' ) );
 
 /**
  * Look out for relevant sass/js changes.
