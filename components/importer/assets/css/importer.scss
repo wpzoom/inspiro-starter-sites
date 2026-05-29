@@ -1502,3 +1502,246 @@ body:not(.inspiro_page_inspiro-demo) #wpcontent {
 		transform: rotateZ(630deg)
 	}
 }
+
+
+/* "Suggest a new demo" — button + feedback survey modal. */
+.inspiro-starter-sites-demo-suggest {
+	margin: 2px 0 24px;
+}
+
+.inspiro-starter-sites-demo-suggest-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 18px;
+	border: 1.5px dashed #c7ccd4;
+	border-radius: 999px;
+	background: #ffffff;
+	color: #1d1d1f;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+
+	&__icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		background: #1d1d1f;
+		color: #ffffff;
+		font-size: 16px;
+		line-height: 1;
+	}
+
+	&:hover {
+		border-color: #1d1d1f;
+	}
+}
+
+body.iss-feedback-open {
+	overflow: hidden;
+}
+
+.inspiro-starter-sites-feedback-root[hidden] {
+	display: none;
+}
+
+.iss-feedback-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	background: rgba(17, 19, 22, 0.55);
+}
+
+.iss-feedback-modal {
+	position: relative;
+	width: 100%;
+	max-width: 520px;
+	max-height: 90vh;
+	overflow-y: auto;
+	background: #ffffff;
+	border-radius: 12px;
+	box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+}
+
+.iss-feedback-close {
+	position: absolute;
+	top: 14px;
+	inset-inline-end: 14px;
+	width: 32px;
+	height: 32px;
+	border: 0;
+	background: transparent;
+	font-size: 24px;
+	line-height: 1;
+	color: #6b7280;
+	cursor: pointer;
+	border-radius: 50%;
+
+	&:hover {
+		background: #f1f2f4;
+		color: #1d1d1f;
+	}
+}
+
+.iss-feedback-header {
+	padding: 28px 28px 0;
+
+	h2 {
+		margin: 0 0 6px;
+		font-size: 20px;
+		font-weight: 700;
+	}
+}
+
+.iss-feedback-intro {
+	margin: 0 0 16px;
+	color: #6b7280;
+	font-size: 14px;
+}
+
+.iss-feedback-progress {
+	height: 4px;
+	border-radius: 999px;
+	background: #eceef1;
+	overflow: hidden;
+
+	span {
+		display: block;
+		height: 100%;
+		width: 25%;
+		background: #1d1d1f;
+		transition: width 0.25s ease;
+	}
+}
+
+.iss-feedback-body {
+	padding: 22px 28px;
+}
+
+.iss-feedback-step {
+	display: none;
+
+	&.is-active {
+		display: block;
+	}
+
+	h3 {
+		margin: 0 0 14px;
+		font-size: 16px;
+		font-weight: 600;
+	}
+}
+
+.iss-feedback-radio,
+.iss-feedback-check {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 11px 14px;
+	margin: 0 0 8px;
+	border: 1.5px solid #e5e7eb;
+	border-radius: 8px;
+	cursor: pointer;
+	font-size: 14px;
+	transition: border-color 0.15s ease, background 0.15s ease;
+
+	&:hover {
+		border-color: #c7ccd4;
+	}
+
+	input {
+		margin: 0;
+	}
+}
+
+.iss-feedback-text {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 10px 12px;
+	margin-top: 6px;
+	border: 1.5px solid #e5e7eb;
+	border-radius: 8px;
+	font-size: 14px;
+}
+
+.iss-feedback-hint {
+	margin: 8px 0 0;
+	color: #8a8f98;
+	font-size: 12.5px;
+}
+
+.iss-feedback-nps {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.iss-feedback-nps-btn {
+	flex: 1 0 auto;
+	min-width: 34px;
+	padding: 9px 0;
+	border: 1.5px solid #e5e7eb;
+	border-radius: 8px;
+	background: #ffffff;
+	color: #1d1d1f;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+
+	&:hover {
+		border-color: #c7ccd4;
+	}
+
+	&.is-active {
+		background: #1d1d1f;
+		border-color: #1d1d1f;
+		color: #ffffff;
+	}
+}
+
+.iss-feedback-nps-legend {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 8px;
+	color: #8a8f98;
+	font-size: 12px;
+}
+
+.iss-feedback-footer {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 18px 28px 24px;
+	border-top: 1px solid #eceef1;
+}
+
+.iss-feedback-step-indicator {
+	margin-inline-start: auto;
+	color: #8a8f98;
+	font-size: 13px;
+}
+
+.iss-feedback-success {
+	text-align: center;
+	padding: 16px 0;
+
+	.iss-feedback-success-check {
+		width: 56px;
+		height: 56px;
+		margin: 0 auto 14px;
+		border-radius: 50%;
+		background: #e8f8ef;
+		color: #0a5c36;
+		font-size: 28px;
+		line-height: 56px;
+	}
+}

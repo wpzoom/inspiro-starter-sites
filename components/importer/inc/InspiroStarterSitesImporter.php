@@ -160,6 +160,9 @@ class InspiroStarterSitesImporter {
 		// Delete imported demo.
 		add_action( 'wp_ajax_inspiro_starter_sites_delete_imported_demo', array( $this, 'delete_imported_demo_ajax_callback' ) );
 
+		// "Suggest a new demo" feedback — local backup store (remote collection happens client-side).
+		add_action( 'wp_ajax_inspiro_starter_sites_demo_feedback', array( $this, 'demo_feedback_ajax_callback' ) );
+
 		add_action( 'wp_import_insert_post', [ $this, 'save_wp_navigation_import_mapping' ], 10, 4 );
 		add_action( 'inspiro_starter_sites/after_import', [ $this, 'fix_imported_wp_navigation' ] );
 
@@ -249,6 +252,12 @@ class InspiroStarterSitesImporter {
 			// Get theme data.
 			$theme = wp_get_theme();
 
+			// Endpoint that collects "Suggest a new demo" feedback (overridable).
+			$feedback_endpoint = Helpers::apply_filters(
+				'inspiro_starter_sites/feedback_endpoint',
+				defined( 'INSPIRO_STARTER_SITES_FEEDBACK_ENDPOINT' ) ? INSPIRO_STARTER_SITES_FEEDBACK_ENDPOINT : ''
+			);
+
 			wp_localize_script( 'inspiro-starter-sites-importer-js', 'inspiro_starter_sites',
 				array(
 					'ajax_url'         => admin_url( 'admin-ajax.php' ),
@@ -259,6 +268,55 @@ class InspiroStarterSitesImporter {
 					'missing_plugins'  => $this->plugin_installer->get_missing_plugins(),
 					'plugin_url'       => INSPIRO_STARTER_SITES_URL . 'components/importer/',
 					'import_url'       => $this->get_plugin_settings_url( [ 'step' => 'import' ] ),
+					'feedback'         => array(
+						'endpoint'   => $feedback_endpoint,
+						'site'       => array(
+							'domain'         => home_url(),
+							'hostname'       => function_exists( 'gethostname' ) ? gethostname() : '',
+							'plugin_version' => INSPIRO_STARTER_SITES_VERSION,
+							'wp_version'     => get_bloginfo( 'version' ),
+							'php_version'    => PHP_VERSION,
+							'language'       => get_locale(),
+							'admin_email'    => get_option( 'admin_email' ),
+						),
+						'categories' => array(
+							'business'   => esc_html__( 'Business / Corporate', 'inspiro-starter-sites' ),
+							'agency'     => esc_html__( 'Agency', 'inspiro-starter-sites' ),
+							'portfolio'  => esc_html__( 'Portfolio', 'inspiro-starter-sites' ),
+							'food'       => esc_html__( 'Food / Restaurant', 'inspiro-starter-sites' ),
+							'ecommerce'  => esc_html__( 'eCommerce', 'inspiro-starter-sites' ),
+							'personal'   => esc_html__( 'Personal', 'inspiro-starter-sites' ),
+							'blog'       => esc_html__( 'Blog', 'inspiro-starter-sites' ),
+							'video'      => esc_html__( 'Video', 'inspiro-starter-sites' ),
+						),
+						'texts'      => array(
+							'title'            => esc_html__( 'Help us build better starter sites', 'inspiro-starter-sites' ),
+							'intro'            => esc_html__( 'Answer a few quick questions to suggest a new demo. It takes less than a minute.', 'inspiro-starter-sites' ),
+							'q_builder'        => esc_html__( 'Which page builder do you prefer?', 'inspiro-starter-sites' ),
+							'builder_gutenberg'=> esc_html__( 'Gutenberg (Block Editor)', 'inspiro-starter-sites' ),
+							'builder_elementor'=> esc_html__( 'Elementor', 'inspiro-starter-sites' ),
+							'builder_other'    => esc_html__( 'Other', 'inspiro-starter-sites' ),
+							'builder_other_ph' => esc_html__( 'Which one?', 'inspiro-starter-sites' ),
+							'q_satisfaction'   => esc_html__( 'How satisfied are you with the available demos?', 'inspiro-starter-sites' ),
+							'nps_low'          => esc_html__( 'Not satisfied', 'inspiro-starter-sites' ),
+							'nps_high'         => esc_html__( 'Very satisfied', 'inspiro-starter-sites' ),
+							'q_categories'     => esc_html__( 'What kind of demo would you like us to add?', 'inspiro-starter-sites' ),
+							'categories_hint'  => esc_html__( 'Select all that apply.', 'inspiro-starter-sites' ),
+							'category_other'   => esc_html__( 'Other', 'inspiro-starter-sites' ),
+							'category_other_ph'=> esc_html__( 'Describe the demo you have in mind', 'inspiro-starter-sites' ),
+							'q_notify'         => esc_html__( 'Want to be notified when new demos launch?', 'inspiro-starter-sites' ),
+							'notify_ph'        => esc_html__( 'your@email.com', 'inspiro-starter-sites' ),
+							'notify_hint'      => esc_html__( 'Optional — you can send your feedback without it. Add your email only if you want a heads-up about new starter sites.', 'inspiro-starter-sites' ),
+							'open'             => esc_html__( 'Suggest a new demo', 'inspiro-starter-sites' ),
+							'back'             => esc_html__( 'Back', 'inspiro-starter-sites' ),
+							'next'             => esc_html__( 'Next', 'inspiro-starter-sites' ),
+							'submit'           => __( 'Subscribe & Send', 'inspiro-starter-sites' ),
+							'skip'             => esc_html__( 'Skip', 'inspiro-starter-sites' ),
+							'thanks_title'     => esc_html__( 'Thank you!', 'inspiro-starter-sites' ),
+							'thanks_text'      => esc_html__( 'Your feedback helps us decide which starter sites to build next.', 'inspiro-starter-sites' ),
+							'close'            => esc_html__( 'Close', 'inspiro-starter-sites' ),
+						),
+					),
 					'texts'            => array(
 						'missing_preview_image'    => esc_html__( 'No preview image defined for this import.', 'inspiro-starter-sites' ),
 						'dialog_title'             => esc_html__( 'Are you sure?', 'inspiro-starter-sites' ),
@@ -908,6 +966,59 @@ class InspiroStarterSitesImporter {
 			esc_html__( 'Demo data has been deleted successfully.', 'inspiro-starter-sites' )
 		);
 
+	}
+
+	/**
+	 * Local backup store for "Suggest a new demo" feedback.
+	 *
+	 * The primary collection is a client-side POST to the remote endpoint; this
+	 * keeps a rolling copy of the last 100 submissions on-site as a fallback and
+	 * for debugging. Stored in the inspiro_starter_sites_demo_feedback option.
+	 */
+	public function demo_feedback_ajax_callback() {
+
+		// Verify if the AJAX call is valid (checks nonce and current_user_can).
+		Helpers::verify_ajax_call();
+
+		$payload_raw = isset( $_POST['payload'] ) ? wp_unslash( $_POST['payload'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitized — decoded + sanitized below.
+		$payload     = json_decode( is_string( $payload_raw ) ? $payload_raw : '', true );
+
+		if ( ! is_array( $payload ) ) {
+			wp_send_json_error( esc_html__( 'Invalid feedback payload.', 'inspiro-starter-sites' ) );
+		}
+
+		// Sanitize recursively — keys and scalar values.
+		$sanitize = function ( $value ) use ( &$sanitize ) {
+			if ( is_array( $value ) ) {
+				$clean = array();
+				foreach ( $value as $k => $v ) {
+					$clean[ sanitize_text_field( (string) $k ) ] = $sanitize( $v );
+				}
+				return $clean;
+			}
+			if ( is_bool( $value ) || is_int( $value ) || is_float( $value ) ) {
+				return $value;
+			}
+			return sanitize_textarea_field( (string) $value );
+		};
+		$clean = $sanitize( $payload );
+
+		$clean['received_at'] = current_time( 'mysql' );
+
+		$stored = get_option( 'inspiro_starter_sites_demo_feedback', array() );
+		if ( ! is_array( $stored ) ) {
+			$stored = array();
+		}
+		$stored[] = $clean;
+
+		// Keep only the most recent 100 entries.
+		if ( count( $stored ) > 100 ) {
+			$stored = array_slice( $stored, -100 );
+		}
+
+		update_option( 'inspiro_starter_sites_demo_feedback', $stored, false );
+
+		wp_send_json_success( esc_html__( 'Feedback received.', 'inspiro-starter-sites' ) );
 	}
 
 	/**

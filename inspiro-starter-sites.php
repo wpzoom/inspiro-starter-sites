@@ -41,6 +41,15 @@ define( 'INSPIRO_STARTER_SITES_URL', plugin_dir_url( INSPIRO_STARTER_SITES__FILE
 // Define the UTM code for the footer menu
 define( 'INSPIRO_STARTER_SITES_MARKETING_UTM_CODE_FOOTER_MENU', '?utm_source=inspiro-starter-sites&utm_medium=footer-menu&utm_campaign=inspiro-starter-sites' );
 
+/**
+ * Remote endpoint that collects "Suggest a new demo" feedback. Mirrors the
+ * Inspiro theme's survey collector. Override via this constant (e.g. point at a
+ * local analytics install) or the 'inspiro_starter_sites/feedback_endpoint' filter.
+ */
+if ( ! defined( 'INSPIRO_STARTER_SITES_FEEDBACK_ENDPOINT' ) ) {
+	define( 'INSPIRO_STARTER_SITES_FEEDBACK_ENDPOINT', 'https://ai.wpzoom.com/simple-demo-feedback-endpoint.php' );
+}
+
 // Load the activator class
 require_once INSPIRO_STARTER_SITES_PATH . 'classes/class-inspiro-starter-sites-activator.php';
 

@@ -198,6 +198,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			'inspiro-lite-charity'         		 => [ 'wpzoom-portfolio', 'social-icons-widget-by-wpzoom', 'carousel-block' ],
 			'inspiro-lite-events'          		 => [ 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-construction'    		 => [ 'social-icons-widget-by-wpzoom' ],
+            'inspiro-lite-architecture'          => [ 'elementor', 'wpzoom-elementor-addons', 'wpzoom-portfolio', 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-winery'    	  		 => [ 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-fitness'		   		 => [ 'social-icons-widget-by-wpzoom' ],
 		];
@@ -273,6 +274,29 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'categories'                 => [ 'woocommerce' ],
 			],
             [
+                'import_id'                  => 'inspiro-lite-energy',
+                'import_file_name'           => 'Green Energy',
+                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-energy.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-energy.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-energy.dat',
+                'import_preview_image_url'   => $demos_preview_url .  'energy.png',
+                'preview_url'                => 'https://inspiro.wpzoom.com/energy/',
+                'is_new'                     => true,
+                'categories'                 => [ 'business' ],
+            ],
+            [
+                'import_id'                  => 'inspiro-lite-architecture',
+                'import_file_name'           => 'Architecture (Lite)',
+                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-architecture.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-architecture.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-architecture.dat',
+                'import_preview_image_url'   => $demos_preview_url .  'architecture.png',
+                'preview_url'                => 'https://inspiro.wpzoom.com/architecture/',
+                'type'                       => 'elementor',
+                'is_new'                     => true,
+                'categories'                 => [ 'portfolio', 'creative', 'architecture', 'construction' ],
+            ],
+            [
                 'import_id'                  => 'inspiro-lite-medical',
                 'import_file_name'           => 'Medical / Doctor (Lite)',
                 'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-medical.xml',
@@ -281,26 +305,6 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'import_preview_image_url'   => $demos_preview_url .  'medical.png',
                 'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-medical/',
                 'categories'                 => [ 'health' ],
-            ],
-            [
-                'import_id'                  => 'inspiro-lite-freelancer',
-                'import_file_name'           => 'Freelancer (One-Page)',
-                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-freelancer.xml',
-                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/freelancer.wie',
-                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-freelancer1.dat',
-                'import_preview_image_url'   => $demos_preview_url .  'freelancer.png',
-                'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-freelancer/',
-                'categories'                 => [ 'portfolio', 'creative' ],
-            ],
-            [
-                'import_id'                  => 'inspiro-lite-freelancer-grey',
-                'import_file_name'           => 'Freelancer #2 (One-Page)',
-                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-freelancer2.xml',
-                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/freelancer2.wie',
-                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-freelancer2.dat',
-                'import_preview_image_url'   => $demos_preview_url .  'freelancer2.png',
-                'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-freelancer-blocks/',
-                'categories'                 => [ 'portfolio', 'creative' ],
             ],
             [
                 'import_id'                  => 'inspiro-lite-finance',
@@ -352,17 +356,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-remix/',
                 'categories'                 => [ 'portfolio', 'creative' ],
             ],
-            [
-                'import_id'                  => 'inspiro-lite-energy',
-                'import_file_name'           => 'Green Energy',
-                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-energy.xml',
-                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-energy.wie',
-                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-energy.dat',
-                'import_preview_image_url'   => $demos_preview_url .  'energy.png',
-                'preview_url'                => 'https://inspiro.wpzoom.com/energy/',
-                'is_new'                     => true,
-                'categories'                 => [ 'business' ],
-            ],
+
             [
                 'import_id'                  => 'inspiro-lite-video',
                 'import_file_name'           => 'Video Production (Lite)',
@@ -428,6 +422,26 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'is_new'                     => true,
 				'categories'                 => [ 'sport', 'health' ],
             ],
+            [
+                'import_id'                  => 'inspiro-lite-freelancer',
+                'import_file_name'           => 'Freelancer (One-Page)',
+                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-freelancer.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/freelancer.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-freelancer1.dat',
+                'import_preview_image_url'   => $demos_preview_url .  'freelancer.png',
+                'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-freelancer/',
+                'categories'                 => [ 'portfolio', 'creative' ],
+            ],
+            [
+                'import_id'                  => 'inspiro-lite-freelancer-grey',
+                'import_file_name'           => 'Freelancer #2 (One-Page)',
+                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-freelancer2.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/freelancer2.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-freelancer2.dat',
+                'import_preview_image_url'   => $demos_preview_url .  'freelancer2.png',
+                'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-freelancer-blocks/',
+                'categories'                 => [ 'portfolio', 'creative' ],
+            ],
 
 		];
 	}
@@ -439,6 +453,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 	public function category_labels() {
 		return apply_filters( 'inspiro_starter_sites/category_labels', [
 			'business'        => __( 'Business', 'inspiro-starter-sites' ),
+            'architecture'    => __( 'Architecture', 'inspiro-starter-sites' ),
 			'portfolio'       => __( 'Portfolio', 'inspiro-starter-sites' ),
 			'creative'        => __( 'Creative', 'inspiro-starter-sites' ),
 			'woocommerce'     => __( 'WooCommerce', 'inspiro-starter-sites' ),

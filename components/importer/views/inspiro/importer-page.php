@@ -195,7 +195,16 @@ $platform_labels = array(
 			<?php endforeach; ?>
 		</ul>
 	<?php endif; ?>
+	<div class="inspiro-starter-sites-demo-suggest">
+		<button type="button" class="inspiro-starter-sites-demo-suggest-btn js-inspiro-starter-sites-suggest-demo">
+			<span class="inspiro-starter-sites-demo-suggest-btn__icon" aria-hidden="true">+</span>
+			<span><?php esc_html_e( 'Suggest a new demo', 'inspiro-starter-sites' ); ?></span>
+		</button>
+	</div>
 </div>
+
+<div class="inspiro-starter-sites-feedback-root js-inspiro-starter-sites-feedback-root" hidden></div>
+
 <ol class="wpz-onboard_content-main-steps">
 	<li id="step-choose-design" class="wpz-onboard_content-main-step step-1 step-choose-design">
 		<form method="post" action="#">
@@ -372,6 +381,7 @@ $platform_labels = array(
 </ol>
 
 <?php if ( ! empty( $premium_section['demos'] ) ) : ?>
+    <hr />
 	<div class="inspiro-starter-sites-demo-section inspiro-starter-sites-demo-section-premium">
 		<h3 class="inspiro-starter-sites-demo-section-title">
 			<?php
