@@ -194,7 +194,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			'inspiro-lite-energy'         		 => [ 'slider-block', 'wpzoom-portfolio', 'icon-block' ],
 			'inspiro-lite-video'          		 => [ 'slider-block', 'wpzoom-portfolio', 'wpzoom-video-popup-block', 'icon-block' ],
 			'inspiro-lite-business'       		 => [ 'wpzoom-portfolio', 'social-icons-widget-by-wpzoom', 'icon-block' ],
-			'inspiro-lite-business-elementor'    => [ 'wpzoom-portfolio', 'social-icons-widget-by-wpzoom', 'icon-block' ],
+			'inspiro-lite-business-elementor'    => [ 'wpzoom-portfolio', 'social-icons-widget-by-wpzoom', 'elementor', 'wpzoom-elementor-addons' ],
 			'inspiro-lite-charity'         		 => [ 'wpzoom-portfolio', 'social-icons-widget-by-wpzoom', 'carousel-block' ],
 			'inspiro-lite-events'          		 => [ 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-construction'    		 => [ 'social-icons-widget-by-wpzoom' ],
