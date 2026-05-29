@@ -161,6 +161,125 @@ body:not(.inspiro_page_inspiro-demo) #wpcontent {
   position: absolute !important;
   z-index: -1 !important;
 }
+.inspiro-starter-sites-demo-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 18px 0 18px;
+}
+.inspiro-starter-sites-demo-filter-btn {
+  appearance: none;
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 999px;
+  color: #1d1d1f;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 10px 20px;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.inspiro-starter-sites-demo-filter-btn:hover {
+  border-color: #1d1d1f;
+}
+.inspiro-starter-sites-demo-filter-btn:focus {
+  outline: 2px solid rgba(34, 113, 177, 0.4);
+  outline-offset: 2px;
+}
+.inspiro-starter-sites-demo-filter-btn__icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+}
+.inspiro-starter-sites-demo-filter-btn__icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.inspiro-starter-sites-demo-filter-btn--elementor {
+  color: #B6224C;
+}
+.inspiro-starter-sites-demo-filter-btn.is-active {
+  background: #1d1d1f;
+  border-color: #1d1d1f;
+  color: #ffffff;
+}
+.inspiro-starter-sites-demo-filter-btn.is-active .inspiro-starter-sites-demo-filter-btn__icon svg [stroke="#1d1d1f"] {
+  stroke: #ffffff;
+}
+.inspiro-starter-sites-demo-categories {
+  column-count: 6;
+  column-gap: 32px;
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+}
+.inspiro-starter-sites-demo-categories li {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  margin: 0 0 10px;
+  padding: 0;
+}
+@media (max-width: 1500px) {
+  .inspiro-starter-sites-demo-categories {
+    column-count: 5;
+  }
+}
+@media (max-width: 1200px) {
+  .inspiro-starter-sites-demo-categories {
+    column-count: 4;
+  }
+}
+@media (max-width: 900px) {
+  .inspiro-starter-sites-demo-categories {
+    column-count: 3;
+  }
+}
+@media (max-width: 600px) {
+  .inspiro-starter-sites-demo-categories {
+    column-count: 2;
+  }
+}
+.inspiro-starter-sites-demo-category {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: #6b7280;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  padding: 4px 0;
+  transition: color 0.15s ease;
+}
+.inspiro-starter-sites-demo-category:hover,
+.inspiro-starter-sites-demo-category:focus {
+  color: #1d1d1f;
+  outline: none;
+}
+.inspiro-starter-sites-demo-category.is-active {
+  color: #1d1d1f;
+  font-weight: 700;
+}
+.inspiro-starter-sites-demo-category__count {
+  color: inherit;
+  margin-left: 4px;
+  opacity: 0.85;
+}
+.inspiro-starter-sites-demo-category__count::before {
+  content: " • ";
+  display: inline;
+  opacity: 0.6;
+  margin-right: 2px;
+}
 .inspiro-starter-sites .wpz-onboard_content-main-step.step-choose-design .preview-thumbnail.inspiro-starter-sites-import .inspiro-starter-sites-demo-badges {
   position: absolute;
   top: 14px;
@@ -205,6 +324,27 @@ body:not(.inspiro_page_inspiro-demo) #wpcontent {
 .inspiro-starter-sites .wpz-onboard_content-main-step.step-choose-design .inspiro-starter-sites-demo-badge-new {
   color: #434f69;
   background: rgb(240, 248, 255);
+}
+
+.inspiro-starter-sites .wpz-onboard_content-main-step.step-choose-design > form > ul > li[data-type] {
+  transition: opacity 320ms cubic-bezier(0.4, 0, 0.2, 1), transform 320ms cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center top;
+  will-change: opacity, transform;
+}
+.inspiro-starter-sites .wpz-onboard_content-main-step.step-choose-design > form > ul > li[data-type].is-filtering-out {
+  opacity: 0;
+  transform: scale(0.92) translateY(8px);
+  pointer-events: none;
+}
+.inspiro-starter-sites .wpz-onboard_content-main-step.step-choose-design > form > ul > li[data-type].is-filtering-in {
+  opacity: 0;
+  transform: scale(0.96) translateY(6px);
+}
+.inspiro-starter-sites-demo-category {
+  transition: color 0.15s ease, opacity 250ms ease;
+}
+.inspiro-starter-sites-demo-categories li.is-cat-hidden {
+  display: none;
 }
 
 .feature-section + hr {
