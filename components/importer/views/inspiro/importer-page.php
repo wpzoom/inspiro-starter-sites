@@ -299,6 +299,18 @@ $platform_labels = array(
 						} );
 
 						$active_index = array_key_first( $variants );
+
+						// Restore the toggle to whichever variant was actually imported,
+						// so returning to this page shows the right editor + "Imported" state.
+						if ( $imported_demo_id ) {
+							foreach ( $variants as $vidx => $vfile ) {
+								if ( isset( $vfile['import_id'] ) && $imported_demo_id == $vfile['import_id'] ) {
+									$active_index = $vidx;
+									break;
+								}
+							}
+						}
+
 						$active_file  = $variants[ $active_index ];
 						$active_type  = ! empty( $active_file['type'] ) ? $active_file['type'] : 'blocks';
 
