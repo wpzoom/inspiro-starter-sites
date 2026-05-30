@@ -20,6 +20,9 @@ No page-building from scratch and no coding required: pick a demo, run the one-c
 
 The plugin works hand-in-hand with the free [Inspiro](https://wordpress.org/themes/inspiro/) theme and gives you access to 20+ ready-made starter templates:
 
+**[View All Demos](https://www.wpzoom.com/themes/inspiro-lite/)**
+⭐️  **[View Premium Starter Sites](https://www.wpzoom.com/themes/inspiro/starter-sites/)** ⭐️
+
 - **Business / Portfolio** | [View Demo](https://demo.wpzoom.com/inspiro-lite-blocks/)
 - **Business (Elementor)** | [View Demo](https://demo.wpzoom.com/inspiro-lite/)
 - **Business** | [View Demo](https://inspiro.wpzoom.com/business/)
@@ -113,6 +116,9 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 
 == Screenshots ==
 1. Demo Importer
+2. 20+ Free Starter Sites for Elementor and Block Editor
+3. Choose your builder, delete imported demos
+4. Demo Imported message
 
 == Changelog ==
 
