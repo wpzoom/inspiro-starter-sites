@@ -1,4 +1,4 @@
-=== Inspiro Starter Sites ===
+=== Inspiro Starter Sites - 20+ Free Templates for Gutenberg & Elementor ===
 Contributors: 		WPZOOM
 Donate link:		http://paypal.me/wpzm/10usd
 Author URI:			https://www.wpzoom.com/  
@@ -8,19 +8,20 @@ Requires PHP: 		7.4
 Stable tag: 		1.1.1
 License: 			GPLv2 or later  
 License URI: 		https://www.gnu.org/licenses/gpl-2.0.html
-Tags: 				starter templates, Gutenberg, Elementor, WooCommerce
+Tags: 				starter templates, demo importer, starter sites, templates, elementor templates
 
 Import starter templates with Gutenberg Blocks, Elementor, and WooCommerce to create a new website in just a few clicks.
 
 == Description ==
 
-**Inspiro Starter Sites** is a free plugin designed to simplify the process of building a website with the [Inspiro](https://wordpress.org/themes/inspiro/) theme. It provides access to a library of 19 professionally designed starter templates:
+**Inspiro Starter Sites** is a free plugin designed to simplify the process of building a website with the [Inspiro](https://wordpress.org/themes/inspiro/) theme. It provides access to a library of 20+ professionally designed starter templates:
 
 - **Business / Portfolio** | [View Demo](https://demo.wpzoom.com/inspiro-lite-blocks/)
 - **Business (Elementor)** | [View Demo](https://demo.wpzoom.com/inspiro-lite/)
 - **Business** | [View Demo](https://inspiro.wpzoom.com/business/)
 - **Video Production** | [View Demo](https://inspiro.wpzoom.com/video/)
 - **Green Energy** | [View Demo](https://inspiro.wpzoom.com/energy/)
+- **Architecture** | [View Demo](https://inspiro.wpzoom.com/architecture/)
 - **Charity / NGO** | [View Demo](https://inspiro.wpzoom.com/charity/)
 - **Events / Conference** | [View Demo](https://inspiro.wpzoom.com/event/)
 - **Construction** | [View Demo](https://inspiro.wpzoom.com/construction/)
