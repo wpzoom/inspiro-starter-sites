@@ -5,7 +5,7 @@ Author URI:			https://www.wpzoom.com/
 Requires at least: 	6.5
 Tested up to: 		7.0
 Requires PHP: 		7.4  
-Stable tag: 		1.1.1
+Stable tag: 		1.1.2
 License: 			GPLv2 or later  
 License URI: 		https://www.gnu.org/licenses/gpl-2.0.html
 Tags: 				starter sites, templates, demo importer, elementor, gutenberg
@@ -29,6 +29,7 @@ The plugin works hand-in-hand with the free [Inspiro](https://wordpress.org/them
 - **Video Production** | [View Demo](https://inspiro.wpzoom.com/video/)
 - **Green Energy** | [View Demo](https://inspiro.wpzoom.com/energy/)
 - **Architecture** | [View Demo](https://inspiro.wpzoom.com/architecture/)
+- **Lawyer / Legal Firm** | [View Demo](https://inspiro.wpzoom.com/lawyer/)
 - **Charity / NGO** | [View Demo](https://inspiro.wpzoom.com/charity/)
 - **Events / Conference** | [View Demo](https://inspiro.wpzoom.com/event/)
 - **Construction** | [View Demo](https://inspiro.wpzoom.com/construction/)
@@ -121,6 +122,9 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 4. Demo Imported message
 
 == Changelog ==
+
+= 1.1.2 =
+* New demo: Lawyer / Legal Firm (Elementor)
 
 = 1.1.1 =
 * New demos: Business (Elementor), Architecture (Elementor)
