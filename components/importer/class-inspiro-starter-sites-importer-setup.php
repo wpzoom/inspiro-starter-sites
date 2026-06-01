@@ -202,6 +202,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
             'inspiro-lite-lawyer'                => [ 'elementor', 'wpzoom-elementor-addons', 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-winery'    	  		 => [ 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-fitness'		   		 => [ 'social-icons-widget-by-wpzoom' ],
+			'inspiro-lite-insurance'		   	 => [ 'social-icons-widget-by-wpzoom' ]
 		];
 	}
 
@@ -454,6 +455,17 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'import_preview_image_url'   => $demos_preview_url .  'freelancer2.png',
                 'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-freelancer-blocks/',
                 'categories'                 => [ 'portfolio', 'creative' ],
+            ],
+			[
+                'import_id'                  => 'inspiro-lite-insurance',
+                'import_file_name'           => 'Insurance Company (Lite)',
+                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-insurance.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-insurance.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-insurance.dat',
+                'import_preview_image_url'   => $demos_preview_url .  'insurance.png',
+                'preview_url'                => 'https://inspiro.wpzoom.com/insurance/',
+				'is_new'                     => true,
+                'categories'                 => [ 'lawyer', 'business' ],
             ],
 
 		];
