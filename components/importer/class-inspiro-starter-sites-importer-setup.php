@@ -268,7 +268,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			],
             [
                 'import_id'                  => 'inspiro-lite-agency',
-                'import_file_name'           => 'Creative Agency',
+                'import_file_name'           => 'Creative Agency (Lite)',
                 'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-agency.xml',
                 'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-agency.wie',
                 'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-agency.dat',
