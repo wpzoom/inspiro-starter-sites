@@ -234,15 +234,17 @@ $platform_labels = array(
 				<li data-name="<?php echo esc_attr( strtolower( $import_file['import_file_name'] ) ); ?>" data-import-id="<?php echo esc_attr( $import_file['import_id'] ); ?>" data-type="<?php echo esc_attr( $demo_type ); ?>" data-categories="<?php echo esc_attr( $demo_categories ); ?>">
 					<figure title="<?php echo esc_attr( $import_file['import_file_name'] ); ?>">
 						<div class="preview-thumbnail inspiro-starter-sites-import" style="background-image:url('<?php echo esc_url( $img_src ) ?>')">
-							<div class="inspiro-starter-sites-demo-badges">
-								<span class="inspiro-starter-sites-demo-badge inspiro-starter-sites-demo-badge-free"><?php esc_html_e( 'Free', 'inspiro-starter-sites' ); ?></span>
-								<?php if ( ! empty( $import_file['is_new'] ) ) : ?>
-									<span class="inspiro-starter-sites-demo-badge inspiro-starter-sites-demo-badge-new"><?php esc_html_e( 'New', 'inspiro-starter-sites' ); ?></span>
-								<?php endif; ?>
-							</div>
 							<a href="<?php echo esc_url( $import_file['preview_url'] ); ?>" target="_blank" class="button-select-template"><?php esc_html_e( 'View Demo', 'inspiro-starter-sites' ); ?></a></div>
 						<figcaption>
-							<h5><?php echo esc_html( $import_file['import_file_name'] ); ?></h5>
+							<div class="inspiro-starter-sites-demo-name">
+								<h5><?php echo esc_html( $import_file['import_file_name'] ); ?></h5>
+								<div class="inspiro-starter-sites-demo-badges">
+									<span class="inspiro-starter-sites-demo-badge inspiro-starter-sites-demo-badge-free"><?php esc_html_e( 'Free', 'inspiro-starter-sites' ); ?></span>
+									<?php if ( ! empty( $import_file['is_new'] ) ) : ?>
+										<span class="inspiro-starter-sites-demo-badge inspiro-starter-sites-demo-badge-new"><?php esc_html_e( 'New', 'inspiro-starter-sites' ); ?></span>
+									<?php endif; ?>
+								</div>
+							</div>
 
 								<?php
 									// Editor badge is always shown; a platform badge (e.g. WooCommerce) is appended when set.
@@ -332,13 +334,15 @@ $platform_labels = array(
 					<li class="inspiro-starter-sites-demo-card-grouped" data-name="<?php echo esc_attr( strtolower( $group_name ) ); ?>" data-import-id="<?php echo esc_attr( $active_file['import_id'] ); ?>" data-type="<?php echo esc_attr( $demo_types_attr ); ?>" data-categories="<?php echo esc_attr( $demo_categories ); ?>" data-active-variant="<?php echo esc_attr( $active_type ); ?>">
 						<figure title="<?php echo esc_attr( $group_name ); ?>">
 							<div class="preview-thumbnail inspiro-starter-sites-import js-inspiro-starter-sites-variant-thumb" style="background-image:url('<?php echo esc_url( $active_img ); ?>')">
-								<div class="inspiro-starter-sites-demo-badges">
-									<span class="inspiro-starter-sites-demo-badge inspiro-starter-sites-demo-badge-free"><?php esc_html_e( 'Free', 'inspiro-starter-sites' ); ?></span>
-									<span class="inspiro-starter-sites-demo-badge inspiro-starter-sites-demo-badge-new js-inspiro-starter-sites-variant-new"<?php echo empty( $active_file['is_new'] ) ? ' style="display:none;"' : ''; ?>><?php esc_html_e( 'New', 'inspiro-starter-sites' ); ?></span>
-								</div>
 								<a href="<?php echo esc_url( $active_file['preview_url'] ); ?>" target="_blank" class="button-select-template js-inspiro-starter-sites-variant-preview"><?php esc_html_e( 'View Demo', 'inspiro-starter-sites' ); ?></a></div>
 							<figcaption>
-								<h5><?php echo esc_html( $group_name ); ?></h5>
+								<div class="inspiro-starter-sites-demo-name">
+									<h5><?php echo esc_html( $group_name ); ?></h5>
+									<div class="inspiro-starter-sites-demo-badges">
+										<span class="inspiro-starter-sites-demo-badge inspiro-starter-sites-demo-badge-free"><?php esc_html_e( 'Free', 'inspiro-starter-sites' ); ?></span>
+										<span class="inspiro-starter-sites-demo-badge inspiro-starter-sites-demo-badge-new js-inspiro-starter-sites-variant-new"<?php echo empty( $active_file['is_new'] ) ? ' style="display:none;"' : ''; ?>><?php esc_html_e( 'New', 'inspiro-starter-sites' ); ?></span>
+									</div>
+								</div>
 
 								<div class="inspiro-starter-sites-demo-variants" role="group" aria-label="<?php esc_attr_e( 'Choose page builder', 'inspiro-starter-sites' ); ?>">
 									<?php foreach ( $variants as $vindex => $vfile ) :
@@ -403,13 +407,15 @@ $platform_labels = array(
 						<li class="inspiro-starter-sites-demo-card-premium">
 							<figure title="<?php echo esc_attr( $demo['import_file_name'] ); ?>">
 								<div class="preview-thumbnail-demo">
-									<span class="inspiro-starter-sites-demo-badge inspiro-starter-sites-demo-badge-premium"><?php esc_html_e( 'Premium', 'inspiro-starter-sites' ); ?></span>
 									<a href="<?php echo esc_url( $demo['preview_url'] ); ?>" target="_blank" rel="noopener">
 										<img src="<?php echo esc_url( $demo['import_preview_image_url'] ); ?>" alt="<?php echo esc_attr( $demo['import_file_name'] ); ?>" />
 									</a>
 								</div>
 								<figcaption>
-									<h5><?php echo esc_html( $demo['import_file_name'] ); ?></h5>
+									<div class="inspiro-starter-sites-demo-name">
+										<h5><?php echo esc_html( $demo['import_file_name'] ); ?></h5>
+										<span class="inspiro-starter-sites-demo-badge inspiro-starter-sites-demo-badge-premium"><?php esc_html_e( 'Premium', 'inspiro-starter-sites' ); ?></span>
+									</div>
 									<a href="<?php echo esc_url( $premium_section['purchase'] ); ?>?utm_source=wpadmin&utm_medium=demos-starter-sites&utm_campaign=starter-sites-premium" target="_blank" rel="noopener" class="button button-primary"><?php esc_html_e( 'Unlock in Premium', 'inspiro-starter-sites' ); ?></a>
 									<a href="<?php echo esc_url( $demo['preview_url'] ); ?>" target="_blank" rel="noopener" class="button button-secondary-gray"><?php esc_html_e( 'Preview', 'inspiro-starter-sites' ); ?></a>
 								</figcaption>

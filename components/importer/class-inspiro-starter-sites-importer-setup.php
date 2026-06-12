@@ -202,8 +202,8 @@ class Inspiro_Starter_Sites_Importer_Setup {
             'inspiro-lite-lawyer'                => [ 'elementor', 'wpzoom-elementor-addons', 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-winery'    	  		 => [ 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-fitness'		   		 => [ 'social-icons-widget-by-wpzoom' ],
-			'inspiro-lite-insurance'		   	 => [ 'social-icons-widget-by-wpzoom' ],
-			'inspiro-lite-advisory'		   	 	 => [ 'social-icons-widget-by-wpzoom' ]
+			'inspiro-lite-insurance'		   	 => [ 'social-icons-widget-by-wpzoom', 'icon-block' ],
+			'inspiro-lite-advisory'		   	 	 => [ 'icon-block' ]
 		];
 	}
 
@@ -300,6 +300,17 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'categories'                 => [ 'portfolio', 'creative', 'architecture', 'construction' ],
             ],
             [
+                'import_id'                  => 'inspiro-lite-advisory',
+                'import_file_name'           => 'Consulting Company (Lite)',
+                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-advisory.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-advisory.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-advisory.dat',
+                'import_preview_image_url'   => $demos_preview_url .  'advisory.png',
+                'preview_url'                => 'https://inspiro.wpzoom.com/advisory/',
+                'is_new'                     => true,
+                'categories'                 => [ 'lawyer', 'business' ],
+            ],
+            [
                 'import_id'                  => 'inspiro-lite-lawyer',
                 'import_file_name'           => 'Lawyer / Legal Firm (Lite)',
                 'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-lawyer.xml',
@@ -330,6 +341,17 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'import_preview_image_url'   => $demos_preview_url .  'finance.png',
                 'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-finance/',
                 'categories'                 => [ 'business' ],
+            ],
+            [
+                'import_id'                  => 'inspiro-lite-insurance',
+                'import_file_name'           => 'Insurance Company (Lite)',
+                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-insurance.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-insurance.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-insurance.dat',
+                'import_preview_image_url'   => $demos_preview_url .  'insurance.png',
+                'preview_url'                => 'https://inspiro.wpzoom.com/insurance/',
+                'is_new'                     => true,
+                'categories'                 => [ 'lawyer', 'business' ],
             ],
 			[
                 'import_id'                  => 'inspiro-lite-recipe-blocks',
@@ -456,28 +478,6 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'import_preview_image_url'   => $demos_preview_url .  'freelancer2.png',
                 'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-freelancer-blocks/',
                 'categories'                 => [ 'portfolio', 'creative' ],
-            ],
-			[
-                'import_id'                  => 'inspiro-lite-insurance',
-                'import_file_name'           => 'Insurance Company (Lite)',
-                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-insurance.xml',
-                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-insurance.wie',
-                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-insurance.dat',
-                'import_preview_image_url'   => $demos_preview_url .  'insurance.png',
-                'preview_url'                => 'https://inspiro.wpzoom.com/insurance/',
-				'is_new'                     => true,
-                'categories'                 => [ 'lawyer', 'business' ],
-            ],
-			[
-                'import_id'                  => 'inspiro-lite-advisory',
-                'import_file_name'           => 'Advisory Company (Lite)',
-                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-advisory.xml',
-                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-advisory.wie',
-                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-advisory.dat',
-                'import_preview_image_url'   => $demos_preview_url .  'advisory.png',
-                'preview_url'                => 'https://inspiro.wpzoom.com/advisory/',
-				'is_new'                     => true,
-                'categories'                 => [ 'lawyer', 'business' ],
             ],
 
 		];
