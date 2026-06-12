@@ -203,6 +203,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			'inspiro-lite-winery'    	  		 => [ 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-fitness'		   		 => [ 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-insurance'		   	 => [ 'social-icons-widget-by-wpzoom', 'icon-block' ],
+            'inspiro-lite-agency'                => [ 'icon-block', 'slider-block', 'wpzoom-portfolio' ],
 			'inspiro-lite-advisory'		   	 	 => [ 'icon-block' ]
 		];
 	}
@@ -222,7 +223,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'type'                       => 'blocks',
 				'group'                      => 'business-portfolio',
 				'group_label'                => 'Business / Portfolio',
-				'categories'                 => [ 'business', 'portfolio' ],
+				'categories'                 => [ 'business', 'portfolio', 'video' ],
 			],
 			[
 				'import_id'                  => 'inspiro-lite',
@@ -249,7 +250,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'group'                      => 'business',
 				'group_label'                => 'Business',
 				'is_new'                     => true,
-				'categories'                 => [ 'business' ],
+				'categories'                 => [ 'business', 'portfolio' ],
 			],
 			[
 				'import_id'                  => 'inspiro-lite-business-elementor',
@@ -263,8 +264,19 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'group'                      => 'business',
 				'group_label'                => 'Business',
 				'is_new'                     => true,
-				'categories'                 => [ 'business' ],
+				'categories'                 => [ 'business', 'portfolio' ],
 			],
+            [
+                'import_id'                  => 'inspiro-lite-agency',
+                'import_file_name'           => 'Creative Agency',
+                'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-agency.xml',
+                'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-agency.wie',
+                'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-agency.dat',
+                'import_preview_image_url'   => $demos_preview_url .  'agency.png',
+                'preview_url'                => 'https://inspiro.wpzoom.com/lite-new/',
+                'is_new'                     => true,
+                'categories'                 => [ 'portfolio', 'creative', 'business', 'video' ],
+            ],
 			[	
 				'import_id'                  => 'inspiro-lite-woo',
 				'import_file_name'           => 'WooCommerce Shop',
@@ -381,7 +393,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-persona.dat',
                 'import_preview_image_url'   => $demos_preview_url .  'persona.png',
                 'preview_url'                => 'https://demo.wpzoom.com/inspiro-lite-persona/',
-                'categories'                 => [ 'portfolio', 'creative' ],
+                'categories'                 => [ 'portfolio', 'creative', 'video' ],
             ],
             [
                 'import_id'                  => 'inspiro-lite-remix',
@@ -402,7 +414,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-video.dat',
                 'import_preview_image_url'   => $demos_preview_url .  'video.png',
                 'preview_url'                => 'https://inspiro.wpzoom.com/video/',
-                'categories'                 => [ 'video', 'creative' ],
+                'categories'                 => [ 'video', 'creative', 'portfolio' ],
             ],
 			[
                 'import_id'                  => 'inspiro-lite-charity',
@@ -490,7 +502,6 @@ class Inspiro_Starter_Sites_Importer_Setup {
 	public function category_labels() {
 		return apply_filters( 'inspiro_starter_sites/category_labels', [
 			'business'        => __( 'Business', 'inspiro-starter-sites' ),
-            'architecture'    => __( 'Architecture', 'inspiro-starter-sites' ),
 			'portfolio'       => __( 'Portfolio', 'inspiro-starter-sites' ),
 			'creative'        => __( 'Creative', 'inspiro-starter-sites' ),
             'lawyer'          => __( 'Legal / Lawyer', 'inspiro-starter-sites' ),
@@ -505,6 +516,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			'construction'    => __( 'Construction', 'inspiro-starter-sites' ),
 			'real-estate'     => __( 'Real Estate & Architecture', 'inspiro-starter-sites' ),
 			'magazine'        => __( 'Magazine', 'inspiro-starter-sites' ),
+            'architecture'    => __( 'Architecture', 'inspiro-starter-sites' ),
 			'automotive'      => __( 'Automotive', 'inspiro-starter-sites' ),
 		] );
 	}
