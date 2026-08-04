@@ -187,7 +187,8 @@ class AiDemoGenerator {
 					'beta'             => __( 'Beta', 'inspiro-starter-sites' ),
 					'intro'            => __( 'Describe the website you need and AI will design and build a few pages for you in about a minute.', 'inspiro-starter-sites' ),
 					'placeholder'      => __( 'e.g. A website for a small coffee roastery in Portland that sells beans online and hosts tasting events…', 'inspiro-starter-sites' ),
-					'ideas_label'      => __( 'Need inspiration? Try one of these:', 'inspiro-starter-sites' ),
+					'ideas_show'       => __( 'Need inspiration? View ideas', 'inspiro-starter-sites' ),
+					'ideas_hide'       => __( 'Hide ideas', 'inspiro-starter-sites' ),
 					'style_label'      => __( 'Design style', 'inspiro-starter-sites' ),
 					'palette_label'    => __( 'Color palette', 'inspiro-starter-sites' ),
 					'typography_label' => __( 'Typography', 'inspiro-starter-sites' ),
@@ -200,6 +201,7 @@ class AiDemoGenerator {
 					'step3'            => __( 'Review & edit', 'inspiro-starter-sites' ),
 					'step3_hint'       => __( 'Open your new site or fine-tune pages in the editor', 'inspiro-starter-sites' ),
 					'plan_item'        => __( 'Site design, copy & structure', 'inspiro-starter-sites' ),
+					'portfolio_item'   => __( 'Portfolio plugin & sample projects', 'inspiro-starter-sites' ),
 					'finalize_item'    => __( 'Menu, footer & homepage setup', 'inspiro-starter-sites' ),
 					'continue'         => __( 'Continue', 'inspiro-starter-sites' ),
 					'enhance'          => __( 'Enhance with AI', 'inspiro-starter-sites' ),
@@ -382,17 +384,17 @@ class AiDemoGenerator {
 		$approved_raw   = isset( $_POST['pages'] ) ? json_decode( wp_unslash( $_POST['pages'] ), true ) : null; // phpcs:ignore WordPress.Security.ValidatedSanitized
 		$approved_pages = $this->sanitize_review_pages( $approved_raw );
 
-		$plan = $this->proxy->claude_json(
-			$this->system_prompt(),
-			$this->plan_prompt(
-				$description,
-				$style ? $style_options[ $style ]['prompt'] : '',
-				$palette ? $palette_options[ $palette ]['colors'] : array(),
-				$palette && ! empty( $palette_options[ $palette ]['theme_var'] ),
-				$approved_pages,
-				$typography ? $typography_options[ $typography ]['prompt'] : ''
+		$plan = $this->proxy->claude_task_json(
+			'demo-plan',
+			array(
+				'description'    => $description,
+				'style'          => $style,
+				'typography'     => $typography,
+				'palette_colors' => $palette ? $palette_options[ $palette ]['colors'] : array(),
+				'use_theme_var'  => $palette && ! empty( $palette_options[ $palette ]['theme_var'] ),
+				'pages'          => $approved_pages,
+				'font_families'  => array_keys( $this->font_whitelist() ),
 			),
-			12000,
 			array( $stream, 'tick' )
 		);
 
@@ -427,7 +429,9 @@ class AiDemoGenerator {
 				$font_css = wptt_get_webfont_styles( 'https://fonts.googleapis.com/css2?' . implode( '&', $specs ) . '&display=swap' );
 				$stream->tick();
 				if ( is_string( $font_css ) && '' !== trim( $font_css ) && false === strpos( $font_css, '<' ) ) {
-					$plan['css'] = $font_css . "\n" . $plan['css'];
+					// Kept separate from the design CSS so the per-page AI
+					// calls don't waste tokens re-reading @font-face rules.
+					$plan['font_css'] = $font_css;
 				}
 			}
 		}
@@ -466,6 +470,10 @@ class AiDemoGenerator {
 					$plan['pages']
 				),
 				'remaining'  => isset( $quota['remaining'] ) ? (int) $quota['remaining'] : null,
+				'portfolio'  => array(
+					'needed'        => ! empty( $plan['portfolio']['needed'] ) && ! empty( $plan['portfolio']['items'] ),
+					'plugin_active' => post_type_exists( 'portfolio_item' ),
+				),
 			)
 		);
 	}
@@ -490,20 +498,7 @@ class AiDemoGenerator {
 			wp_send_json_error( array( 'message' => esc_html__( 'Type a few words about the website first.', 'inspiro-starter-sites' ) ) );
 		}
 
-		$prompt = "Expand this short website request into a vivid brief for generating a demo website:\n\n"
-			. '"' . $description . '"' . "\n\n"
-			. "Rules:\n"
-			. "- 2-4 sentences, maximum ~90 words. It must still read as a request a person would type, not marketing copy.\n"
-			. "- Invent concrete, fitting details the request lacks: a business/person name, a city or region, the audience, 2-3 specific offerings, and the visual vibe (e.g. moody and cinematic, bright and playful).\n"
-			. "- Keep every detail the user already gave; never contradict them.\n"
-			. "- Write in the language the request is WRITTEN in.\n"
-			. "- Return ONLY the enhanced description text — no quotes, no preamble, no markdown.";
-
-		$text = $this->proxy->claude_text(
-			'You help people describe the website they want. Return only the improved description text.',
-			$prompt,
-			400
-		);
+		$text = $this->proxy->claude_task( 'demo-enhance', array( 'description' => $description ) );
 
 		if ( is_wp_error( $text ) ) {
 			wp_send_json_error(
@@ -544,18 +539,12 @@ class AiDemoGenerator {
 			wp_send_json_error( array( 'message' => esc_html__( 'Please describe your website in a bit more detail.', 'inspiro-starter-sites' ) ) );
 		}
 
-		$prompt = "Propose the pages for a demo WordPress website based on this request:\n\n"
-			. '"' . $description . '"' . "\n\n"
-			. "Rules:\n"
-			. "- 1 to " . self::MAX_REVIEW_PAGES . " pages — typically 3-5; a SINGLE landing page when the request calls for one. The FIRST page is always {\"slug\":\"home\",\"title\":\"Home\"}.\n"
-			. "- Page titles in the language the request is WRITTEN in (the business's location or cuisine does not change the language).\n"
-			. "- brief: one sentence on what the page should contain.\n"
-			. "- Return ONLY compact JSON: {\"pages\":[{\"slug\":\"home\",\"title\":\"Home\",\"brief\":\"...\"}]}";
-
-		$result = $this->proxy->claude_json(
-			'You plan WordPress demo websites. Return only valid JSON with no markdown formatting.',
-			$prompt,
-			700
+		$result = $this->proxy->claude_task_json(
+			'demo-pages',
+			array(
+				'description' => $description,
+				'max_pages'   => self::MAX_REVIEW_PAGES,
+			)
 		);
 
 		if ( is_wp_error( $result ) || empty( $result['pages'] ) || ! is_array( $result['pages'] ) ) {
@@ -676,11 +665,26 @@ class AiDemoGenerator {
 		$page = $state['plan']['pages'][ $index ];
 
 		// One Claude call designs this page as HTML against the shared
-		// stylesheet generated in the plan step.
-		$html = $this->proxy->claude_text(
-			$this->page_system_prompt(),
-			$this->page_prompt( $state, $index ),
-			9000,
+		// stylesheet generated in the plan step (prompt assembled server-side).
+		$html = $this->proxy->claude_task(
+			'demo-page',
+			array(
+				'description'      => $state['description'],
+				'site_title'       => $state['plan']['site_title'],
+				'tagline'          => $state['plan']['tagline'],
+				'css'              => $state['plan']['css'],
+				'page'             => $page,
+				'pages'            => array_map(
+					static function ( $p ) {
+						return array(
+							'slug'  => $p['slug'],
+							'title' => $p['title'],
+						);
+					},
+					$state['plan']['pages']
+				),
+				'portfolio_needed' => ! empty( $state['plan']['portfolio']['needed'] ) && ! empty( $state['plan']['portfolio']['items'] ),
+			),
 			array( $stream, 'tick' )
 		);
 
@@ -763,6 +767,10 @@ class AiDemoGenerator {
 	public function ajax_finalize() {
 		Helpers::verify_ajax_call();
 
+		if ( function_exists( 'set_time_limit' ) ) {
+			@set_time_limit( 180 ); // phpcs:ignore
+		}
+
 		$plan_id = isset( $_POST['plan_id'] ) ? sanitize_key( wp_unslash( $_POST['plan_id'] ) ) : '';
 		$state   = $this->get_plan_state( $plan_id );
 
@@ -776,6 +784,13 @@ class AiDemoGenerator {
 		if ( empty( $created_pages ) ) {
 			wp_send_json_error( array( 'message' => esc_html__( 'No pages were created.', 'inspiro-starter-sites' ) ) );
 		}
+
+		// Portfolio-item creation sideloads several photos — stream
+		// keep-alive bytes so short server idle timeouts survive it.
+		$stream = new StreamingResponse();
+		$stream->begin();
+
+		$this->create_portfolio_items( $state, $plan_id, $stream );
 
 		ksort( $created_pages );
 
@@ -877,7 +892,7 @@ class AiDemoGenerator {
 		$demos[ $plan_id ] = array(
 			'site_title'  => $state['plan']['site_title'],
 			'description' => $state['description'],
-			'css'         => isset( $state['plan']['css'] ) ? $state['plan']['css'] : '',
+			'css'         => trim( ( ! empty( $state['plan']['font_css'] ) ? $state['plan']['font_css'] . "\n" : '' ) . ( isset( $state['plan']['css'] ) ? $state['plan']['css'] : '' ) ),
 			'pages'       => array_values( $created_pages ),
 			'menu_id'     => $menu_id && ! is_wp_error( $menu_id ) ? (int) $menu_id : 0,
 			'widgets'     => $footer_widget_ids,
@@ -891,12 +906,60 @@ class AiDemoGenerator {
 		// Fresh permalinks for the new pages.
 		flush_rewrite_rules();
 
-		wp_send_json_success(
+		$stream->finish_success(
 			array(
 				'view_url'  => home_url( '/' ),
 				'pages_url' => admin_url( 'edit.php?post_type=page' ),
 			)
 		);
+	}
+
+	/**
+	 * Create the plan's portfolio items (WPZOOM Portfolio plugin CPT) with
+	 * sideloaded featured images. No-op when the plan doesn't need a
+	 * portfolio or the plugin isn't active.
+	 *
+	 * @param array             $state   Plan state (used_photo_ids updated).
+	 * @param string            $plan_id Plan ID (cleanup meta tag).
+	 * @param StreamingResponse $stream  Keep-alive.
+	 */
+	private function create_portfolio_items( array &$state, $plan_id, StreamingResponse $stream ) {
+		$portfolio = isset( $state['plan']['portfolio'] ) ? $state['plan']['portfolio'] : array();
+
+		if ( empty( $portfolio['needed'] ) || empty( $portfolio['items'] ) || ! post_type_exists( 'portfolio_item' ) ) {
+			return;
+		}
+
+		foreach ( $portfolio['items'] as $item ) {
+			$post_id = wp_insert_post(
+				wp_slash(
+					array(
+						'post_type'   => 'portfolio_item',
+						'post_status' => 'publish',
+						'post_title'  => $item['title'],
+						'meta_input'  => array(
+							self::GENERATED_META_KEY => $plan_id,
+						),
+					)
+				)
+			);
+
+			if ( is_wp_error( $post_id ) || ! $post_id ) {
+				continue;
+			}
+
+			if ( ! empty( $item['image_query'] ) ) {
+				$images = $this->resolve_images( $item['image_query'], 1, $state['used_photo_ids'], $state['plan']['site_title'], $plan_id, array( $stream, 'tick' ) );
+				if ( $images ) {
+					set_post_thumbnail( $post_id, $images[0]['id'] );
+					$state['used_photo_ids'][] = $images[0]['photo_id'];
+				}
+			}
+
+			$stream->tick();
+		}
+
+		set_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id, $state, HOUR_IN_SECONDS );
 	}
 
 	/* ---------------------------------------------------------------------
@@ -1006,7 +1069,7 @@ class AiDemoGenerator {
 
 		$post_ids = get_posts(
 			array(
-				'post_type'   => array( 'page', 'attachment' ),
+				'post_type'   => array( 'page', 'attachment', 'portfolio_item' ),
 				'post_status' => 'any',
 				'numberposts' => -1,
 				'fields'      => 'ids',
@@ -1216,134 +1279,6 @@ class AiDemoGenerator {
 	}
 
 	/**
-	 * Shared design-quality directive for both prompts.
-	 *
-	 * @return string
-	 */
-	private function design_directive() {
-		return 'NEVER use generic AI-generated aesthetics: cliched color schemes (particularly purple gradients, or cream backgrounds with serif type on every site), predictable centered-hero-then-three-cards layouts, or cookie-cutter design without context-specific character. The quality bar is premium WordPress demo sites: modern, image-led, sans-serif-forward typography with generous whitespace, deep neutral darks, one confident accent color, and cohesive rhythm across sections. Serif typefaces are a deliberate accent or an explicit typography choice — never the default. Sites are LIGHT by default: white/near-white page backgrounds with dark text, dark sections only as accents — a predominantly dark site ONLY when the user explicitly selects a Dark style or the request asks for it. Vary art direction between businesses: two different requests must not produce the same-feeling site.';
-	}
-
-	/**
-	 * System prompt for the plan call.
-	 *
-	 * @return string
-	 */
-	private function system_prompt() {
-		return 'You are an award-winning web designer and copywriter who creates WordPress demo websites. '
-			. $this->design_directive()
-			. ' Return only valid JSON with no markdown formatting.';
-	}
-
-	/**
-	 * System prompt for the per-page HTML call.
-	 *
-	 * @return string
-	 */
-	private function page_system_prompt() {
-		return 'You are an award-winning web designer building one page of a demo website. '
-			. $this->design_directive()
-			. ' Return only raw HTML with no markdown fences and no commentary.';
-	}
-
-	/**
-	 * User prompt for the plan call.
-	 *
-	 * @param string $description User's site description.
-	 * @return string
-	 */
-	private function plan_prompt( $description, $style_instruction = '', $palette_colors = array(), $use_theme_var = false, $approved_pages = array(), $typography_instruction = '' ) {
-		$direction = '';
-
-		if ( $typography_instruction ) {
-			$direction .= '- TYPOGRAPHY (selected by the user, mandatory): ' . $typography_instruction . ". Choose the \"fonts\" families accordingly.\n";
-		}
-
-		if ( $approved_pages ) {
-			$list = array();
-			foreach ( $approved_pages as $page ) {
-				$list[] = $page['slug'] . ' — ' . $page['title'] . ' — ' . $page['brief'];
-			}
-			$direction .= "- PAGES (approved by the user, mandatory): the site has EXACTLY these pages, in this order — use these slugs and titles verbatim in \"pages\" and expand each brief into 2-4 sentences describing that page's sections and layout:\n  "
-				. implode( "\n  ", $list ) . "\n";
-		}
-		if ( $style_instruction ) {
-			$direction .= "- ART DIRECTION STYLE (selected by the user, mandatory): " . $style_instruction . ".\n";
-		}
-		if ( $palette_colors ) {
-			$direction .= '- COLOR PALETTE (selected by the user, mandatory): build the entire design system around these brand colors: '
-				. implode( ', ', $palette_colors )
-				. " — derive tints, shades and neutrals from them and apply them consistently across every page.\n";
-
-			if ( $use_theme_var ) {
-				$direction .= '- This is the WordPress theme\'s own palette: define the main accent as a custom property bound to the theme\'s live variable — e.g. ".iss-ai-demo { --ai-accent: var(--inspiro-primary-color, ' . $palette_colors[0] . '); }" — and use var(--ai-accent) for every accent-colored element, so changing the theme palette in the Customizer restyles the demo automatically.' . "\n";
-			}
-		}
-
-		return "Design a complete demo website for the following request:\n\n"
-			. '"' . $description . '"' . "\n\n"
-			. "Return a site plan plus the site's full stylesheet. Rules:\n"
-			. $direction
-			. "- 1 to 5 pages — typically 3-5; a SINGLE landing page when the request calls for it (e.g. a product launch, event, or one-pager). The FIRST page is always the homepage with slug \"home\". Pick inner pages that fit the business (about, services, menu, portfolio, contact...).\n"
-			. "- Each page gets a \"brief\": 2-4 sentences describing its sections, layout ideas and content angle. Make pages structurally DIFFERENT from each other.\n"
-			. "- LANGUAGE: write ALL copy (site title, tagline, briefs, page names) in the language the request itself is WRITTEN in, unless it explicitly asks for another language. The business's location, nationality or cuisine does NOT change the language: an English request about a roastery in Porto or an Italian restaurant gets ENGLISH copy and English page names.\n"
-			. "- \"css\" is the complete design system for the whole site. Requirements:\n"
-			. "  * EVERY selector is scoped under .iss-ai-demo (e.g. \".iss-ai-demo .ai-hero { ... }\"). Style element defaults too (.iss-ai-demo h2, .iss-ai-demo p...).\n"
-			. "  * EVERY custom class name starts with the prefix ai- (.ai-hero, .ai-card, .ai-grid...) so the active theme's own classes can never collide with the design.\n"
-			. "  * CSS custom properties on .iss-ai-demo for the palette and fonts.\n"
-			. "  * A distinctive art direction for THIS business: real palette, fluid type and section padding with clamp().\n"
-			. "  * Typography: define .iss-ai-demo { --font-display: '<fonts.display>', <fallback stack>; --font-body: '<fonts.body>', <fallback stack>; } using EXACTLY the families you chose in the \"fonts\" field, and use these variables for all type.\n"
-			. "  * Must define: .ai-kicker (eyebrow label), .ai-card styles, section spacing/typography (including heights for photo-backed hero/banner sections), and .ai-container { max-width: 1140px; margin-inline: auto; } used inside full-bleed sections so their content aligns with the site's content column. Layout grids are native WordPress columns — do NOT define CSS grid systems.\n"
-			. "  * Do NOT define button styles (.ai-btn) — buttons are rendered as native WordPress buttons from the \"brand\" tokens below. Do NOT underline links inside buttons (scope generic link styles to content, e.g. .iss-ai-demo p a).\n"
-			. "  * The stylesheet is the source of truth for the FULL design — every section class used in pages (including .ai-section, .ai-card, heroes) must be completely styled here: backgrounds, padding, spacing, colors. A page must look right from this CSS alone.\n"
-			. "  * Style images (border-radius etc.) and vary section backgrounds so the site has rhythm.\n"
-			. "  * Gradients, shadows, borders, CSS-only transitions are welcome. NO url(), NO @import, NO external fonts, NO JavaScript, NO double-quote characters anywhere in the CSS (use single quotes).\n"
-			. "  * Roughly 150-250 lines.\n"
-			. "- \"footer\": short content for the theme's footer widget areas (the theme renders the site footer — pages must NOT contain their own): about = 1-2 sentence blurb about the business, contact_heading = a short localized heading like Contact, plus fictional email, phone, address.\n"
-			. "- \"brand\": tokens used to render native WordPress buttons and accents: accent (hex background of primary buttons), accent_text (hex text color on the accent, must be readable), radius (button corner radius like 8px, 999px for pills, 0px for sharp).\n"
-			. "- \"fonts\": pick a display and a body family for this site, EXACTLY from this list (they are loaded as real webfonts): " . implode( ', ', array_keys( $this->font_whitelist() ) ) . ". Pick pairings that fit the business and differ between sites; display and body may be the same family.\n"
-			. "- Never include a literal double-quote character (\") inside any JSON string value; in CSS use single quotes, in copy use curly quotes.\n"
-			. "- Return ONLY compact JSON matching exactly this shape:\n"
-			. '{"site_title":"...","tagline":"...","css":".iss-ai-demo{...} .iss-ai-demo .ai-hero{...}","fonts":{"display":"Syne","body":"DM Sans"},"brand":{"accent":"#c4580a","accent_text":"#ffffff","radius":"8px"},"footer":{"about":"...","contact_heading":"...","email":"...","phone":"...","address":"..."},"pages":[{"slug":"home","title":"Home","brief":"..."}]}';
-	}
-
-	/**
-	 * User prompt for a single page's HTML.
-	 *
-	 * @param array $state Plan state.
-	 * @param int   $index Page index.
-	 * @return string
-	 */
-	private function page_prompt( array $state, $index ) {
-		$plan  = $state['plan'];
-		$page  = $plan['pages'][ $index ];
-		$pages = array();
-		foreach ( $plan['pages'] as $p ) {
-			$pages[] = $p['slug'] . ' (' . $p['title'] . ')';
-		}
-
-		return 'Build the "' . $page['title'] . '" page (slug: ' . $page['slug'] . ') of the demo site "' . $plan['site_title'] . '" — ' . $plan['tagline'] . ".\n\n"
-			. 'Original request: "' . $state['description'] . "\"\n"
-			. 'Site pages (for internal links): ' . implode( ', ', $pages ) . "\n"
-			. 'Page brief: ' . $page['brief'] . "\n\n"
-			. "The site's stylesheet is below. Build the page WITH these classes (plus semantic extra classes only if the stylesheet defines them):\n\n"
-			. $plan['css'] . "\n\n"
-			. "Write the page BODY as HTML in exactly this dialect:\n"
-			. "- Allowed elements: <section>, <div>, <h1>-<h6>, <p>, <span>, <img>, <a>, <ul>/<ol>/<li>, <blockquote>, <details>/<summary>, <figure>/<figcaption>, <hr>, inline <strong>/<em>/<br>, and small decorative inline <svg> icons (fill='currentColor', no scripts).\n"
-			. "- Structure: 4 to 7 top-level <section> elements with meaningful classes from the stylesheet (all custom classes carry the ai- prefix). Exactly ONE <h1> on the page, in the first section. Do NOT wrap the page in a .iss-ai-demo container — that wrapper is added automatically.\n"
-			. "- Section widths: sections WITHOUT a painted background are centered at the site's content width automatically — design them as normal content columns. Sections WITH a painted background span the full viewport: declare data-bg='#hex' for solid colors (plus data-text='#hex' when the text is light — these become native, user-editable block colors layered on top of the CSS) or data-full='1' for gradient/photo backgrounds. Inside full-bleed sections, wrap the content in a container div whose class the stylesheet constrains (max-width + margin-inline auto) so text lines up with the site's content column.\n"
-			. "- Images: NEVER use src. Write <img data-query='english photo search phrase' data-orientation='landscape' alt='...'> (or data-orientation='portrait' for people/tall crops). 2-6 images where the design calls for them; queries specific and photogenic, no brand names.\n"
-			. "- Photo-backed sections (heroes, banners, CTAs with imagery): put the image FIRST inside the section as <img data-query='...' data-role='background' data-dim='40' alt='...'> — it becomes a native cover block with the photo cropped to the section (height comes from the section's CSS class). The homepage hero should normally be such a section.\n"
-			. "- Content images (not backgrounds) MUST declare data-aspect — '16-9' (wide), '3-2', '4-3', '1-1' (square), '3-4' (portrait) — so they crop to a fitting ratio. NEVER place an image without data-aspect; an uncropped portrait photo must never span the content column.\n"
-			. "- Card/feature grids: wrap the items in <div class='ai-cols-3'> (or ai-cols-2 / ai-cols-4) — each child becomes a native WordPress column; do not build main layouts with custom CSS grid.\n"
-			. "- Buttons: <a class='ai-btn' href='#page:contact'>Label</a> (or class='ai-btn ai-btn-outline' for the secondary variant) — they are converted to native WordPress buttons automatically. ALL internal links use href='#page:slug' with a slug from the page list above.\n"
-			. "- Do NOT include a site header, logo, navigation menu/bar, or site footer — the WordPress theme already renders those around your content. Start with the page's first content section and end with its last content section. Never use <header>, <nav> or <footer> elements.\n"
-			. "- NO <style>, NO <script>, NO style= attributes, NO src attributes, NO external resources.\n"
-			. "- Copy: demo-quality and concise — headings punchy, paragraphs 1-3 short sentences, realistic fictional details. Write in the language the original request is WRITTEN in (the business's location or cuisine does not change the language).\n"
-			. "- Return ONLY the HTML.";
-	}
-
-	/**
 	 * Validate and sanitize the AI-returned plan into a trusted structure.
 	 *
 	 * @param array $plan     Raw decoded plan.
@@ -1387,6 +1322,23 @@ class AiDemoGenerator {
 			'display' => isset( $whitelist[ $display ] ) ? $display : 'Inter Tight',
 			'body'    => isset( $whitelist[ $body ] ) ? $body : 'Inter',
 		);
+
+		// Portfolio: items shown via the WPZOOM Portfolio plugin's block.
+		$clean['portfolio'] = array(
+			'needed' => ! empty( $plan['portfolio']['needed'] ),
+			'items'  => array(),
+		);
+		if ( $clean['portfolio']['needed'] && ! empty( $plan['portfolio']['items'] ) && is_array( $plan['portfolio']['items'] ) ) {
+			foreach ( array_slice( $plan['portfolio']['items'], 0, 8 ) as $item ) {
+				if ( ! is_array( $item ) || empty( $item['title'] ) ) {
+					continue;
+				}
+				$clean['portfolio']['items'][] = array(
+					'title'       => $clean_text( $item['title'], 120 ),
+					'image_query' => $clean_text( isset( $item['image_query'] ) ? $item['image_query'] : '', 80 ),
+				);
+			}
+		}
 
 		// Brand tokens for native buttons/accents (validated, with fallbacks).
 		$raw_brand      = ( ! empty( $plan['brand'] ) && is_array( $plan['brand'] ) ) ? $plan['brand'] : array();
@@ -1512,7 +1464,11 @@ class AiDemoGenerator {
 		}
 
 		$state = $this->get_plan_state( $plan_id );
-		return ( $state && ! empty( $state['plan']['css'] ) ) ? $state['plan']['css'] : '';
+		if ( ! $state || empty( $state['plan']['css'] ) ) {
+			return '';
+		}
+		$font_css = ! empty( $state['plan']['font_css'] ) ? $state['plan']['font_css'] . "\n" : '';
+		return $font_css . $state['plan']['css'];
 	}
 
 	/**
@@ -1596,23 +1552,18 @@ class AiDemoGenerator {
 		return array(
 			'modern'       => array(
 				'label'  => __( 'Modern Sans', 'inspiro-starter-sites' ),
-				'prompt' => 'modern sans-serif throughout — Inter Tight, Inter, or Manrope for display AND body, tight letter-spacing on headlines, confident weights',
 			),
 			'geometric'    => array(
 				'label'  => __( 'Geometric', 'inspiro-starter-sites' ),
-				'prompt' => 'geometric sans-serif — Poppins, Jost, Sora or Montserrat display with a clean sans body, rounded friendly feel',
 			),
 			'expressive'   => array(
 				'label'  => __( 'Expressive', 'inspiro-starter-sites' ),
-				'prompt' => 'expressive display — Syne or Space Grotesk for big personality headlines, DM Sans or Onest body; bold scale contrast between display and body',
 			),
 			'serif-accent' => array(
 				'label'  => __( 'Serif Accent', 'inspiro-starter-sites' ),
-				'prompt' => 'sans-serif body (Inter Tight, Onest or DM Sans) with Instrument Serif or Fraunces used ONLY as an accent — italic highlighted words inside headlines, not whole paragraphs',
 			),
 			'classic'      => array(
 				'label'  => __( 'Classic Serif', 'inspiro-starter-sites' ),
-				'prompt' => 'classic serif display — Fraunces or Playfair Display headlines with a humanist sans body (Manrope, Raleway); refined and literary',
 			),
 		);
 	}
@@ -1626,35 +1577,27 @@ class AiDemoGenerator {
 		return array(
 			'minimal'   => array(
 				'label'  => __( 'Minimal', 'inspiro-starter-sites' ),
-				'prompt' => 'ultra-minimal and restrained — lots of whitespace, typographic hierarchy does the work, few decorative elements',
 			),
 			'editorial' => array(
 				'label'  => __( 'Editorial', 'inspiro-starter-sites' ),
-				'prompt' => 'editorial magazine feel — serif display type, pull quotes, asymmetric layouts, generous imagery',
 			),
 			'bold'      => array(
 				'label'  => __( 'Big Type', 'inspiro-starter-sites' ),
-				'prompt' => 'big-type — oversized confident display headlines on a LIGHT background, high contrast dark-on-light, graphic blocks of color as accents',
 			),
 			'luxury'    => array(
 				'label'  => __( 'Luxury', 'inspiro-starter-sites' ),
-				'prompt' => 'luxury — refined serif typography, muted sophisticated palette, generous spacing, understated elegance',
 			),
 			'corporate' => array(
 				'label'  => __( 'Corporate', 'inspiro-starter-sites' ),
-				'prompt' => 'clean corporate — structured grids, professional and trustworthy, clear hierarchy',
 			),
 			'playful'   => array(
 				'label'  => __( 'Playful', 'inspiro-starter-sites' ),
-				'prompt' => 'playful and colourful — rounded shapes, energetic accent colors, friendly voice',
 			),
 			'retro'     => array(
 				'label'  => __( 'Retro', 'inspiro-starter-sites' ),
-				'prompt' => 'retro-vintage character — warm aged tones, classic typographic flavor, subtle texture feel (CSS only)',
 			),
 			'dark'      => array(
 				'label'  => __( 'Dark', 'inspiro-starter-sites' ),
-				'prompt' => 'dark mode throughout — near-black backgrounds on every section, one luminous accent color, glowing highlights',
 			),
 		);
 	}

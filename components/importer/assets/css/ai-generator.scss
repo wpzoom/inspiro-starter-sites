@@ -267,13 +267,36 @@ body.iss-ai-open {
 	outline: none;
 }
 
-/* Enhance-with-AI row under the textarea */
+/* Toolbar row under the textarea: ideas toggle left, enhance right */
 .iss-ai-enhance-row {
 	display: flex;
-	justify-content: flex-end;
 	align-items: center;
 	gap: 10px;
 	margin-top: 6px;
+}
+
+.iss-ai-enhance-spacer {
+	flex: 1 1 auto;
+}
+
+.iss-ai-ideas-toggle {
+	border: 0;
+	background: none;
+	padding: 4px 6px;
+	font-size: 12px;
+	font-weight: 600;
+	color: #6b7280;
+	cursor: pointer;
+	border-radius: 6px;
+}
+
+.iss-ai-ideas-toggle:hover {
+	color: #1d1d1f;
+	background: #f4f4f5;
+}
+
+.iss-ai-ideas[hidden] {
+	display: none;
 }
 
 .iss-ai-enhance {

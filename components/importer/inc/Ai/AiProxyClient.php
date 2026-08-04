@@ -142,6 +142,64 @@ class AiProxyClient {
 			),
 		);
 
+		return $this->request_claude( $body, $heartbeat );
+	}
+
+	/**
+	 * Run a server-defined AI task: the proxy assembles the prompt from
+	 * { task, vars } (see wpzoom-ai-prompts.php on the AI server), so no
+	 * prompt engineering ships in this plugin's source.
+	 *
+	 * @param string        $task      Task slug (demo-plan, demo-page, ...).
+	 * @param array         $vars      Task variables.
+	 * @param callable|null $heartbeat Keep-alive callback.
+	 * @return string|WP_Error Text response.
+	 */
+	public function claude_task( $task, array $vars, $heartbeat = null ) {
+		return $this->request_claude(
+			array(
+				'task'   => $task,
+				'vars'   => $vars,
+				'stream' => false,
+			),
+			$heartbeat
+		);
+	}
+
+	/**
+	 * claude_task() + JSON extraction.
+	 *
+	 * @param string        $task      Task slug.
+	 * @param array         $vars      Task variables.
+	 * @param callable|null $heartbeat Keep-alive callback.
+	 * @return array|WP_Error Decoded JSON object.
+	 */
+	public function claude_task_json( $task, array $vars, $heartbeat = null ) {
+		$text = $this->claude_task( $task, $vars, $heartbeat );
+
+		if ( is_wp_error( $text ) ) {
+			return $text;
+		}
+
+		$text    = preg_replace( '/^```(?:json)?\s*|\s*```$/s', '', trim( $text ) );
+		$text    = $this->extract_json_object( $text );
+		$decoded = json_decode( $text, true );
+
+		if ( ! is_array( $decoded ) ) {
+			return new WP_Error( 'ai_parse_error', __( 'The AI returned a malformed response. Please try again.', 'inspiro-starter-sites' ) );
+		}
+
+		return $decoded;
+	}
+
+	/**
+	 * POST a request body to the Claude proxy and return the text content.
+	 *
+	 * @param array         $body      Request body (raw Anthropic or task form).
+	 * @param callable|null $heartbeat Keep-alive callback.
+	 * @return string|WP_Error
+	 */
+	private function request_claude( array $body, $heartbeat = null ) {
 		$result = $this->post_with_heartbeat( $this->endpoint( 'claude' ), wp_json_encode( $body ), $heartbeat );
 
 		if ( is_wp_error( $result ) ) {

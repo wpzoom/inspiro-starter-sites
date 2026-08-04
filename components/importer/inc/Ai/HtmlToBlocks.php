@@ -214,9 +214,15 @@ class HtmlToBlocks {
 
 			case 'div':
 			case 'aside':
+				// Placeholder for the WPZOOM Portfolio grid block.
+				if ( 'portfolio' === trim( $el->getAttribute( 'data-block' ) ) ) {
+					return \WP_Block_Type_Registry::get_instance()->is_registered( 'wpzoom-blocks/portfolio' )
+						? '<!-- wp:wpzoom-blocks/portfolio /-->'
+						: '';
+				}
 				// ai-cols-N wrappers become native columns blocks.
 				if ( preg_match( '/\bai-cols-([2-4])\b/', $el->getAttribute( 'class' ), $m ) ) {
-					return $this->columns_block( $el );
+					return $this->columns_block( $el, (int) $m[1] );
 				}
 				$bg = $this->find_background_image( $el );
 				if ( $bg ) {
@@ -526,14 +532,16 @@ class HtmlToBlocks {
 	}
 
 	/**
-	 * Native columns block from an ai-cols-N wrapper: each element child
-	 * becomes a column. Grid classes are stripped (core's flex layout takes
-	 * over); other classes are preserved.
+	 * Native columns blocks from an ai-cols-N wrapper. Children are CHUNKED
+	 * into rows of N — nine cards in an ai-cols-3 become three stacked
+	 * columns blocks of three, never one nine-column row.
 	 *
 	 * @param \DOMElement $el
+	 * @param int         $per_row Columns per row (2-4).
 	 * @return string
 	 */
-	private function columns_block( $el ) {
+	private function columns_block( $el, $per_row = 3 ) {
+		$per_row = max( 2, min( 4, (int) $per_row ) );
 		$columns = array();
 
 		foreach ( iterator_to_array( $el->childNodes ) as $child ) {
@@ -567,12 +575,17 @@ class HtmlToBlocks {
 			$class             .= ' ' . $classes;
 		}
 
-		return sprintf(
-			"<!-- wp:columns%s -->\n<div class=\"%s\">%s</div>\n<!-- /wp:columns -->",
-			$attrs ? ' ' . wp_json_encode( $attrs ) : '',
-			esc_attr( $class ),
-			"\n" . implode( "\n\n", $columns ) . "\n"
-		);
+		$rows = array();
+		foreach ( array_chunk( $columns, $per_row ) as $chunk ) {
+			$rows[] = sprintf(
+				"<!-- wp:columns%s -->\n<div class=\"%s\">%s</div>\n<!-- /wp:columns -->",
+				$attrs ? ' ' . wp_json_encode( $attrs ) : '',
+				esc_attr( $class ),
+				"\n" . implode( "\n\n", $chunk ) . "\n"
+			);
+		}
+
+		return implode( "\n\n", $rows );
 	}
 
 	private function figure_block( $el ) {

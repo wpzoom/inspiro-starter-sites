@@ -155,10 +155,12 @@ jQuery( function ( $ ) {
 							'<p class="iss-ai-field-label">' + esc( t.describe_label || '' ) + '</p>' +
 							'<textarea class="iss-ai-textarea js-iss-ai-description" rows="4" maxlength="1200" placeholder="' + esc( t.placeholder || '' ) + '"></textarea>' +
 							'<div class="iss-ai-enhance-row">' +
-								'<button type="button" class="iss-ai-enhance js-iss-ai-enhance">&#10024; ' + esc( t.enhance || '' ) + '</button>' +
+								'<button type="button" class="iss-ai-ideas-toggle js-iss-ai-ideas-toggle" aria-expanded="false">&#128161; ' + esc( t.ideas_show || '' ) + '</button>' +
+								'<span class="iss-ai-enhance-spacer"></span>' +
 								'<button type="button" class="iss-ai-enhance-undo js-iss-ai-enhance-undo" hidden>' + esc( t.undo || '' ) + '</button>' +
+								'<button type="button" class="iss-ai-enhance js-iss-ai-enhance">&#10024; ' + esc( t.enhance || '' ) + '</button>' +
 							'</div>' +
-							'<div class="iss-ai-ideas">' + ideas + '</div>' +
+							'<div class="iss-ai-ideas js-iss-ai-ideas" hidden>' + ideas + '</div>' +
 
 							'<div class="iss-ai-field-columns">' +
 								'<div class="iss-ai-field">' +
@@ -322,6 +324,9 @@ jQuery( function ( $ ) {
 		var $list = $root.find( '.js-iss-ai-progress-pages' ).empty();
 
 		$list.append( $( '<li>' ).attr( 'data-item', 'plan' ).addClass( 'is-done' ).text( t.plan_item || '' ) );
+		if ( planState.portfolio && planState.portfolio.needed ) {
+			$list.append( $( '<li>' ).attr( 'data-item', 'portfolio' ).text( t.portfolio_item || '' ) );
+		}
 		$.each( planState.pages || [], function ( i, page ) {
 			$list.append( $( '<li>' ).attr( 'data-item', 'page-' + i ).text( page.title ) );
 		} );
@@ -516,11 +521,38 @@ jQuery( function ( $ ) {
 				}
 				planState = response.data;
 				renderProgressPages();
-				buildNextPage( 0 );
+				ensurePortfolioPlugin( function () {
+					buildNextPage( 0 );
+				} );
 			} )
 			.fail( function ( xhr, textStatus ) {
 				var response = xhr && xhr.responseJSON ? xhr.responseJSON : null;
 				failWith( responseMessage( response ), xhrDetail( xhr, textStatus ) );
+			} );
+	}
+
+	// Install/activate the WPZOOM Portfolio plugin (via the importer's
+	// existing installer endpoint) when the plan needs it. Failures don't
+	// stop the run — the portfolio block simply won't be inserted.
+	function ensurePortfolioPlugin( next ) {
+		var portfolio = planState.portfolio || {};
+
+		if ( ! portfolio.needed ) {
+			next();
+			return;
+		}
+		if ( portfolio.plugin_active ) {
+			markProgressItem( 'portfolio', 'is-done' );
+			next();
+			return;
+		}
+
+		markProgressItem( 'portfolio', 'is-active' );
+
+		ajax( 'inspiro_starter_sites_install_plugin', { slug: 'wpzoom-portfolio' }, 120000 )
+			.always( function () {
+				markProgressItem( 'portfolio', 'is-done' );
+				next();
 			} );
 	}
 
@@ -613,9 +645,29 @@ jQuery( function ( $ ) {
 		}
 	} );
 
+	// Ideas are opt-in: hidden until "View ideas" is clicked, and collapsed
+	// again once one is picked — describing OR picking, never both.
+	function toggleIdeas( show ) {
+		var $ideas  = $root.find( '.js-iss-ai-ideas' );
+		var $toggle = $root.find( '.js-iss-ai-ideas-toggle' );
+
+		if ( show ) {
+			$ideas.removeAttr( 'hidden' );
+			$toggle.attr( 'aria-expanded', 'true' ).html( '&#128161; ' + esc( t.ideas_hide || '' ) );
+		} else {
+			$ideas.attr( 'hidden', 'hidden' );
+			$toggle.attr( 'aria-expanded', 'false' ).html( '&#128161; ' + esc( t.ideas_show || '' ) );
+		}
+	}
+
+	$root.on( 'click', '.js-iss-ai-ideas-toggle', function () {
+		toggleIdeas( $root.find( '.js-iss-ai-ideas' ).attr( 'hidden' ) !== undefined );
+	} );
+
 	$root.on( 'click', '.js-iss-ai-idea', function () {
 		var text = $( this ).attr( 'data-text' ) || $( this ).text();
 		$root.find( '.js-iss-ai-description' ).val( text ).trigger( 'focus' );
+		toggleIdeas( false );
 	} );
 
 	// Standalone "delete the AI demo" — meta-scoped server-side, so only
