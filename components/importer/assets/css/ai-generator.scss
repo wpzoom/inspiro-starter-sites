@@ -596,6 +596,44 @@ body.iss-ai-open {
 	color: #8a8f98;
 }
 
+.iss-ai-verify-code {
+	max-width: 160px;
+	font-size: 18px;
+	letter-spacing: 6px;
+	font-variant-numeric: tabular-nums;
+	text-align: center;
+}
+
+.iss-ai-verify-links {
+	display: flex;
+	gap: 18px;
+	margin: 14px 0 0;
+}
+
+.iss-ai-link-btn {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: #50575e;
+	font-size: 13px;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.iss-ai-link-btn:hover {
+	color: #1d1d1f;
+}
+
+.iss-ai-verify-note {
+	margin: 10px 0 0;
+	font-size: 13px;
+	color: #00753e;
+}
+
+.iss-ai-verify-note[hidden] {
+	display: none;
+}
+
 .iss-ai-connected-email {
 	display: block;
 	margin-bottom: 4px;

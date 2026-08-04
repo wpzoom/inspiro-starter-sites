@@ -144,17 +144,33 @@ jQuery( function ( $ ) {
 					'<div class="iss-ai-body">' +
 
 						// Step: connect — email registration with the WPZOOM AI
-						// server, required before any free generation.
+						// server, required before any free generation. Two
+						// modes: email entry, then 6-digit code verification.
 						'<div class="iss-ai-step iss-ai-step-connect" data-step="connect">' +
 							'<div class="iss-ai-connect-card">' +
-								'<h3>' + esc( t.connect_title || '' ) + '</h3>' +
-								'<p class="iss-ai-connect-text">' + esc( t.connect_text || '' ) + '</p>' +
-								'<div class="iss-ai-connect-row">' +
-									'<input type="email" class="iss-ai-connect-email js-iss-ai-connect-email" placeholder="' + esc( t.connect_email_ph || '' ) + '" autocomplete="email">' +
-									'<button type="button" class="button button-primary js-iss-ai-connect">' + esc( t.connect_button || '' ) + '</button>' +
+								'<div class="js-iss-ai-connect-mode-email">' +
+									'<h3>' + esc( t.connect_title || '' ) + '</h3>' +
+									'<p class="iss-ai-connect-text">' + esc( t.connect_text || '' ) + '</p>' +
+									'<div class="iss-ai-connect-row">' +
+										'<input type="email" class="iss-ai-connect-email js-iss-ai-connect-email" placeholder="' + esc( t.connect_email_ph || '' ) + '" autocomplete="email">' +
+										'<button type="button" class="button button-primary js-iss-ai-connect">' + esc( t.connect_button || '' ) + '</button>' +
+									'</div>' +
+									'<label class="iss-ai-connect-consent"><input type="checkbox" class="js-iss-ai-connect-consent"> <span>' + esc( t.connect_consent || '' ) + '</span></label>' +
+									'<p class="iss-ai-connect-privacy"><a href="https://www.wpzoom.com/privacy-policy/" target="_blank" rel="noopener">' + esc( t.connect_privacy || '' ) + '</a></p>' +
 								'</div>' +
-								'<label class="iss-ai-connect-consent"><input type="checkbox" class="js-iss-ai-connect-consent"> <span>' + esc( t.connect_consent || '' ) + '</span></label>' +
-								'<p class="iss-ai-connect-privacy"><a href="https://www.wpzoom.com/privacy-policy/" target="_blank" rel="noopener">' + esc( t.connect_privacy || '' ) + '</a></p>' +
+								'<div class="js-iss-ai-connect-mode-verify" hidden>' +
+									'<h3>' + esc( t.verify_title || '' ) + '</h3>' +
+									'<p class="iss-ai-connect-text js-iss-ai-verify-text"></p>' +
+									'<div class="iss-ai-connect-row">' +
+										'<input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" class="iss-ai-connect-email iss-ai-verify-code js-iss-ai-verify-code" placeholder="' + esc( t.verify_code_ph || '' ) + '" autocomplete="one-time-code">' +
+										'<button type="button" class="button button-primary js-iss-ai-verify">' + esc( t.verify_button || '' ) + '</button>' +
+									'</div>' +
+									'<p class="iss-ai-verify-links">' +
+										'<button type="button" class="iss-ai-link-btn js-iss-ai-resend">' + esc( t.resend_code || '' ) + '</button>' +
+										'<button type="button" class="iss-ai-link-btn js-iss-ai-change-email">' + esc( t.change_email || '' ) + '</button>' +
+									'</p>' +
+									'<p class="iss-ai-verify-note js-iss-ai-verify-note" hidden></p>' +
+								'</div>' +
 								'<p class="iss-ai-error js-iss-ai-connect-error" hidden></p>' +
 							'</div>' +
 						'</div>' +
@@ -839,50 +855,140 @@ jQuery( function ( $ ) {
 	} );
 
 	/* -----------------------------------------------------------------
-	 * Connect (email registration)
+	 * Connect (email registration + 6-digit verification)
 	 * -------------------------------------------------------------- */
 
-	function submitConnect() {
-		var $email  = $root.find( '.js-iss-ai-connect-email' );
-		var $button = $root.find( '.js-iss-ai-connect' );
+	var pendingEmail   = '';
+	var pendingConsent = false;
+
+	function showConnectMode( mode ) {
+		$root.find( '.js-iss-ai-connect-mode-email' ).attr( 'hidden', 'hidden' );
+		$root.find( '.js-iss-ai-connect-mode-verify' ).attr( 'hidden', 'hidden' );
+		$root.find( '.js-iss-ai-connect-mode-' + mode ).removeAttr( 'hidden' );
+		$root.find( '.js-iss-ai-connect-error' ).attr( 'hidden', 'hidden' );
+		$root.find( '.js-iss-ai-verify-note' ).attr( 'hidden', 'hidden' );
+	}
+
+	function connectError( message ) {
+		$root.find( '.js-iss-ai-connect-error' ).text( message || t.error_generic || '' ).removeAttr( 'hidden' );
+	}
+
+	function submitConnect( isResend ) {
+		var $button = $root.find( isResend ? '.js-iss-ai-resend' : '.js-iss-ai-connect' );
 		var $error  = $root.find( '.js-iss-ai-connect-error' );
-		var email   = $.trim( $email.val() || '' );
+		var email   = isResend ? pendingEmail : $.trim( $root.find( '.js-iss-ai-connect-email' ).val() || '' );
+		var consent = isResend ? pendingConsent : $root.find( '.js-iss-ai-connect-consent' ).is( ':checked' );
 
 		// Light client-side check; the server validates for real.
 		if ( ! email || email.indexOf( '@' ) < 1 || email.indexOf( '.' ) < 0 ) {
-			$error.text( t.connect_invalid || '' ).removeAttr( 'hidden' );
+			connectError( t.connect_invalid || '' );
 			return;
 		}
 		$error.attr( 'hidden', 'hidden' );
-		$button.prop( 'disabled', true ).text( t.connecting || '' );
+		$root.find( '.js-iss-ai-verify-note' ).attr( 'hidden', 'hidden' );
+		$button.prop( 'disabled', true );
+		if ( ! isResend ) {
+			$button.text( t.connecting || '' );
+		}
 
 		ajax( 'inspiro_starter_sites_ai_connect', {
 			email:   email,
-			consent: $root.find( '.js-iss-ai-connect-consent' ).is( ':checked' ) ? '1' : ''
+			consent: consent ? '1' : ''
 		}, 30000 )
 			.done( function ( response ) {
-				$button.prop( 'disabled', false ).text( t.connect_button || '' );
+				$button.prop( 'disabled', false );
+				if ( ! isResend ) {
+					$button.text( t.connect_button || '' );
+				}
 				if ( ! response || ! response.success || ! response.data ) {
-					$error.text( responseMessage( response ) ).removeAttr( 'hidden' );
+					connectError( responseMessage( response ) );
 					return;
 				}
+
+				// Verification pending: swap to the code entry.
+				if ( response.data.pending ) {
+					pendingEmail   = response.data.email || email;
+					pendingConsent = consent;
+					$root.find( '.js-iss-ai-verify-text' ).text( sprintf( t.verify_text || '%s', pendingEmail ) );
+					showConnectMode( 'verify' );
+					if ( isResend ) {
+						$root.find( '.js-iss-ai-verify-note' ).text( t.code_sent || '' ).removeAttr( 'hidden' );
+					} else {
+						$root.find( '.js-iss-ai-verify-code' ).val( '' ).trigger( 'focus' );
+					}
+					return;
+				}
+
 				applyQuotaResponse( response.data );
 				if ( response.data.connected ) {
 					showStep( 'input' );
 				}
 			} )
 			.fail( function () {
-				$button.prop( 'disabled', false ).text( t.connect_button || '' );
-				$error.text( t.error_generic || '' ).removeAttr( 'hidden' );
+				$button.prop( 'disabled', false );
+				if ( ! isResend ) {
+					$button.text( t.connect_button || '' );
+				}
+				connectError( t.error_generic || '' );
 			} );
 	}
 
-	$root.on( 'click', '.js-iss-ai-connect', submitConnect );
+	function submitVerify() {
+		var $button = $root.find( '.js-iss-ai-verify' );
+		var code    = ( $root.find( '.js-iss-ai-verify-code' ).val() || '' ).replace( /\D/g, '' );
+
+		if ( 6 !== code.length ) {
+			connectError( t.verify_invalid || '' );
+			return;
+		}
+		$root.find( '.js-iss-ai-connect-error' ).attr( 'hidden', 'hidden' );
+		$button.prop( 'disabled', true ).text( t.verifying || '' );
+
+		ajax( 'inspiro_starter_sites_ai_verify', { code: code }, 30000 )
+			.done( function ( response ) {
+				$button.prop( 'disabled', false ).text( t.verify_button || '' );
+				if ( ! response || ! response.success || ! response.data ) {
+					connectError( responseMessage( response ) );
+					return;
+				}
+				applyQuotaResponse( response.data );
+				if ( response.data.connected ) {
+					showConnectMode( 'email' );
+					showStep( 'input' );
+				}
+			} )
+			.fail( function () {
+				$button.prop( 'disabled', false ).text( t.verify_button || '' );
+				connectError( t.error_generic || '' );
+			} );
+	}
+
+	$root.on( 'click', '.js-iss-ai-connect', function () {
+		submitConnect( false );
+	} );
+
+	$root.on( 'click', '.js-iss-ai-verify', submitVerify );
+
+	$root.on( 'click', '.js-iss-ai-resend', function () {
+		submitConnect( true );
+	} );
+
+	$root.on( 'click', '.js-iss-ai-change-email', function () {
+		showConnectMode( 'email' );
+		$root.find( '.js-iss-ai-connect-email' ).trigger( 'focus' );
+	} );
 
 	$root.on( 'keydown', '.js-iss-ai-connect-email', function ( e ) {
 		if ( 'Enter' === e.key ) {
 			e.preventDefault();
-			submitConnect();
+			submitConnect( false );
+		}
+	} );
+
+	$root.on( 'keydown', '.js-iss-ai-verify-code', function ( e ) {
+		if ( 'Enter' === e.key ) {
+			e.preventDefault();
+			submitVerify();
 		}
 	} );
 } );

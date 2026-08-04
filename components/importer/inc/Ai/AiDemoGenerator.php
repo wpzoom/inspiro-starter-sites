@@ -65,6 +65,7 @@ class AiDemoGenerator {
 
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_quota', array( $this, 'ajax_quota' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_connect', array( $this, 'ajax_connect' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_verify', array( $this, 'ajax_verify' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_enhance_prompt', array( $this, 'ajax_enhance_prompt' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_suggest_pages', array( $this, 'ajax_suggest_pages' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_generate', array( $this, 'ajax_generate' ) );
@@ -258,6 +259,16 @@ class AiDemoGenerator {
 					'connect_invalid'  => __( 'Please enter a valid email address.', 'inspiro-starter-sites' ),
 					/* translators: %s: connected email address */
 					'connected_as'     => __( 'Connected as %s', 'inspiro-starter-sites' ),
+					'verify_title'     => __( 'Check your inbox', 'inspiro-starter-sites' ),
+					/* translators: %s: email address the code was sent to */
+					'verify_text'      => __( 'We sent a 6-digit code to %s. Enter it below to activate your free generations.', 'inspiro-starter-sites' ),
+					'verify_code_ph'   => __( '6-digit code', 'inspiro-starter-sites' ),
+					'verify_button'    => __( 'Verify & start', 'inspiro-starter-sites' ),
+					'verifying'        => __( 'Verifying…', 'inspiro-starter-sites' ),
+					'verify_invalid'   => __( 'Please enter the 6-digit code from the email.', 'inspiro-starter-sites' ),
+					'resend_code'      => __( 'Resend code', 'inspiro-starter-sites' ),
+					'code_sent'        => __( 'A new code is on its way.', 'inspiro-starter-sites' ),
+					'change_email'     => __( 'Use a different email', 'inspiro-starter-sites' ),
 				),
 			)
 		);
@@ -358,8 +369,46 @@ class AiDemoGenerator {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
 		}
 
+		// Server requires email verification: a 6-digit code was sent, the
+		// UI should show the code entry.
+		if ( ! empty( $result['pending'] ) ) {
+			wp_send_json_success(
+				array(
+					'connected' => false,
+					'pending'   => true,
+					'email'     => $result['email'],
+				)
+			);
+		}
+
 		// Return the quota right away so the UI can swap the connect card for
 		// the generator without a second round trip.
+		$quota = $this->proxy->quota( 'check' );
+
+		wp_send_json_success( array_merge(
+			$this->quota_payload( is_wp_error( $quota ) ? array() : $quota ),
+			array( 'previous' => $this->previous_demo_info() )
+		) );
+	}
+
+	/* ---------------------------------------------------------------------
+	 * AJAX: verify (6-digit email confirmation code)
+	 * ------------------------------------------------------------------ */
+
+	public function ajax_verify() {
+		Helpers::verify_ajax_call();
+
+		$code = isset( $_POST['code'] ) ? preg_replace( '/\D/', '', wp_unslash( $_POST['code'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		if ( 6 !== strlen( $code ) ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'Please enter the 6-digit code from the email.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$result = $this->proxy->verify( $code );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
 		$quota = $this->proxy->quota( 'check' );
 
 		wp_send_json_success( array_merge(

@@ -166,9 +166,12 @@ class AiProxyClient {
 	public function claude_task( $task, array $vars, $heartbeat = null ) {
 		return $this->request_claude(
 			array(
-				'task'   => $task,
-				'vars'   => $vars,
-				'stream' => false,
+				'task'     => $task,
+				'vars'     => $vars,
+				'stream'   => false,
+				// Task requests are free-tier only: the server requires an
+				// active email registration and rate-limits per email/day.
+				'site_key' => (string) get_option( self::SITE_KEY_OPTION, '' ),
 			),
 			$heartbeat
 		);
@@ -392,12 +395,14 @@ class AiProxyClient {
 	}
 
 	/**
-	 * Register this site + email with the proxy and store the issued site_key.
-	 * Free generations require this — the server keys the quota by email.
+	 * Register this site + email with the proxy. When the server requires
+	 * email verification it responds `pending` (a 6-digit code was emailed)
+	 * and the site_key is only released by verify(); otherwise the key is
+	 * stored immediately. The server keys free quota by the verified email.
 	 *
 	 * @param string $email   User email.
 	 * @param bool   $consent Whether the user opted into WPZOOM marketing emails.
-	 * @return array|WP_Error [ 'email' => string ] on success.
+	 * @return array|WP_Error [ 'email' => string, 'pending' => bool ].
 	 */
 	public function connect( $email, $consent = false ) {
 		$response = wp_remote_post(
@@ -421,13 +426,61 @@ class AiProxyClient {
 		$code = (int) wp_remote_retrieve_response_code( $response );
 		$data = json_decode( wp_remote_retrieve_body( $response ), true );
 
-		if ( $code < 200 || $code >= 300 || ! is_array( $data ) || empty( $data['success'] ) || empty( $data['site_key'] ) ) {
+		if ( $code < 200 || $code >= 300 || ! is_array( $data ) || empty( $data['success'] ) ) {
 			$msg = ( is_array( $data ) && ! empty( $data['message'] ) ) ? $data['message'] : ( 'HTTP ' . $code );
 			return new WP_Error( 'ai_connect_error', $msg );
 		}
 
+		if ( ! empty( $data['pending'] ) ) {
+			return array(
+				'pending' => true,
+				'email'   => sanitize_email( (string) ( isset( $data['email'] ) ? $data['email'] : $email ) ),
+			);
+		}
+
+		if ( empty( $data['site_key'] ) ) {
+			return new WP_Error( 'ai_connect_error', __( 'The AI service returned an unexpected response. Please try again.', 'inspiro-starter-sites' ) );
+		}
+
 		update_option( self::SITE_KEY_OPTION, sanitize_text_field( (string) $data['site_key'] ), false );
 		update_option( self::EMAIL_OPTION, sanitize_email( (string) ( isset( $data['email'] ) ? $data['email'] : $email ) ), false );
+
+		return array(
+			'pending' => false,
+			'email'   => $this->connected_email(),
+		);
+	}
+
+	/**
+	 * Confirm the emailed 6-digit code and store the released site_key.
+	 *
+	 * @param string $code 6-digit verification code.
+	 * @return array|WP_Error [ 'email' => string ] on success.
+	 */
+	public function verify( $code ) {
+		$response = wp_remote_post(
+			$this->endpoint( 'ai-verify' ),
+			array(
+				'headers' => array( 'Content-Type' => 'application/json' ),
+				'body'    => wp_json_encode( array( 'code' => preg_replace( '/\D/', '', (string) $code ) ) ),
+				'timeout' => 15,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return new WP_Error( 'ai_verify_unreachable', $response->get_error_message() );
+		}
+
+		$status = (int) wp_remote_retrieve_response_code( $response );
+		$data   = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( $status < 200 || $status >= 300 || ! is_array( $data ) || empty( $data['success'] ) || empty( $data['site_key'] ) ) {
+			$msg = ( is_array( $data ) && ! empty( $data['message'] ) ) ? $data['message'] : ( 'HTTP ' . $status );
+			return new WP_Error( 'ai_verify_error', $msg );
+		}
+
+		update_option( self::SITE_KEY_OPTION, sanitize_text_field( (string) $data['site_key'] ), false );
+		update_option( self::EMAIL_OPTION, sanitize_email( (string) ( isset( $data['email'] ) ? $data['email'] : '' ) ), false );
 
 		return array( 'email' => $this->connected_email() );
 	}
