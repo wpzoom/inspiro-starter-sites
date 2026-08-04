@@ -77,65 +77,111 @@ jQuery( function ( $ ) {
 			ideas += '<button type="button" class="iss-ai-idea js-iss-ai-idea">' + esc( idea ) + '</button>';
 		} );
 
+		// Design style + palette chips ("" = let the AI decide).
+		var styleChips = '<button type="button" class="iss-ai-chip is-active" data-value="">' + esc( t.auto || '' ) + '</button>';
+		$.each( config.styles || {}, function ( slug, label ) {
+			styleChips += '<button type="button" class="iss-ai-chip" data-value="' + esc( slug ) + '">' + esc( label ) + '</button>';
+		} );
+
+		var paletteChips = '<button type="button" class="iss-ai-chip is-active" data-value="">' + esc( t.auto || '' ) + '</button>';
+		$.each( config.palettes || {}, function ( slug, palette ) {
+			var swatches = '';
+			$.each( palette.colors || [], function ( i, color ) {
+				if ( /^#[0-9a-fA-F]{3,8}$/.test( color ) ) {
+					swatches += '<span class="iss-ai-swatch" style="background:' + color + '"></span>';
+				}
+			} );
+			paletteChips += '<button type="button" class="iss-ai-chip iss-ai-chip--palette" data-value="' + esc( slug ) + '">' + swatches + '<span>' + esc( palette.label ) + '</span></button>';
+		} );
+
+		var steps =
+			'<ol class="iss-ai-steps js-iss-ai-steps">' +
+				'<li data-step-num="1"><span class="iss-ai-step-num">1</span><span class="iss-ai-step-text"><strong>' + esc( t.step1 || '' ) + '</strong><em>' + esc( t.step1_hint || '' ) + '</em></span></li>' +
+				'<li data-step-num="2"><span class="iss-ai-step-num">2</span><span class="iss-ai-step-text"><strong>' + esc( t.step2 || '' ) + '</strong><em>' + esc( t.step2_hint || '' ) + '</em></span></li>' +
+				'<li data-step-num="3"><span class="iss-ai-step-num">3</span><span class="iss-ai-step-text"><strong>' + esc( t.step3 || '' ) + '</strong><em>' + esc( t.step3_hint || '' ) + '</em></span></li>' +
+			'</ol>';
+
 		var html =
 		'<div class="iss-ai-overlay js-iss-ai-overlay">' +
-			'<div class="iss-ai-modal" role="dialog" aria-modal="true" aria-label="' + esc( t.title || '' ) + '">' +
+			'<div class="iss-ai-modal iss-ai-modal--xl" role="dialog" aria-modal="true" aria-label="' + esc( t.title || '' ) + '">' +
 				'<button type="button" class="iss-ai-close js-iss-ai-close" aria-label="' + esc( t.close || 'Close' ) + '">&times;</button>' +
-				'<div class="iss-ai-header">' +
+
+				'<aside class="iss-ai-sidebar">' +
 					'<h2>' + esc( t.title || '' ) + ' <span class="iss-ai-badge">' + esc( t.beta || 'Beta' ) + '</span></h2>' +
 					'<p class="iss-ai-intro">' + esc( t.intro || '' ) + '</p>' +
-				'</div>' +
-				'<div class="iss-ai-body">' +
+					steps +
+					'<div class="iss-ai-sidebar-footer">' +
+						'<span class="iss-ai-quota js-iss-ai-quota">' + esc( t.quota_loading || '' ) + '</span>' +
+					'</div>' +
+				'</aside>' +
 
-					// Step: input.
-					'<div class="iss-ai-step iss-ai-step-input is-active" data-step="input">' +
-						'<div class="iss-ai-replace-notice js-iss-ai-replace-notice" hidden>' +
-							'<strong>' + esc( t.replace_title || '' ) + '</strong>' +
-							'<p class="js-iss-ai-replace-text"></p>' +
-							'<label class="iss-ai-replace-check"><input type="checkbox" class="js-iss-ai-replace" checked> <span>' + esc( t.replace_checkbox || '' ) + '</span></label>' +
-							'<p class="iss-ai-replace-hint">' + esc( t.replace_keep_hint || '' ) + '</p>' +
+				'<div class="iss-ai-main">' +
+					'<div class="iss-ai-body">' +
+
+						// Step: input.
+						'<div class="iss-ai-step iss-ai-step-input is-active" data-step="input">' +
+							'<div class="iss-ai-replace-notice js-iss-ai-replace-notice" hidden>' +
+								'<strong>' + esc( t.replace_title || '' ) + '</strong>' +
+								'<p class="js-iss-ai-replace-text"></p>' +
+								'<label class="iss-ai-replace-check"><input type="checkbox" class="js-iss-ai-replace" checked> <span>' + esc( t.replace_checkbox || '' ) + '</span></label>' +
+								'<p class="iss-ai-replace-hint">' + esc( t.replace_keep_hint || '' ) + '</p>' +
+								'<button type="button" class="iss-ai-delete-link js-iss-ai-delete">' + esc( t.delete_now || '' ) + '</button>' +
+							'</div>' +
+							'<p class="iss-ai-delete-result js-iss-ai-delete-result" hidden></p>' +
+
+							'<p class="iss-ai-field-label">' + esc( t.describe_label || '' ) + '</p>' +
+							'<textarea class="iss-ai-textarea js-iss-ai-description" rows="4" maxlength="1200" placeholder="' + esc( t.placeholder || '' ) + '"></textarea>' +
+							'<div class="iss-ai-ideas">' + ideas + '</div>' +
+
+							'<div class="iss-ai-field-columns">' +
+								'<div class="iss-ai-field">' +
+									'<p class="iss-ai-field-label">' + esc( t.style_label || '' ) + '</p>' +
+									'<div class="iss-ai-chips js-iss-ai-style">' + styleChips + '</div>' +
+								'</div>' +
+							'</div>' +
+
+							'<p class="iss-ai-field-label">' + esc( t.palette_label || '' ) + '</p>' +
+							'<div class="iss-ai-chips iss-ai-chips--grid js-iss-ai-palette">' + paletteChips + '</div>' +
+
+							'<p class="iss-ai-error js-iss-ai-input-error" hidden></p>' +
 						'</div>' +
-						'<textarea class="iss-ai-textarea js-iss-ai-description" rows="4" maxlength="1200" placeholder="' + esc( t.placeholder || '' ) + '"></textarea>' +
-						'<p class="iss-ai-ideas-label">' + esc( t.ideas_label || '' ) + '</p>' +
-						'<div class="iss-ai-ideas">' + ideas + '</div>' +
-						'<p class="iss-ai-error js-iss-ai-input-error" hidden></p>' +
-					'</div>' +
 
-					// Step: progress.
-					'<div class="iss-ai-step iss-ai-step-progress" data-step="progress">' +
-						'<div class="iss-ai-spinner" aria-hidden="true"></div>' +
-						'<p class="iss-ai-progress-label js-iss-ai-progress-label"></p>' +
-						'<div class="iss-ai-progress-bar"><span class="js-iss-ai-progress-fill"></span></div>' +
-						'<p class="iss-ai-hint">' + esc( t.progress_hint || '' ) + '</p>' +
-					'</div>' +
-
-					// Step: success.
-					'<div class="iss-ai-step iss-ai-step-success" data-step="success">' +
-						'<div class="iss-ai-success-check" aria-hidden="true">&#10003;</div>' +
-						'<h3 class="js-iss-ai-success-title">' + esc( t.success_title || '' ) + '</h3>' +
-						'<p>' + esc( t.success_text || '' ) + '</p>' +
-						'<ul class="iss-ai-page-list js-iss-ai-page-list"></ul>' +
-						'<div class="iss-ai-actions">' +
-							'<a href="' + esc( config.site_url || '#' ) + '" target="_blank" rel="noopener" class="button button-primary js-iss-ai-view-site">' + esc( t.view_site || '' ) + '</a>' +
-							'<a href="' + esc( config.pages_url || '#' ) + '" class="button">' + esc( t.edit_pages || '' ) + '</a>' +
+						// Step: progress.
+						'<div class="iss-ai-step iss-ai-step-progress" data-step="progress">' +
+							'<div class="iss-ai-spinner" aria-hidden="true"></div>' +
+							'<p class="iss-ai-progress-label js-iss-ai-progress-label"></p>' +
+							'<div class="iss-ai-progress-bar"><span class="js-iss-ai-progress-fill"></span></div>' +
+							'<ul class="iss-ai-progress-pages js-iss-ai-progress-pages"></ul>' +
+							'<p class="iss-ai-hint">' + esc( t.progress_hint || '' ) + '</p>' +
 						'</div>' +
-					'</div>' +
 
-					// Step: error.
-					'<div class="iss-ai-step iss-ai-step-error" data-step="error">' +
-						'<h3>' + esc( t.error_title || '' ) + '</h3>' +
-						'<p class="js-iss-ai-error-message"></p>' +
-						'<p class="iss-ai-error-detail js-iss-ai-error-detail" hidden></p>' +
-						'<div class="iss-ai-actions">' +
-							'<button type="button" class="button button-primary js-iss-ai-retry">' + esc( t.try_again || '' ) + '</button>' +
-							'<button type="button" class="button js-iss-ai-close">' + esc( t.close || '' ) + '</button>' +
+						// Step: success.
+						'<div class="iss-ai-step iss-ai-step-success" data-step="success">' +
+							'<div class="iss-ai-success-check" aria-hidden="true">&#10003;</div>' +
+							'<h3 class="js-iss-ai-success-title">' + esc( t.success_title || '' ) + '</h3>' +
+							'<p>' + esc( t.success_text || '' ) + '</p>' +
+							'<ul class="iss-ai-page-list js-iss-ai-page-list"></ul>' +
+							'<div class="iss-ai-actions">' +
+								'<a href="' + esc( config.site_url || '#' ) + '" target="_blank" rel="noopener" class="button button-primary js-iss-ai-view-site">' + esc( t.view_site || '' ) + '</a>' +
+								'<a href="' + esc( config.pages_url || '#' ) + '" class="button">' + esc( t.edit_pages || '' ) + '</a>' +
+							'</div>' +
 						'</div>' +
-					'</div>' +
 
-				'</div>' +
-				'<div class="iss-ai-footer js-iss-ai-footer">' +
-					'<span class="iss-ai-quota js-iss-ai-quota">' + esc( t.quota_loading || '' ) + '</span>' +
-					'<button type="button" class="button button-primary iss-ai-generate-btn js-iss-ai-generate">' + esc( t.generate || '' ) + '</button>' +
+						// Step: error.
+						'<div class="iss-ai-step iss-ai-step-error" data-step="error">' +
+							'<h3>' + esc( t.error_title || '' ) + '</h3>' +
+							'<p class="js-iss-ai-error-message"></p>' +
+							'<p class="iss-ai-error-detail js-iss-ai-error-detail" hidden></p>' +
+							'<div class="iss-ai-actions">' +
+								'<button type="button" class="button button-primary js-iss-ai-retry">' + esc( t.try_again || '' ) + '</button>' +
+								'<button type="button" class="button js-iss-ai-close">' + esc( t.close || '' ) + '</button>' +
+							'</div>' +
+						'</div>' +
+
+					'</div>' +
+					'<div class="iss-ai-footer js-iss-ai-footer">' +
+						'<button type="button" class="button button-primary iss-ai-generate-btn js-iss-ai-generate">' + esc( t.generate || '' ) + '</button>' +
+					'</div>' +
 				'</div>' +
 			'</div>' +
 		'</div>';
@@ -148,6 +194,35 @@ jQuery( function ( $ ) {
 		$root.find( '.iss-ai-step' ).removeClass( 'is-active' );
 		$root.find( '.iss-ai-step[data-step="' + step + '"]' ).addClass( 'is-active' );
 		$root.find( '.js-iss-ai-footer' ).toggle( 'input' === step );
+
+		// Sidebar step indicator: input → 1, progress → 2, success/error → 3.
+		var current = 'input' === step ? 1 : ( 'progress' === step ? 2 : 3 );
+		$root.find( '.js-iss-ai-steps li' ).each( function () {
+			var num = parseInt( $( this ).attr( 'data-step-num' ), 10 );
+			$( this )
+				.toggleClass( 'is-current', num === current )
+				.toggleClass( 'is-done', num < current );
+		} );
+	}
+
+	/* -----------------------------------------------------------------
+	 * Live build checklist (progress step)
+	 * -------------------------------------------------------------- */
+
+	function renderProgressPages() {
+		var $list = $root.find( '.js-iss-ai-progress-pages' ).empty();
+
+		$list.append( $( '<li>' ).attr( 'data-item', 'plan' ).addClass( 'is-done' ).text( t.plan_item || '' ) );
+		$.each( planState.pages || [], function ( i, page ) {
+			$list.append( $( '<li>' ).attr( 'data-item', 'page-' + i ).text( page.title ) );
+		} );
+		$list.append( $( '<li>' ).attr( 'data-item', 'finalize' ).text( t.finalize_item || '' ) );
+	}
+
+	function markProgressItem( item, state ) {
+		$root.find( '.js-iss-ai-progress-pages li[data-item="' + item + '"]' )
+			.removeClass( 'is-active is-done' )
+			.addClass( state );
 	}
 
 	function openModal() {
@@ -273,13 +348,19 @@ jQuery( function ( $ ) {
 		showStep( 'progress' );
 		setProgress( t.step_plan || '', 0.08 );
 
-		ajax( 'inspiro_starter_sites_ai_generate', { description: description, replace: replace }, 300000 )
+		ajax( 'inspiro_starter_sites_ai_generate', {
+			description: description,
+			replace:     replace,
+			style:       $root.find( '.js-iss-ai-style .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
+			palette:     $root.find( '.js-iss-ai-palette .iss-ai-chip.is-active' ).attr( 'data-value' ) || ''
+		}, 300000 )
 			.done( function ( response ) {
 				if ( ! response || ! response.success || ! response.data || ! response.data.plan_id ) {
 					failWith( responseMessage( response ), responseDetail( response ) );
 					return;
 				}
 				planState = response.data;
+				renderProgressPages();
 				buildNextPage( 0 );
 			} )
 			.fail( function ( xhr, textStatus ) {
@@ -300,6 +381,7 @@ jQuery( function ( $ ) {
 		// Plan ≈ 40% of the perceived work; pages ≈ 50%; finalize ≈ 10%.
 		var fraction = 0.4 + ( 0.5 * ( index / total ) );
 		setProgress( sprintf( t.step_page || '', index + 1, total, pages[ index ].title ), fraction );
+		markProgressItem( 'page-' + index, 'is-active' );
 
 		// Each page build now includes its own AI design call (~30-60s).
 		ajax( 'inspiro_starter_sites_ai_build_page', {
@@ -311,16 +393,19 @@ jQuery( function ( $ ) {
 					// A single failed page shouldn't kill the run — note it and continue.
 					setProgress( t.page_failed || '', fraction );
 				}
+				markProgressItem( 'page-' + index, 'is-done' );
 				buildNextPage( index + 1 );
 			} )
 			.fail( function () {
 				setProgress( t.page_failed || '', fraction );
+				markProgressItem( 'page-' + index, 'is-done' );
 				buildNextPage( index + 1 );
 			} );
 	}
 
 	function finalize() {
 		setProgress( t.step_finalize || '', 0.92 );
+		markProgressItem( 'finalize', 'is-active' );
 
 		ajax( 'inspiro_starter_sites_ai_finalize', { plan_id: planState.plan_id }, 60000 )
 			.done( function ( response ) {
@@ -375,6 +460,40 @@ jQuery( function ( $ ) {
 
 	$root.on( 'click', '.js-iss-ai-idea', function () {
 		$root.find( '.js-iss-ai-description' ).val( $( this ).text() ).trigger( 'focus' );
+	} );
+
+	// Standalone "delete the AI demo" — meta-scoped server-side, so only
+	// AI-generated pages/media/menu/widgets are removed.
+	$root.on( 'click', '.js-iss-ai-delete', function () {
+		if ( running || ! window.confirm( t.delete_confirm || '' ) ) {
+			return;
+		}
+
+		var $button = $( this ).prop( 'disabled', true ).text( t.deleting || '' );
+		var $result = $root.find( '.js-iss-ai-delete-result' );
+
+		ajax( 'inspiro_starter_sites_ai_delete', {}, 120000 )
+			.done( function ( response ) {
+				if ( response && response.success && response.data ) {
+					$result.text( response.data.message || '' ).removeAttr( 'hidden' );
+					$root.find( '.js-iss-ai-replace-notice' ).attr( 'hidden', 'hidden' );
+				} else {
+					$result.text( responseMessage( response ) ).removeAttr( 'hidden' );
+				}
+			} )
+			.fail( function ( xhr, textStatus ) {
+				$result.text( xhrDetail( xhr, textStatus ) || t.error_generic || '' ).removeAttr( 'hidden' );
+			} )
+			.always( function () {
+				$button.prop( 'disabled', false ).text( t.delete_now || '' );
+			} );
+	} );
+
+	// Style / palette chips — single-select per group.
+	$root.on( 'click', '.iss-ai-chip', function () {
+		var $chip = $( this );
+		$chip.closest( '.iss-ai-chips' ).find( '.iss-ai-chip' ).removeClass( 'is-active' );
+		$chip.addClass( 'is-active' );
 	} );
 
 	$root.on( 'click', '.js-iss-ai-generate', function () {

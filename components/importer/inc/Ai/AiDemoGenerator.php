@@ -60,11 +60,13 @@ class AiDemoGenerator {
 
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 20 );
 		add_action( 'wp_head', array( $this, 'print_demo_css' ), 100 );
+		add_action( 'enqueue_block_assets', array( $this, 'enqueue_editor_demo_css' ) );
 
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_quota', array( $this, 'ajax_quota' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_generate', array( $this, 'ajax_generate' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_build_page', array( $this, 'ajax_build_page' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_finalize', array( $this, 'ajax_finalize' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_delete', array( $this, 'ajax_delete' ) );
 	}
 
 	/**
@@ -118,6 +120,21 @@ class AiDemoGenerator {
 				'ajax_nonce' => wp_create_nonce( 'inspiro-starter-sites-ajax-verification' ),
 				'pages_url'  => admin_url( 'edit.php?post_type=page' ),
 				'site_url'   => home_url( '/' ),
+				'styles'     => array_map(
+					static function ( $style ) {
+						return $style['label'];
+					},
+					$this->style_options()
+				),
+				'palettes'   => array_map(
+					static function ( $palette ) {
+						return array(
+							'label'  => $palette['label'],
+							'colors' => $palette['colors'],
+						);
+					},
+					$this->palette_options()
+				),
 				'ideas'      => array(
 					esc_html__( 'A portfolio site for a wedding photographer based in Lisbon, with a moody, elegant style.', 'inspiro-starter-sites' ),
 					esc_html__( 'A website for a small family-run Italian restaurant with a seasonal menu and cozy atmosphere.', 'inspiro-starter-sites' ),
@@ -132,6 +149,18 @@ class AiDemoGenerator {
 					'intro'            => esc_html__( 'Describe the website you need and AI will design and build a few pages for you in about a minute.', 'inspiro-starter-sites' ),
 					'placeholder'      => esc_html__( 'e.g. A website for a small coffee roastery in Portland that sells beans online and hosts tasting events…', 'inspiro-starter-sites' ),
 					'ideas_label'      => esc_html__( 'Need inspiration? Try one of these:', 'inspiro-starter-sites' ),
+					'style_label'      => esc_html__( 'Design style', 'inspiro-starter-sites' ),
+					'palette_label'    => esc_html__( 'Color palette', 'inspiro-starter-sites' ),
+					'auto'             => esc_html__( 'Let AI decide', 'inspiro-starter-sites' ),
+					'describe_label'   => esc_html__( 'Describe your website', 'inspiro-starter-sites' ),
+					'step1'            => esc_html__( 'Describe & style', 'inspiro-starter-sites' ),
+					'step1_hint'       => esc_html__( 'Tell the AI about the website and pick a look', 'inspiro-starter-sites' ),
+					'step2'            => esc_html__( 'AI builds your demo', 'inspiro-starter-sites' ),
+					'step2_hint'       => esc_html__( 'Design, copy, photos and pages — about a minute per page', 'inspiro-starter-sites' ),
+					'step3'            => esc_html__( 'Review & edit', 'inspiro-starter-sites' ),
+					'step3_hint'       => esc_html__( 'Open your new site or fine-tune pages in the editor', 'inspiro-starter-sites' ),
+					'plan_item'        => esc_html__( 'Site design, copy & structure', 'inspiro-starter-sites' ),
+					'finalize_item'    => esc_html__( 'Menu, footer & homepage setup', 'inspiro-starter-sites' ),
 					'generate'         => esc_html__( 'Generate demo', 'inspiro-starter-sites' ),
 					'generating'       => esc_html__( 'Generating…', 'inspiro-starter-sites' ),
 					'quota_left'       => /* translators: %1$s: used, %2$s: limit */ esc_html__( '%1$s of %2$s free generations used', 'inspiro-starter-sites' ),
@@ -145,6 +174,9 @@ class AiDemoGenerator {
 					'replace_notice_unnamed' => esc_html__( 'Generating a new demo will permanently delete the %s previously generated AI page(s) — including any changes you made to them.', 'inspiro-starter-sites' ),
 					'replace_checkbox' => esc_html__( 'Delete the previous AI demo when generating the new one', 'inspiro-starter-sites' ),
 					'replace_keep_hint'=> esc_html__( 'Uncheck to keep the old pages — they will remain published alongside the new demo.', 'inspiro-starter-sites' ),
+					'delete_now'       => esc_html__( 'Delete the AI demo now (without generating a new one)', 'inspiro-starter-sites' ),
+					'delete_confirm'   => esc_html__( 'Permanently delete all AI-generated pages, their images, the demo menu and footer widgets? Content that existed before the AI demo is not affected. This cannot be undone.', 'inspiro-starter-sites' ),
+					'deleting'         => esc_html__( 'Deleting…', 'inspiro-starter-sites' ),
 					'step_plan'        => esc_html__( 'Designing your site structure and writing the copy…', 'inspiro-starter-sites' ),
 					/* translators: %1$s: current page number, %2$s: total pages, %3$s: page title */
 					'step_page'        => esc_html__( 'Creating page %1$s of %2$s: %3$s', 'inspiro-starter-sites' ),
@@ -211,6 +243,31 @@ class AiDemoGenerator {
 	}
 
 	/* ---------------------------------------------------------------------
+	 * AJAX: delete all AI-generated demo content
+	 * ------------------------------------------------------------------ */
+
+	public function ajax_delete() {
+		Helpers::verify_ajax_call();
+
+		$counts = $this->delete_ai_demos( '' );
+
+		flush_rewrite_rules();
+
+		wp_send_json_success(
+			array(
+				'pages'       => $counts['pages'],
+				'attachments' => $counts['attachments'],
+				'message'     => sprintf(
+					/* translators: %1$d: pages deleted, %2$d: media files deleted */
+					esc_html__( 'AI demo removed: %1$d page(s) and %2$d media file(s) deleted, menu and footer widgets cleaned up.', 'inspiro-starter-sites' ),
+					$counts['pages'],
+					$counts['attachments']
+				),
+			)
+		);
+	}
+
+	/* ---------------------------------------------------------------------
 	 * AJAX: generate the site plan
 	 * ------------------------------------------------------------------ */
 
@@ -254,9 +311,23 @@ class AiDemoGenerator {
 		$stream = new StreamingResponse();
 		$stream->begin();
 
+		$style_options   = $this->style_options();
+		$palette_options = $this->palette_options();
+
+		$style   = isset( $_POST['style'] ) ? sanitize_key( wp_unslash( $_POST['style'] ) ) : '';
+		$palette = isset( $_POST['palette'] ) ? sanitize_key( wp_unslash( $_POST['palette'] ) ) : '';
+
+		$style   = isset( $style_options[ $style ] ) ? $style : '';
+		$palette = isset( $palette_options[ $palette ] ) ? $palette : '';
+
 		$plan = $this->proxy->claude_json(
 			$this->system_prompt(),
-			$this->plan_prompt( $description ),
+			$this->plan_prompt(
+				$description,
+				$style ? $style_options[ $style ]['prompt'] : '',
+				$palette ? $palette_options[ $palette ]['colors'] : array(),
+				$palette && ! empty( $palette_options[ $palette ]['theme_var'] )
+			),
 			12000,
 			array( $stream, 'tick' )
 		);
@@ -659,65 +730,154 @@ class AiDemoGenerator {
 	}
 
 	/**
-	 * Permanently delete all previously AI-generated content: pages and the
-	 * sideloaded attachments carrying the generated-demo meta key (any plan
-	 * except the one currently being built), plus their option records.
+	 * Permanently delete previously AI-generated content (any plan except
+	 * $keep_plan_id — pass '' to delete everything).
 	 *
-	 * @param string $keep_plan_id Plan ID of the generation in progress.
+	 * Strictly scoped: only posts (pages/attachments) carrying the
+	 * generated-demo meta key, only widget IDs recorded by a generation, and
+	 * — on a full wipe — only the recorded demo menus and the front-page
+	 * assignment when it points at a deleted page. Pre-existing content is
+	 * never touched.
+	 *
+	 * @param string $keep_plan_id Plan ID of a generation in progress, or ''.
+	 * @return array [ 'pages' => int, 'attachments' => int ]
 	 */
-	private function delete_previous_ai_demos( $keep_plan_id ) {
+	private function delete_ai_demos( $keep_plan_id = '' ) {
+		$meta_query = array(
+			array(
+				'key'     => self::GENERATED_META_KEY,
+				'compare' => 'EXISTS',
+			),
+		);
+		if ( '' !== $keep_plan_id ) {
+			$meta_query = array(
+				array(
+					'key'     => self::GENERATED_META_KEY,
+					'value'   => $keep_plan_id,
+					'compare' => '!=',
+				),
+			);
+		}
+
 		$post_ids = get_posts(
 			array(
 				'post_type'   => array( 'page', 'attachment' ),
 				'post_status' => 'any',
 				'numberposts' => -1,
 				'fields'      => 'ids',
-				'meta_query'  => array( // phpcs:ignore WordPress.DB.SlowDBQuery
-					array(
-						'key'     => self::GENERATED_META_KEY,
-						'value'   => $keep_plan_id,
-						'compare' => '!=',
-					),
-				),
+				'meta_query'  => $meta_query, // phpcs:ignore WordPress.DB.SlowDBQuery
 			)
 		);
 
+		$counts        = array(
+			'pages'       => 0,
+			'attachments' => 0,
+		);
+		$front_page_id = (int) get_option( 'page_on_front' );
+		$front_deleted = false;
+
 		foreach ( $post_ids as $post_id ) {
-			wp_delete_post( $post_id, true );
+			$type = get_post_type( $post_id );
+			if ( (int) $post_id === $front_page_id ) {
+				$front_deleted = true;
+			}
+			if ( wp_delete_post( $post_id, true ) ) {
+				$counts[ 'attachment' === $type ? 'attachments' : 'pages' ]++;
+			}
 		}
 
-		// Remove footer widgets created by the demos being deleted, then drop
-		// their stored records.
-		$demos = get_option( self::DEMOS_OPTION, array() );
-		if ( is_array( $demos ) && $demos ) {
-			$remove_widget_ids = array();
-			foreach ( $demos as $record_plan_id => $record ) {
-				if ( $record_plan_id !== $keep_plan_id && ! empty( $record['widgets'] ) && is_array( $record['widgets'] ) ) {
-					$remove_widget_ids = array_merge( $remove_widget_ids, $record['widgets'] );
+		// Collect record data before dropping the records.
+		$demos             = get_option( self::DEMOS_OPTION, array() );
+		$demos             = is_array( $demos ) ? $demos : array();
+		$remove_widget_ids = array();
+		$remove_menu_ids   = array();
+		$remove_plan_ids   = array();
+
+		foreach ( $demos as $record_plan_id => $record ) {
+			if ( $record_plan_id === $keep_plan_id ) {
+				continue;
+			}
+			$remove_plan_ids[] = $record_plan_id;
+			if ( ! empty( $record['widgets'] ) && is_array( $record['widgets'] ) ) {
+				$remove_widget_ids = array_merge( $remove_widget_ids, $record['widgets'] );
+			}
+			if ( ! empty( $record['menu_id'] ) ) {
+				$remove_menu_ids[] = (int) $record['menu_id'];
+			}
+		}
+
+		// Footer widgets created by the deleted demos.
+		if ( $remove_widget_ids ) {
+			$instances = get_option( 'widget_block', array() );
+			$instances = is_array( $instances ) ? $instances : array();
+			foreach ( $remove_widget_ids as $widget_id ) {
+				$number = (int) str_replace( 'block-', '', $widget_id );
+				unset( $instances[ $number ] );
+			}
+			update_option( 'widget_block', $instances );
+
+			$sidebars = wp_get_sidebars_widgets();
+			foreach ( $sidebars as $sidebar_id => $widget_ids ) {
+				if ( is_array( $widget_ids ) ) {
+					$sidebars[ $sidebar_id ] = array_values( array_diff( $widget_ids, $remove_widget_ids ) );
+				}
+			}
+			wp_set_sidebars_widgets( $sidebars );
+		}
+
+		// Leftover mid-generation state.
+		foreach ( $remove_plan_ids as $plan ) {
+			delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan );
+		}
+
+		$demos = array_intersect_key( $demos, array( $keep_plan_id => true ) );
+		update_option( self::DEMOS_OPTION, $demos, false );
+
+		// Full wipe: also remove the demo menus and fix dangling settings.
+		// (On a replace, ajax_finalize() reassigns the menu and front page.)
+		if ( '' === $keep_plan_id ) {
+			$fallback_menu = wp_get_nav_menu_object( esc_html__( 'AI Demo Menu', 'inspiro-starter-sites' ) );
+			if ( $fallback_menu ) {
+				$remove_menu_ids[] = (int) $fallback_menu->term_id;
+			}
+			foreach ( array_unique( $remove_menu_ids ) as $menu_id ) {
+				if ( wp_get_nav_menu_object( $menu_id ) ) {
+					wp_delete_nav_menu( $menu_id );
 				}
 			}
 
-			if ( $remove_widget_ids ) {
-				$instances = get_option( 'widget_block', array() );
-				$instances = is_array( $instances ) ? $instances : array();
-				foreach ( $remove_widget_ids as $widget_id ) {
-					$number = (int) str_replace( 'block-', '', $widget_id );
-					unset( $instances[ $number ] );
-				}
-				update_option( 'widget_block', $instances );
-
-				$sidebars = wp_get_sidebars_widgets();
-				foreach ( $sidebars as $sidebar_id => $widget_ids ) {
-					if ( is_array( $widget_ids ) ) {
-						$sidebars[ $sidebar_id ] = array_values( array_diff( $widget_ids, $remove_widget_ids ) );
+			// Unset menu locations that now point at deleted menus.
+			$locations = get_theme_mod( 'nav_menu_locations', array() );
+			if ( is_array( $locations ) ) {
+				$changed = false;
+				foreach ( $locations as $location => $menu_id ) {
+					if ( $menu_id && ! wp_get_nav_menu_object( $menu_id ) ) {
+						unset( $locations[ $location ] );
+						$changed = true;
 					}
 				}
-				wp_set_sidebars_widgets( $sidebars );
+				if ( $changed ) {
+					set_theme_mod( 'nav_menu_locations', $locations );
+				}
 			}
 
-			$demos = array_intersect_key( $demos, array( $keep_plan_id => true ) );
-			update_option( self::DEMOS_OPTION, $demos, false );
+			// Front page pointed at a deleted AI page — back to latest posts.
+			if ( $front_deleted ) {
+				update_option( 'show_on_front', 'posts' );
+				update_option( 'page_on_front', 0 );
+			}
 		}
+
+		return $counts;
+	}
+
+	/**
+	 * Back-compat wrapper used by the replace flow.
+	 *
+	 * @param string $keep_plan_id Plan ID of the generation in progress.
+	 */
+	private function delete_previous_ai_demos( $keep_plan_id ) {
+		$this->delete_ai_demos( $keep_plan_id );
 	}
 
 	/**
@@ -847,18 +1007,34 @@ class AiDemoGenerator {
 	 * @param string $description User's site description.
 	 * @return string
 	 */
-	private function plan_prompt( $description ) {
+	private function plan_prompt( $description, $style_instruction = '', $palette_colors = array(), $use_theme_var = false ) {
+		$direction = '';
+		if ( $style_instruction ) {
+			$direction .= "- ART DIRECTION STYLE (selected by the user, mandatory): " . $style_instruction . ".\n";
+		}
+		if ( $palette_colors ) {
+			$direction .= '- COLOR PALETTE (selected by the user, mandatory): build the entire design system around these brand colors: '
+				. implode( ', ', $palette_colors )
+				. " — derive tints, shades and neutrals from them and apply them consistently across every page.\n";
+
+			if ( $use_theme_var ) {
+				$direction .= '- This is the WordPress theme\'s own palette: define the main accent as a custom property bound to the theme\'s live variable — e.g. ".iss-ai-demo { --ai-accent: var(--inspiro-primary-color, ' . $palette_colors[0] . '); }" — and use var(--ai-accent) for every accent-colored element, so changing the theme palette in the Customizer restyles the demo automatically.' . "\n";
+			}
+		}
+
 		return "Design a complete demo website for the following request:\n\n"
 			. '"' . $description . '"' . "\n\n"
 			. "Return a site plan plus the site's full stylesheet. Rules:\n"
+			. $direction
 			. "- 3 to 5 pages. The FIRST page is always the homepage with slug \"home\". Pick inner pages that fit the business (about, services, menu, portfolio, contact...).\n"
 			. "- Each page gets a \"brief\": 2-4 sentences describing its sections, layout ideas and content angle. Make pages structurally DIFFERENT from each other.\n"
 			. "- LANGUAGE: write ALL copy (site title, tagline, briefs, page names) in the language the request itself is WRITTEN in, unless it explicitly asks for another language. The business's location, nationality or cuisine does NOT change the language: an English request about a roastery in Porto or an Italian restaurant gets ENGLISH copy and English page names.\n"
 			. "- \"css\" is the complete design system for the whole site. Requirements:\n"
-			. "  * EVERY selector is scoped under .ai-demo (e.g. \".ai-demo .hero { ... }\"). Style element defaults too (.ai-demo h2, .ai-demo p...).\n"
-			. "  * CSS custom properties on .ai-demo for the palette and fonts.\n"
+			. "  * EVERY selector is scoped under .iss-ai-demo (e.g. \".iss-ai-demo .ai-hero { ... }\"). Style element defaults too (.iss-ai-demo h2, .iss-ai-demo p...).\n"
+			. "  * EVERY custom class name starts with the prefix ai- (.ai-hero, .ai-card, .ai-grid...) so the active theme's own classes can never collide with the design.\n"
+			. "  * CSS custom properties on .iss-ai-demo for the palette and fonts.\n"
 			. "  * A distinctive art direction for THIS business: real palette, expressive display typography from widely-available system font stacks (e.g. Georgia, 'Iowan Old Style', 'Avenir Next', Futura, 'Gill Sans', Palatino, ui-serif, ui-rounded...), fluid type and section padding with clamp().\n"
-			. "  * Must define: .kicker (eyebrow label), .btn (solid button) and .btn.btn-outline, a responsive grid (.grid.cols-2, .cols-3, .cols-4 via CSS grid, collapsing on mobile with @media), .card styles, and dark + light section variants (e.g. .section--dark).\n"
+			. "  * Must define: .ai-kicker (eyebrow label), .ai-btn (solid button, fully styled: background, color, padding, border, radius) and .ai-btn.ai-btn-outline, a responsive grid (.ai-grid.ai-cols-2, .ai-cols-3, .ai-cols-4 via CSS grid, collapsing on mobile with @media), .ai-card styles, and dark + light section variants (e.g. .ai-section--dark).\n"
 			. "  * Style images (border-radius etc.) and vary section backgrounds so the site has rhythm.\n"
 			. "  * Gradients, shadows, borders, CSS-only transitions are welcome. NO url(), NO @import, NO external fonts, NO JavaScript, NO double-quote characters anywhere in the CSS (use single quotes).\n"
 			. "  * Roughly 150-250 lines.\n"
@@ -891,9 +1067,9 @@ class AiDemoGenerator {
 			. $plan['css'] . "\n\n"
 			. "Write the page BODY as HTML in exactly this dialect:\n"
 			. "- Allowed elements: <section>, <div>, <h1>-<h6>, <p>, <span>, <img>, <a>, <ul>/<ol>/<li>, <blockquote>, <details>/<summary>, <figure>/<figcaption>, <hr>, inline <strong>/<em>/<br>, and small decorative inline <svg> icons (fill='currentColor', no scripts).\n"
-			. "- Structure: 4 to 7 top-level <section> elements with meaningful classes from the stylesheet. Exactly ONE <h1> on the page, in the first section.\n"
+			. "- Structure: 4 to 7 top-level <section> elements with meaningful classes from the stylesheet (all custom classes carry the ai- prefix). Exactly ONE <h1> on the page, in the first section.\n"
 			. "- Images: NEVER use src. Write <img data-query='english photo search phrase' data-orientation='landscape' alt='...'> (or data-orientation='portrait' for people/tall crops). 2-6 images where the design calls for them; queries specific and photogenic, no brand names.\n"
-			. "- Buttons: <a class='btn' href='#page:contact'>Label</a> (or class='btn btn-outline'). ALL internal links use href='#page:slug' with a slug from the page list above.\n"
+			. "- Buttons: <a class='ai-btn' href='#page:contact'>Label</a> (or class='ai-btn ai-btn-outline'). ALL internal links use href='#page:slug' with a slug from the page list above.\n"
 			. "- Do NOT include a site header, logo, navigation menu/bar, or site footer — the WordPress theme already renders those around your content. Start with the page's first content section and end with its last content section. Never use <header>, <nav> or <footer> elements.\n"
 			. "- NO <style>, NO <script>, NO style= attributes, NO src attributes, NO external resources.\n"
 			. "- Copy: demo-quality and concise — headings punchy, paragraphs 1-3 short sentences, realistic fictional details. Write in the language the original request is WRITTEN in (the business's location or cuisine does not change the language).\n"
@@ -986,43 +1162,198 @@ class AiDemoGenerator {
 		$css = trim( mb_substr( $css, 0, 60000 ) );
 
 		// Must actually be scoped to the demo wrapper.
-		if ( false === strpos( $css, '.ai-demo' ) ) {
+		if ( false === strpos( $css, '.iss-ai-demo' ) ) {
 			return '';
 		}
+
+		// Small reset neutralizing theme styles that would otherwise
+		// interfere inside the demo scope (figure gutters, image sizing).
+		$css .= "\n.iss-ai-demo figure{margin:0}.iss-ai-demo img{height:auto;max-width:100%}.iss-ai-demo .wp-block-image{margin:0}";
 
 		return $css;
 	}
 
 	/**
-	 * Print the active AI demo stylesheet on generated pages.
+	 * The demo stylesheet for a generated page (finalized demo or, mid-
+	 * generation, the plan transient).
+	 *
+	 * @param int $post_id Page ID.
+	 * @return string CSS or ''.
+	 */
+	private function get_demo_css_for_post( $post_id ) {
+		$plan_id = get_post_meta( $post_id, self::GENERATED_META_KEY, true );
+		if ( ! $plan_id ) {
+			return '';
+		}
+
+		$demos = get_option( self::DEMOS_OPTION, array() );
+		if ( is_array( $demos ) && ! empty( $demos[ $plan_id ]['css'] ) ) {
+			return $demos[ $plan_id ]['css'];
+		}
+
+		$state = $this->get_plan_state( $plan_id );
+		return ( $state && ! empty( $state['plan']['css'] ) ) ? $state['plan']['css'] : '';
+	}
+
+	/**
+	 * Print the active AI demo stylesheet on generated pages (front end).
 	 */
 	public function print_demo_css() {
 		if ( ! is_singular( 'page' ) ) {
 			return;
 		}
 
-		$plan_id = get_post_meta( get_queried_object_id(), self::GENERATED_META_KEY, true );
-		if ( ! $plan_id ) {
-			return;
-		}
-
-		$css   = '';
-		$demos = get_option( self::DEMOS_OPTION, array() );
-
-		if ( is_array( $demos ) && ! empty( $demos[ $plan_id ]['css'] ) ) {
-			$css = $demos[ $plan_id ]['css'];
-		} else {
-			// Mid-generation preview (not finalized yet) — read the transient.
-			$state = $this->get_plan_state( $plan_id );
-			if ( $state && ! empty( $state['plan']['css'] ) ) {
-				$css = $state['plan']['css'];
-			}
-		}
-
+		$css = $this->get_demo_css_for_post( get_queried_object_id() );
 		if ( '' === $css ) {
 			return;
 		}
 
 		echo "\n<style id=\"inspiro-starter-sites-ai-css\">\n" . $css . "\n</style>\n"; // phpcs:ignore WordPress.Security.EscapeOutput -- sanitized in sanitize_css().
+	}
+
+	/**
+	 * Load the demo stylesheet into the block editor canvas so generated
+	 * pages preview correctly while editing. enqueue_block_assets styles are
+	 * copied into the editor iframe by core.
+	 */
+	public function enqueue_editor_demo_css() {
+		if ( ! is_admin() ) {
+			return; // Front end is handled by print_demo_css().
+		}
+
+		$post = get_post();
+		if ( ! $post || 'page' !== $post->post_type ) {
+			return;
+		}
+
+		$css = $this->get_demo_css_for_post( $post->ID );
+		if ( '' === $css ) {
+			return;
+		}
+
+		wp_register_style( 'inspiro-starter-sites-ai-demo', false, array(), INSPIRO_STARTER_SITES_VERSION );
+		wp_enqueue_style( 'inspiro-starter-sites-ai-demo' );
+		wp_add_inline_style( 'inspiro-starter-sites-ai-demo', $css );
+	}
+
+	/**
+	 * User-selectable design styles: slug => [ label, prompt instruction ].
+	 *
+	 * @return array[]
+	 */
+	private function style_options() {
+		return array(
+			'minimal'   => array(
+				'label'  => esc_html__( 'Minimal', 'inspiro-starter-sites' ),
+				'prompt' => 'ultra-minimal and restrained — lots of whitespace, typographic hierarchy does the work, few decorative elements',
+			),
+			'editorial' => array(
+				'label'  => esc_html__( 'Editorial', 'inspiro-starter-sites' ),
+				'prompt' => 'editorial magazine feel — serif display type, pull quotes, asymmetric layouts, generous imagery',
+			),
+			'bold'      => array(
+				'label'  => esc_html__( 'Big Type', 'inspiro-starter-sites' ),
+				'prompt' => 'big-type — oversized confident display headlines, high contrast, graphic blocks of color',
+			),
+			'luxury'    => array(
+				'label'  => esc_html__( 'Luxury', 'inspiro-starter-sites' ),
+				'prompt' => 'luxury — refined serif typography, muted sophisticated palette, generous spacing, understated elegance',
+			),
+			'corporate' => array(
+				'label'  => esc_html__( 'Corporate', 'inspiro-starter-sites' ),
+				'prompt' => 'clean corporate — structured grids, professional and trustworthy, clear hierarchy',
+			),
+			'playful'   => array(
+				'label'  => esc_html__( 'Playful', 'inspiro-starter-sites' ),
+				'prompt' => 'playful and colourful — rounded shapes, energetic accent colors, friendly voice',
+			),
+			'retro'     => array(
+				'label'  => esc_html__( 'Retro', 'inspiro-starter-sites' ),
+				'prompt' => 'retro-vintage character — warm aged tones, classic typographic flavor, subtle texture feel (CSS only)',
+			),
+			'dark'      => array(
+				'label'  => esc_html__( 'Dark', 'inspiro-starter-sites' ),
+				'prompt' => 'dark mode throughout — near-black backgrounds on every section, one luminous accent color, glowing highlights',
+			),
+		);
+	}
+
+	/**
+	 * User-selectable color palettes: slug => [ label, colors, theme_var ].
+	 *
+	 * The theme's own customizer palettes (inspiro_get_color_palettes) are
+	 * listed first; the active one is bound to the theme's live CSS variable
+	 * (--inspiro-primary-color) so a later customizer palette change restyles
+	 * the demo automatically. AI-suggested palettes follow.
+	 *
+	 * @return array[]
+	 */
+	private function palette_options() {
+		$palettes = array();
+
+		if ( function_exists( 'inspiro_get_color_palettes' ) ) {
+			$theme_palettes = inspiro_get_color_palettes();
+			$active         = get_theme_mod( 'colorscheme', 'default' );
+
+			foreach ( (array) $theme_palettes as $palette_id => $palette ) {
+				if ( empty( $palette['colors'] ) || ! is_array( $palette['colors'] ) ) {
+					continue;
+				}
+
+				$colors  = array_values(
+					array_filter(
+						array(
+							isset( $palette['colors']['primary'] ) ? $palette['colors']['primary'] : '',
+							isset( $palette['colors']['tertiary'] ) ? $palette['colors']['tertiary'] : '',
+							isset( $palette['colors']['secondary'] ) ? $palette['colors']['secondary'] : '',
+						)
+					)
+				);
+				if ( ! $colors ) {
+					continue;
+				}
+
+				$is_active = ( $palette_id === $active );
+				$label     = isset( $palette['label'] ) ? $palette['label'] : $palette_id;
+
+				$palettes[ 'theme-' . sanitize_key( $palette_id ) ] = array(
+					'label'     => $is_active
+						/* translators: %s: theme palette name */
+						? sprintf( esc_html__( 'Theme: %s (current)', 'inspiro-starter-sites' ), $label )
+						/* translators: %s: theme palette name */
+						: sprintf( esc_html__( 'Theme: %s', 'inspiro-starter-sites' ), $label ),
+					'colors'    => $colors,
+					// Only the ACTIVE palette matches the live CSS variable.
+					'theme_var' => $is_active,
+				);
+			}
+		}
+
+		return $palettes + array(
+			'warm'   => array(
+				'label'  => esc_html__( 'Warm earth', 'inspiro-starter-sites' ),
+				'colors' => array( '#C4580A', '#2B1D12', '#FAF3E7' ),
+			),
+			'ocean'  => array(
+				'label'  => esc_html__( 'Ocean', 'inspiro-starter-sites' ),
+				'colors' => array( '#0E2A3A', '#1B7F79', '#F2EFE6' ),
+			),
+			'forest' => array(
+				'label'  => esc_html__( 'Forest', 'inspiro-starter-sites' ),
+				'colors' => array( '#1F3D2B', '#9CB49A', '#F4F1E8' ),
+			),
+			'berry'  => array(
+				'label'  => esc_html__( 'Berry', 'inspiro-starter-sites' ),
+				'colors' => array( '#5B2333', '#C9A227', '#F6EEEA' ),
+			),
+			'mono'   => array(
+				'label'  => esc_html__( 'Monochrome', 'inspiro-starter-sites' ),
+				'colors' => array( '#111111', '#666666', '#F5F5F5' ),
+			),
+			'pastel' => array(
+				'label'  => esc_html__( 'Pastel', 'inspiro-starter-sites' ),
+				'colors' => array( '#A3B18A', '#E8C4C4', '#FDF8F0' ),
+			),
+		);
 	}
 }

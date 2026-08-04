@@ -94,7 +94,7 @@ class HtmlToBlocks {
 			return '';
 		}
 
-		$classes = trim( 'ai-demo' . ( $page_slug ? ' ai-demo--' . sanitize_html_class( $page_slug ) : '' ) );
+		$classes = trim( 'iss-ai-demo' . ( $page_slug ? ' iss-ai-demo--' . sanitize_html_class( $page_slug ) : '' ) );
 
 		return sprintf(
 			"<!-- wp:group {\"align\":\"full\",\"className\":\"%s\",\"layout\":{\"type\":\"default\"}} -->\n<div class=\"wp-block-group alignfull %s\">%s</div>\n<!-- /wp:group -->",
@@ -370,26 +370,25 @@ class HtmlToBlocks {
 	}
 
 	private function buttons_block( array $anchors ) {
+		// Buttons are kept as verbatim anchors inside a Custom HTML block —
+		// NOT wp:button. The theme styles both `.btn` and
+		// `.wp-block-button__link`, which visually collides with the AI's
+		// button design; a bare anchor is styled only by the demo stylesheet,
+		// exactly as the AI designed it.
 		$buttons = array();
 
 		foreach ( $anchors as $a ) {
 			$classes = $this->classes( $a );
-			$attrs   = $classes ? ' ' . wp_json_encode( array( 'className' => $classes ) ) : '';
-			$class   = 'wp-block-button' . ( $classes ? ' ' . $classes : '' );
 
 			$buttons[] = sprintf(
-				"<!-- wp:button%s -->\n<div class=\"%s\"><a class=\"wp-block-button__link wp-element-button\" href=\"%s\">%s</a></div>\n<!-- /wp:button -->",
-				$attrs,
-				esc_attr( $class ),
+				'<a class="%s" href="%s">%s</a>',
+				esc_attr( $classes ),
 				esc_url( $this->resolve_href( $a->getAttribute( 'href' ) ) ),
 				$this->inline_html( $a )
 			);
 		}
 
-		return sprintf(
-			"<!-- wp:buttons -->\n<div class=\"wp-block-buttons\">%s</div>\n<!-- /wp:buttons -->",
-			implode( "\n\n", $buttons )
-		);
+		return sprintf( "<!-- wp:html -->\n%s\n<!-- /wp:html -->", implode( "\n", $buttons ) );
 	}
 
 	private function list_block( $el ) {
@@ -552,9 +551,9 @@ class HtmlToBlocks {
 	 */
 	private function is_button( $el ) {
 		$class = ' ' . strtolower( $el->getAttribute( 'class' ) ) . ' ';
-		return false !== strpos( $class, ' btn ' )
+		return false !== strpos( $class, 'ai-btn' )
+			|| false !== strpos( $class, ' btn ' )
 			|| false !== strpos( $class, ' btn-' )
-			|| false !== strpos( $class, 'btn-outline' )
 			|| false !== strpos( $class, ' button ' );
 	}
 
