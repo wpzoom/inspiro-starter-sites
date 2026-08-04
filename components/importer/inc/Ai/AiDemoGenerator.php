@@ -66,6 +66,7 @@ class AiDemoGenerator {
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_quota', array( $this, 'ajax_quota' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_connect', array( $this, 'ajax_connect' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_verify', array( $this, 'ajax_verify' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_disconnect', array( $this, 'ajax_disconnect' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_enhance_prompt', array( $this, 'ajax_enhance_prompt' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_suggest_pages', array( $this, 'ajax_suggest_pages' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_generate', array( $this, 'ajax_generate' ) );
@@ -269,6 +270,7 @@ class AiDemoGenerator {
 					'resend_code'      => __( 'Resend code', 'inspiro-starter-sites' ),
 					'code_sent'        => __( 'A new code is on its way.', 'inspiro-starter-sites' ),
 					'change_email'     => __( 'Use a different email', 'inspiro-starter-sites' ),
+					'disconnect'       => __( 'Disconnect', 'inspiro-starter-sites' ),
 				),
 			)
 		);
@@ -389,6 +391,21 @@ class AiDemoGenerator {
 			$this->quota_payload( is_wp_error( $quota ) ? array() : $quota ),
 			array( 'previous' => $this->previous_demo_info() )
 		) );
+	}
+
+	/* ---------------------------------------------------------------------
+	 * AJAX: disconnect (forget the local registration)
+	 * ------------------------------------------------------------------ */
+
+	public function ajax_disconnect() {
+		Helpers::verify_ajax_call();
+
+		// Local-only: the server keeps the registration, so reconnecting with
+		// the same email is instant and its quota history is preserved. A new
+		// email goes through code verification like any email change.
+		$this->proxy->disconnect();
+
+		wp_send_json_success( array( 'connected' => false ) );
 	}
 
 	/* ---------------------------------------------------------------------

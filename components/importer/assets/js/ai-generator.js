@@ -137,6 +137,7 @@ jQuery( function ( $ ) {
 					'<div class="iss-ai-sidebar-footer">' +
 						'<span class="iss-ai-connected-email js-iss-ai-connected-email" hidden></span>' +
 						'<span class="iss-ai-quota js-iss-ai-quota">' + esc( t.quota_loading || '' ) + '</span>' +
+						'<button type="button" class="iss-ai-link-btn iss-ai-disconnect js-iss-ai-disconnect" hidden>' + esc( t.disconnect || '' ) + '</button>' +
 					'</div>' +
 				'</aside>' +
 
@@ -443,19 +444,23 @@ jQuery( function ( $ ) {
 	}
 
 	function renderQuota() {
-		var $quota = $root.find( '.js-iss-ai-quota' );
-		var $email = $root.find( '.js-iss-ai-connected-email' );
+		var $quota      = $root.find( '.js-iss-ai-quota' );
+		var $email      = $root.find( '.js-iss-ai-connected-email' );
+		var $disconnect = $root.find( '.js-iss-ai-disconnect' );
 
 		if ( ! quota || false === quota.connected ) {
 			$quota.text( '' );
 			$email.attr( 'hidden', 'hidden' ).text( '' );
+			$disconnect.attr( 'hidden', 'hidden' );
 			return;
 		}
 
 		if ( quota.email ) {
 			$email.text( sprintf( t.connected_as || '%s', quota.email ) ).removeAttr( 'hidden' );
+			$disconnect.removeAttr( 'hidden' );
 		} else {
 			$email.attr( 'hidden', 'hidden' ).text( '' );
+			$disconnect.attr( 'hidden', 'hidden' );
 		}
 
 		if ( quota.remaining <= 0 ) {
@@ -976,6 +981,29 @@ jQuery( function ( $ ) {
 	$root.on( 'click', '.js-iss-ai-change-email', function () {
 		showConnectMode( 'email' );
 		$root.find( '.js-iss-ai-connect-email' ).trigger( 'focus' );
+	} );
+
+	$root.on( 'click', '.js-iss-ai-disconnect', function () {
+		if ( running ) {
+			return; // A build in flight still needs the registration.
+		}
+		var $btn = $( this ).prop( 'disabled', true );
+
+		ajax( 'inspiro_starter_sites_ai_disconnect', {}, 20000 )
+			.done( function ( response ) {
+				if ( response && response.success ) {
+					quota     = null;
+					connected = false;
+					renderQuota();
+					showConnectMode( 'email' );
+					$root.find( '.js-iss-ai-connect-email' ).val( '' );
+					showStep( 'connect' );
+					$root.find( '.js-iss-ai-connect-email' ).trigger( 'focus' );
+				}
+			} )
+			.always( function () {
+				$btn.prop( 'disabled', false );
+			} );
 	} );
 
 	$root.on( 'keydown', '.js-iss-ai-connect-email', function ( e ) {
