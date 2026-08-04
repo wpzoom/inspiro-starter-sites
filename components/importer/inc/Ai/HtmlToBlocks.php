@@ -289,7 +289,23 @@ class HtmlToBlocks {
 		$class = 'wp-block-group';
 		$style = '';
 
-		if ( $full_width ) {
+		// data-bg / data-text become native block colors — editable in the
+		// block UI, and inline styles that no theme rule can override.
+		$bg   = sanitize_hex_color( trim( $el->getAttribute( 'data-bg' ) ) );
+		$text = sanitize_hex_color( trim( $el->getAttribute( 'data-text' ) ) );
+
+		// Full-bleed is earned, not default: only sections with a painted
+		// background (solid via data-bg, or gradient/photo declared via
+		// data-full / an ai-full class) span the viewport. Everything else
+		// gets no alignment and is centered at the content width by the
+		// theme — plain content should sit in the main column.
+		$is_full = $full_width && (
+			$bg
+			|| '1' === trim( $el->getAttribute( 'data-full' ) )
+			|| false !== strpos( ' ' . $classes . ' ', ' ai-full ' )
+		);
+
+		if ( $is_full ) {
 			$attrs = array( 'align' => 'full' ) + $attrs;
 			$class .= ' alignfull';
 		}
@@ -297,11 +313,6 @@ class HtmlToBlocks {
 			$attrs['className'] = $classes;
 			$class             .= ' ' . $classes;
 		}
-
-		// data-bg / data-text become native block colors — editable in the
-		// block UI, and inline styles that no theme rule can override.
-		$bg   = sanitize_hex_color( trim( $el->getAttribute( 'data-bg' ) ) );
-		$text = sanitize_hex_color( trim( $el->getAttribute( 'data-text' ) ) );
 
 		if ( $bg || $text ) {
 			$attrs['style'] = array( 'color' => array() );
@@ -679,7 +690,9 @@ class HtmlToBlocks {
 			if ( 'home' === $slug ) {
 				return isset( $this->page_links['home'] ) ? $this->page_links['home'] : home_url( '/' );
 			}
-			return isset( $this->page_links[ $slug ] ) ? $this->page_links[ $slug ] : home_url( '/' . $slug . '/' );
+			// A page the user removed in the plan review (or the AI invented)
+			// must not become a 404 link.
+			return isset( $this->page_links[ $slug ] ) ? $this->page_links[ $slug ] : '#';
 		}
 
 		if ( '' === $href ) {

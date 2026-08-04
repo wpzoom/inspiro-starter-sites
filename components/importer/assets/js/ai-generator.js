@@ -164,6 +164,18 @@ jQuery( function ( $ ) {
 							'<p class="iss-ai-error js-iss-ai-input-error" hidden></p>' +
 						'</div>' +
 
+						// Step: plan review.
+						'<div class="iss-ai-step iss-ai-step-plan" data-step="plan">' +
+							'<h3 class="iss-ai-plan-title">' + esc( t.plan_title || '' ) + '</h3>' +
+							'<p class="iss-ai-plan-hint">' + esc( t.plan_hint || '' ) + '</p>' +
+							'<ul class="iss-ai-plan-list js-iss-ai-plan-list"></ul>' +
+							'<div class="iss-ai-plan-add">' +
+								'<input type="text" class="iss-ai-plan-add-input js-iss-ai-plan-add-input" maxlength="60" placeholder="' + esc( t.plan_add_ph || '' ) + '">' +
+								'<button type="button" class="button js-iss-ai-plan-add">' + esc( t.plan_add || '' ) + '</button>' +
+							'</div>' +
+							'<p class="iss-ai-error js-iss-ai-plan-error" hidden></p>' +
+						'</div>' +
+
 						// Step: progress.
 						'<div class="iss-ai-step iss-ai-step-progress" data-step="progress">' +
 							'<div class="iss-ai-spinner" aria-hidden="true"></div>' +
@@ -198,7 +210,8 @@ jQuery( function ( $ ) {
 
 					'</div>' +
 					'<div class="iss-ai-footer js-iss-ai-footer">' +
-						'<button type="button" class="button button-primary iss-ai-generate-btn js-iss-ai-generate">' + esc( t.generate || '' ) + '</button>' +
+						'<button type="button" class="button button-primary iss-ai-generate-btn js-iss-ai-generate">' + esc( t['continue'] || '' ) + '</button>' +
+						'<button type="button" class="button button-primary iss-ai-generate-btn js-iss-ai-build" style="display:none">' + esc( t.generate || '' ) + '</button>' +
 					'</div>' +
 				'</div>' +
 			'</div>' +
@@ -211,16 +224,74 @@ jQuery( function ( $ ) {
 	function showStep( step ) {
 		$root.find( '.iss-ai-step' ).removeClass( 'is-active' );
 		$root.find( '.iss-ai-step[data-step="' + step + '"]' ).addClass( 'is-active' );
-		$root.find( '.js-iss-ai-footer' ).toggle( 'input' === step );
+		$root.find( '.js-iss-ai-footer' ).toggle( 'input' === step || 'plan' === step );
+		$root.find( '.js-iss-ai-generate' ).toggle( 'input' === step );
+		$root.find( '.js-iss-ai-build' ).toggle( 'plan' === step );
 
-		// Sidebar step indicator: input → 1, progress → 2, success/error → 3.
-		var current = 'input' === step ? 1 : ( 'progress' === step ? 2 : 3 );
+		// Sidebar step indicator: input/plan → 1, progress → 2, done → 3.
+		var current = ( 'input' === step || 'plan' === step ) ? 1 : ( 'progress' === step ? 2 : 3 );
 		$root.find( '.js-iss-ai-steps li' ).each( function () {
 			var num = parseInt( $( this ).attr( 'data-step-num' ), 10 );
 			$( this )
 				.toggleClass( 'is-current', num === current )
 				.toggleClass( 'is-done', num < current );
 		} );
+	}
+
+	/* -----------------------------------------------------------------
+	 * Plan review step
+	 * -------------------------------------------------------------- */
+
+	var MAX_REVIEW_PAGES = 5;
+
+	function renderPlanReview() {
+		var $list = $root.find( '.js-iss-ai-plan-list' ).empty();
+
+		$.each( planState.pages || [], function ( i, page ) {
+			$list.append( planRow( page.slug, page.title ) );
+		} );
+
+		planReviewState();
+	}
+
+	function planRow( slug, title ) {
+		return $( '<li class="iss-ai-plan-row">' )
+			.attr( 'data-slug', slug || '' )
+			.append( $( '<input type="text" class="iss-ai-plan-input" maxlength="60">' ).val( title ) )
+			.append(
+				$( '<button type="button" class="iss-ai-plan-remove js-iss-ai-plan-remove">&times;</button>' )
+					.attr( 'aria-label', t.plan_remove || '' )
+			);
+	}
+
+	// Enforce 1..MAX pages: hide the add row at the cap, disable build at 0.
+	function planReviewState() {
+		var count = $root.find( '.iss-ai-plan-row' ).length;
+		$root.find( '.iss-ai-plan-add' ).toggle( count < MAX_REVIEW_PAGES );
+		$root.find( '.js-iss-ai-build' ).prop( 'disabled', 0 === count );
+
+		var $error = $root.find( '.js-iss-ai-plan-error' );
+		if ( 0 === count ) {
+			$error.text( t.plan_min || '' ).removeAttr( 'hidden' );
+		} else {
+			$error.attr( 'hidden', 'hidden' );
+		}
+	}
+
+	function collectPlanPages() {
+		var pages = [];
+		$root.find( '.iss-ai-plan-row' ).each( function () {
+			var title = $.trim( $( this ).find( '.iss-ai-plan-input' ).val() || '' );
+			var slug  = $( this ).attr( 'data-slug' ) || '';
+			if ( title ) {
+				pages.push( {
+					slug:  slug,
+					title: title,
+					brief: suggestBriefs[ slug ] || ''
+				} );
+			}
+		} );
+		return pages;
 	}
 
 	/* -----------------------------------------------------------------
@@ -349,7 +420,12 @@ jQuery( function ( $ ) {
 		return ( response && response.data && response.data.detail ) ? String( response.data.detail ) : '';
 	}
 
-	function startGeneration() {
+	// Step 1 → 2: a small, fast AI call proposes pages for review BEFORE any
+	// expensive generation (no quota consumed). Falls back to a generic page
+	// list if the suggestion service hiccups.
+	var suggestBriefs = {};
+
+	function suggestPages() {
 		var description = $.trim( $root.find( '.js-iss-ai-description' ).val() || '' );
 		var $inputError = $root.find( '.js-iss-ai-input-error' );
 
@@ -359,8 +435,47 @@ jQuery( function ( $ ) {
 		}
 		$inputError.attr( 'hidden', 'hidden' );
 
-		var $replace = $root.find( '.js-iss-ai-replace' );
-		var replace  = ( ! $replace.length || $replace.closest( '.js-iss-ai-replace-notice' ).attr( 'hidden' ) || $replace.is( ':checked' ) ) ? '1' : '0';
+		var $button = $root.find( '.js-iss-ai-generate' ).prop( 'disabled', true ).text( t.suggesting || '' );
+
+		function proceed( pages ) {
+			$button.prop( 'disabled', false ).text( t['continue'] || '' );
+			suggestBriefs = {};
+			$.each( pages, function ( i, page ) {
+				if ( page.slug && page.brief ) {
+					suggestBriefs[ page.slug ] = page.brief;
+				}
+			} );
+			planState = { pages: pages };
+			renderPlanReview();
+			showStep( 'plan' );
+		}
+
+		ajax( 'inspiro_starter_sites_ai_suggest_pages', { description: description }, 90000 )
+			.done( function ( response ) {
+				if ( response && response.success && response.data && response.data.pages && response.data.pages.length ) {
+					proceed( response.data.pages );
+				} else {
+					// Suggestion hiccup — a sensible default list still lets
+					// the user shape the site before generating.
+					proceed( config.fallback_pages || [] );
+				}
+			} )
+			.fail( function () {
+				proceed( config.fallback_pages || [] );
+			} );
+	}
+
+	// Step 2 → 3: the real generation, constrained to the approved pages.
+	function startGeneration() {
+		var pages = collectPlanPages();
+		if ( ! pages.length ) {
+			planReviewState();
+			return;
+		}
+
+		var description = $.trim( $root.find( '.js-iss-ai-description' ).val() || '' );
+		var $replace    = $root.find( '.js-iss-ai-replace' );
+		var replace     = ( ! $replace.length || $replace.closest( '.js-iss-ai-replace-notice' ).attr( 'hidden' ) || $replace.is( ':checked' ) ) ? '1' : '0';
 
 		running = true;
 		showStep( 'progress' );
@@ -370,7 +485,8 @@ jQuery( function ( $ ) {
 			description: description,
 			replace:     replace,
 			style:       $root.find( '.js-iss-ai-style .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
-			palette:     $root.find( '.js-iss-ai-palette .iss-ai-chip.is-active' ).attr( 'data-value' ) || ''
+			palette:     $root.find( '.js-iss-ai-palette .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
+			pages:       JSON.stringify( pages )
 		}, 300000 )
 			.done( function ( response ) {
 				if ( ! response || ! response.success || ! response.data || ! response.data.plan_id ) {
@@ -517,7 +633,38 @@ jQuery( function ( $ ) {
 
 	$root.on( 'click', '.js-iss-ai-generate', function () {
 		if ( ! running ) {
+			suggestPages();
+		}
+	} );
+
+	$root.on( 'click', '.js-iss-ai-build', function () {
+		if ( ! running ) {
 			startGeneration();
+		}
+	} );
+
+	$root.on( 'click', '.js-iss-ai-plan-remove', function () {
+		$( this ).closest( '.iss-ai-plan-row' ).remove();
+		planReviewState();
+	} );
+
+	function addPlanPage() {
+		var $input = $root.find( '.js-iss-ai-plan-add-input' );
+		var title  = $.trim( $input.val() || '' );
+		if ( ! title || $root.find( '.iss-ai-plan-row' ).length >= MAX_REVIEW_PAGES ) {
+			return;
+		}
+		$root.find( '.js-iss-ai-plan-list' ).append( planRow( '', title ) );
+		$input.val( '' ).trigger( 'focus' );
+		planReviewState();
+	}
+
+	$root.on( 'click', '.js-iss-ai-plan-add', addPlanPage );
+
+	$root.on( 'keydown', '.js-iss-ai-plan-add-input', function ( e ) {
+		if ( 'Enter' === e.key ) {
+			e.preventDefault();
+			addPlanPage();
 		}
 	} );
 

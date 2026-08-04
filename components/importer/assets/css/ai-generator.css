@@ -478,6 +478,82 @@ body.iss-ai-open {
 	display: none;
 }
 
+/* Plan review step */
+.iss-ai-step-plan {
+	max-width: 560px;
+	margin: 0 auto;
+	padding-top: 8px;
+}
+
+.iss-ai-plan-title {
+	margin: 0 0 6px;
+	font-size: 17px;
+	font-weight: 700;
+}
+
+.iss-ai-plan-hint {
+	margin: 0 0 20px;
+	color: #6b7280;
+	font-size: 13px;
+}
+
+.iss-ai-plan-list {
+	list-style: none;
+	margin: 0 0 12px;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.iss-ai-plan-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
+}
+
+.iss-ai-plan-input,
+.iss-ai-plan-add-input {
+	flex: 1 1 auto;
+	border: 1.5px solid #e4e4e7;
+	border-radius: 8px;
+	padding: 9px 13px;
+	font-size: 14px;
+	transition: border-color 0.15s ease;
+}
+
+.iss-ai-plan-input:focus,
+.iss-ai-plan-add-input:focus {
+	border-color: #1d1d1f;
+	box-shadow: none;
+	outline: none;
+}
+
+.iss-ai-plan-remove {
+	flex: 0 0 32px;
+	width: 32px;
+	height: 32px;
+	border: 0;
+	border-radius: 8px;
+	background: transparent;
+	color: #8a8f98;
+	font-size: 20px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.iss-ai-plan-remove:hover {
+	background: #fcf0f1;
+	color: #b32d2e;
+}
+
+.iss-ai-plan-add {
+	display: flex;
+	gap: 8px;
+	margin-top: 4px;
+}
+
 /* Progress step */
 .iss-ai-step-progress {
 	max-width: 440px;

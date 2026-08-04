@@ -27,6 +27,7 @@ class AiDemoGenerator {
 	const DEMOS_OPTION          = 'inspiro_starter_sites_ai_demos';
 
 	const MAX_PAGES             = 6;
+	const MAX_REVIEW_PAGES      = 5;
 	const MAX_SECTIONS_PER_PAGE = 8;
 
 	/**
@@ -63,6 +64,7 @@ class AiDemoGenerator {
 		add_action( 'enqueue_block_assets', array( $this, 'enqueue_editor_demo_css' ) );
 
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_quota', array( $this, 'ajax_quota' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_suggest_pages', array( $this, 'ajax_suggest_pages' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_generate', array( $this, 'ajax_generate' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_build_page', array( $this, 'ajax_build_page' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_finalize', array( $this, 'ajax_finalize' ) );
@@ -135,86 +137,103 @@ class AiDemoGenerator {
 					},
 					$this->palette_options()
 				),
+				'fallback_pages' => array(
+					array( 'slug' => 'home', 'title' => __( 'Home', 'inspiro-starter-sites' ) ),
+					array( 'slug' => 'about', 'title' => __( 'About', 'inspiro-starter-sites' ) ),
+					array( 'slug' => 'services', 'title' => __( 'Services', 'inspiro-starter-sites' ) ),
+					array( 'slug' => 'contact', 'title' => __( 'Contact', 'inspiro-starter-sites' ) ),
+				),
 				'ideas'      => array(
 					array(
 						'icon'  => 'camera',
-						'title' => esc_html__( 'Photography portfolio', 'inspiro-starter-sites' ),
-						'text'  => esc_html__( 'A portfolio site for a wedding photographer based in Lisbon, with a moody, elegant style.', 'inspiro-starter-sites' ),
+						'title' => __( 'Photography portfolio', 'inspiro-starter-sites' ),
+						'text'  => __( 'A portfolio site for a wedding photographer based in Lisbon, with a moody, elegant style.', 'inspiro-starter-sites' ),
 					),
 					array(
 						'icon'  => 'restaurant',
-						'title' => esc_html__( 'Restaurant', 'inspiro-starter-sites' ),
-						'text'  => esc_html__( 'A website for a small family-run Italian restaurant with a seasonal menu and cozy atmosphere.', 'inspiro-starter-sites' ),
+						'title' => __( 'Restaurant', 'inspiro-starter-sites' ),
+						'text'  => __( 'A website for a small family-run Italian restaurant with a seasonal menu and cozy atmosphere.', 'inspiro-starter-sites' ),
 					),
 					array(
 						'icon'  => 'wellness',
-						'title' => esc_html__( 'Yoga studio', 'inspiro-starter-sites' ),
-						'text'  => esc_html__( 'A yoga studio site offering morning classes, workshops, and private sessions.', 'inspiro-starter-sites' ),
+						'title' => __( 'Yoga studio', 'inspiro-starter-sites' ),
+						'text'  => __( 'A yoga studio site offering morning classes, workshops, and private sessions.', 'inspiro-starter-sites' ),
 					),
 					array(
 						'icon'  => 'architecture',
-						'title' => esc_html__( 'Architecture firm', 'inspiro-starter-sites' ),
-						'text'  => esc_html__( 'A site for an architecture firm specializing in sustainable residential design.', 'inspiro-starter-sites' ),
+						'title' => __( 'Architecture firm', 'inspiro-starter-sites' ),
+						'text'  => __( 'A site for an architecture firm specializing in sustainable residential design.', 'inspiro-starter-sites' ),
 					),
 					array(
 						'icon'  => 'fitness',
-						'title' => esc_html__( 'Fitness coach', 'inspiro-starter-sites' ),
-						'text'  => esc_html__( 'A personal site for a fitness coach offering online training programs.', 'inspiro-starter-sites' ),
+						'title' => __( 'Fitness coach', 'inspiro-starter-sites' ),
+						'text'  => __( 'A personal site for a fitness coach offering online training programs.', 'inspiro-starter-sites' ),
 					),
 					array(
 						'icon'  => 'travel',
-						'title' => esc_html__( 'Travel agency', 'inspiro-starter-sites' ),
-						'text'  => esc_html__( 'A website for a boutique travel agency organizing hiking tours in the Alps.', 'inspiro-starter-sites' ),
+						'title' => __( 'Travel agency', 'inspiro-starter-sites' ),
+						'text'  => __( 'A website for a boutique travel agency organizing hiking tours in the Alps.', 'inspiro-starter-sites' ),
 					),
 				),
 				'texts'      => array(
-					'title'            => esc_html__( 'Generate a demo with AI', 'inspiro-starter-sites' ),
-					'beta'             => esc_html__( 'Beta', 'inspiro-starter-sites' ),
-					'intro'            => esc_html__( 'Describe the website you need and AI will design and build a few pages for you in about a minute.', 'inspiro-starter-sites' ),
-					'placeholder'      => esc_html__( 'e.g. A website for a small coffee roastery in Portland that sells beans online and hosts tasting events…', 'inspiro-starter-sites' ),
-					'ideas_label'      => esc_html__( 'Need inspiration? Try one of these:', 'inspiro-starter-sites' ),
-					'style_label'      => esc_html__( 'Design style', 'inspiro-starter-sites' ),
-					'palette_label'    => esc_html__( 'Color palette', 'inspiro-starter-sites' ),
-					'auto'             => esc_html__( 'Let AI decide', 'inspiro-starter-sites' ),
-					'describe_label'   => esc_html__( 'Describe your website', 'inspiro-starter-sites' ),
-					'step1'            => esc_html__( 'Describe and style', 'inspiro-starter-sites' ),
-					'step1_hint'       => esc_html__( 'Tell the AI about the website and pick a look', 'inspiro-starter-sites' ),
-					'step2'            => esc_html__( 'AI builds your demo', 'inspiro-starter-sites' ),
-					'step2_hint'       => esc_html__( 'Design, copy, photos and pages — about a minute per page', 'inspiro-starter-sites' ),
-					'step3'            => esc_html__( 'Review and edit', 'inspiro-starter-sites' ),
-					'step3_hint'       => esc_html__( 'Open your new site or fine-tune pages in the editor', 'inspiro-starter-sites' ),
-					'plan_item'        => esc_html__( 'Site design, copy & structure', 'inspiro-starter-sites' ),
-					'finalize_item'    => esc_html__( 'Menu, footer & homepage setup', 'inspiro-starter-sites' ),
-					'generate'         => esc_html__( 'Generate demo', 'inspiro-starter-sites' ),
-					'generating'       => esc_html__( 'Generating…', 'inspiro-starter-sites' ),
-					'quota_left'       => /* translators: %1$s: used, %2$s: limit */ esc_html__( '%1$s of %2$s free generations used', 'inspiro-starter-sites' ),
-					'quota_none'       => esc_html__( 'You have used all your free AI generations for this site.', 'inspiro-starter-sites' ),
-					'quota_loading'    => esc_html__( 'Checking available generations…', 'inspiro-starter-sites' ),
-					'too_short'        => esc_html__( 'Please describe your website in a bit more detail (at least a short sentence).', 'inspiro-starter-sites' ),
-					'replace_title'    => esc_html__( 'You already have an AI-generated demo', 'inspiro-starter-sites' ),
+					'title'            => __( 'Generate a demo with AI', 'inspiro-starter-sites' ),
+					'beta'             => __( 'Beta', 'inspiro-starter-sites' ),
+					'intro'            => __( 'Describe the website you need and AI will design and build a few pages for you in about a minute.', 'inspiro-starter-sites' ),
+					'placeholder'      => __( 'e.g. A website for a small coffee roastery in Portland that sells beans online and hosts tasting events…', 'inspiro-starter-sites' ),
+					'ideas_label'      => __( 'Need inspiration? Try one of these:', 'inspiro-starter-sites' ),
+					'style_label'      => __( 'Design style', 'inspiro-starter-sites' ),
+					'palette_label'    => __( 'Color palette', 'inspiro-starter-sites' ),
+					'auto'             => __( 'Let AI decide', 'inspiro-starter-sites' ),
+					'describe_label'   => __( 'Describe your website', 'inspiro-starter-sites' ),
+					'step1'            => __( 'Describe & style', 'inspiro-starter-sites' ),
+					'step1_hint'       => __( 'Tell the AI about the website and pick a look', 'inspiro-starter-sites' ),
+					'step2'            => __( 'AI builds your demo', 'inspiro-starter-sites' ),
+					'step2_hint'       => __( 'Design, copy, photos and pages — about a minute per page', 'inspiro-starter-sites' ),
+					'step3'            => __( 'Review & edit', 'inspiro-starter-sites' ),
+					'step3_hint'       => __( 'Open your new site or fine-tune pages in the editor', 'inspiro-starter-sites' ),
+					'plan_item'        => __( 'Site design, copy & structure', 'inspiro-starter-sites' ),
+					'finalize_item'    => __( 'Menu, footer & homepage setup', 'inspiro-starter-sites' ),
+					'continue'         => __( 'Continue', 'inspiro-starter-sites' ),
+					'suggesting'       => __( 'Suggesting pages…', 'inspiro-starter-sites' ),
+					'plan_title'       => __( 'Review your pages', 'inspiro-starter-sites' ),
+					'plan_hint'        => __( 'Suggested for your website. Rename, remove, or add your own (up to 5) — nothing is generated until you continue.', 'inspiro-starter-sites' ),
+					'plan_add_ph'      => __( 'Add a page, e.g. Pricing…', 'inspiro-starter-sites' ),
+					'plan_add'         => __( 'Add', 'inspiro-starter-sites' ),
+					'plan_remove'      => __( 'Remove page', 'inspiro-starter-sites' ),
+					'plan_min'         => __( 'Keep at least one page.', 'inspiro-starter-sites' ),
+					/* translators: %s: maximum number of pages */
+					'plan_max'         => __( 'Maximum %s pages.', 'inspiro-starter-sites' ),
+					'build_pages'      => __( 'Build these pages', 'inspiro-starter-sites' ),
+					'generate'         => __( 'Generate demo', 'inspiro-starter-sites' ),
+					'generating'       => __( 'Generating…', 'inspiro-starter-sites' ),
+					'quota_left'       => /* translators: %1$s: used, %2$s: limit */ __( '%1$s of %2$s free generations used', 'inspiro-starter-sites' ),
+					'quota_none'       => __( 'You have used all your free AI generations for this site.', 'inspiro-starter-sites' ),
+					'quota_loading'    => __( 'Checking available generations…', 'inspiro-starter-sites' ),
+					'too_short'        => __( 'Please describe your website in a bit more detail (at least a short sentence).', 'inspiro-starter-sites' ),
+					'replace_title'    => __( 'You already have an AI-generated demo', 'inspiro-starter-sites' ),
 					/* translators: %1$s: previous demo name, %2$s: number of pages */
-					'replace_notice'   => esc_html__( 'Generating a new demo will permanently delete the %2$s page(s) from “%1$s” — including any changes you made to them.', 'inspiro-starter-sites' ),
+					'replace_notice'   => __( 'Generating a new demo will permanently delete the %2$s page(s) from “%1$s” — including any changes you made to them.', 'inspiro-starter-sites' ),
 					/* translators: %s: number of pages */
-					'replace_notice_unnamed' => esc_html__( 'Generating a new demo will permanently delete the %s previously generated AI page(s) — including any changes you made to them.', 'inspiro-starter-sites' ),
-					'replace_checkbox' => esc_html__( 'Delete the previous AI demo when generating the new one', 'inspiro-starter-sites' ),
-					'replace_keep_hint'=> esc_html__( 'Uncheck to keep the old pages — they will remain published alongside the new demo.', 'inspiro-starter-sites' ),
-					'delete_now'       => esc_html__( 'Delete the AI demo now (without generating a new one)', 'inspiro-starter-sites' ),
-					'delete_confirm'   => esc_html__( 'Permanently delete all AI-generated pages, their images, the demo menu and footer widgets? Content that existed before the AI demo is not affected. This cannot be undone.', 'inspiro-starter-sites' ),
-					'deleting'         => esc_html__( 'Deleting…', 'inspiro-starter-sites' ),
-					'step_plan'        => esc_html__( 'Designing your site structure and writing the copy…', 'inspiro-starter-sites' ),
+					'replace_notice_unnamed' => __( 'Generating a new demo will permanently delete the %s previously generated AI page(s) — including any changes you made to them.', 'inspiro-starter-sites' ),
+					'replace_checkbox' => __( 'Delete the previous AI demo when generating the new one', 'inspiro-starter-sites' ),
+					'replace_keep_hint'=> __( 'Uncheck to keep the old pages — they will remain published alongside the new demo.', 'inspiro-starter-sites' ),
+					'delete_now'       => __( 'Delete the AI demo now (without generating a new one)', 'inspiro-starter-sites' ),
+					'delete_confirm'   => __( 'Permanently delete all AI-generated pages, their images, the demo menu and footer widgets? Content that existed before the AI demo is not affected. This cannot be undone.', 'inspiro-starter-sites' ),
+					'deleting'         => __( 'Deleting…', 'inspiro-starter-sites' ),
+					'step_plan'        => __( 'Designing your site structure and writing the copy…', 'inspiro-starter-sites' ),
 					/* translators: %1$s: current page number, %2$s: total pages, %3$s: page title */
-					'step_page'        => esc_html__( 'Creating page %1$s of %2$s: %3$s', 'inspiro-starter-sites' ),
-					'step_finalize'    => esc_html__( 'Setting up navigation and homepage…', 'inspiro-starter-sites' ),
-					'progress_hint'    => esc_html__( 'This usually takes about a minute. Please keep this tab open.', 'inspiro-starter-sites' ),
-					'success_title'    => esc_html__( 'Your demo is ready!', 'inspiro-starter-sites' ),
-					'success_text'     => esc_html__( 'The AI created the following pages, set up the menu, and assigned your new homepage.', 'inspiro-starter-sites' ),
-					'view_site'        => esc_html__( 'View site', 'inspiro-starter-sites' ),
-					'edit_pages'       => esc_html__( 'Edit pages', 'inspiro-starter-sites' ),
-					'error_title'      => esc_html__( 'Something went wrong', 'inspiro-starter-sites' ),
-					'error_generic'    => esc_html__( 'The AI service could not complete the request. Please try again in a moment.', 'inspiro-starter-sites' ),
-					'try_again'        => esc_html__( 'Try again', 'inspiro-starter-sites' ),
-					'close'            => esc_html__( 'Close', 'inspiro-starter-sites' ),
-					'page_failed'      => esc_html__( 'One of the pages could not be created, continuing with the rest…', 'inspiro-starter-sites' ),
+					'step_page'        => __( 'Creating page %1$s of %2$s: %3$s', 'inspiro-starter-sites' ),
+					'step_finalize'    => __( 'Setting up navigation and homepage…', 'inspiro-starter-sites' ),
+					'progress_hint'    => __( 'This usually takes about a minute. Please keep this tab open.', 'inspiro-starter-sites' ),
+					'success_title'    => __( 'Your demo is ready!', 'inspiro-starter-sites' ),
+					'success_text'     => __( 'The AI created the following pages, set up the menu, and assigned your new homepage.', 'inspiro-starter-sites' ),
+					'view_site'        => __( 'View site', 'inspiro-starter-sites' ),
+					'edit_pages'       => __( 'Edit pages', 'inspiro-starter-sites' ),
+					'error_title'      => __( 'Something went wrong', 'inspiro-starter-sites' ),
+					'error_generic'    => __( 'The AI service could not complete the request. Please try again in a moment.', 'inspiro-starter-sites' ),
+					'try_again'        => __( 'Try again', 'inspiro-starter-sites' ),
+					'close'            => __( 'Close', 'inspiro-starter-sites' ),
+					'page_failed'      => __( 'One of the pages could not be created, continuing with the rest…', 'inspiro-starter-sites' ),
 				),
 			)
 		);
@@ -344,20 +363,25 @@ class AiDemoGenerator {
 		$style   = isset( $style_options[ $style ] ) ? $style : '';
 		$palette = isset( $palette_options[ $palette ] ) ? $palette : '';
 
+		// Pages the user approved in the review step (before this call).
+		$approved_raw   = isset( $_POST['pages'] ) ? json_decode( wp_unslash( $_POST['pages'] ), true ) : null; // phpcs:ignore WordPress.Security.ValidatedSanitized
+		$approved_pages = $this->sanitize_review_pages( $approved_raw );
+
 		$plan = $this->proxy->claude_json(
 			$this->system_prompt(),
 			$this->plan_prompt(
 				$description,
 				$style ? $style_options[ $style ]['prompt'] : '',
 				$palette ? $palette_options[ $palette ]['colors'] : array(),
-				$palette && ! empty( $palette_options[ $palette ]['theme_var'] )
+				$palette && ! empty( $palette_options[ $palette ]['theme_var'] ),
+				$approved_pages
 			),
 			12000,
 			array( $stream, 'tick' )
 		);
 
 		if ( ! is_wp_error( $plan ) ) {
-			$plan = $this->sanitize_plan( $plan );
+			$plan = $this->sanitize_plan( $plan, $approved_pages );
 		}
 
 		if ( is_wp_error( $plan ) ) {
@@ -407,6 +431,110 @@ class AiDemoGenerator {
 				'remaining'  => isset( $quota['remaining'] ) ? (int) $quota['remaining'] : null,
 			)
 		);
+	}
+
+	/* ---------------------------------------------------------------------
+	 * AJAX: quick page suggestion (before the expensive generation)
+	 * ------------------------------------------------------------------ */
+
+	/**
+	 * A small, fast Claude call proposing 1-5 pages for the description —
+	 * shown to the user for review BEFORE the expensive plan+CSS generation.
+	 * Stateless and free (no quota consumed).
+	 */
+	public function ajax_suggest_pages() {
+		Helpers::verify_ajax_call();
+
+		$description = isset( $_POST['description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['description'] ) ) : '';
+		$description = trim( mb_substr( $description, 0, 1200 ) );
+
+		if ( mb_strlen( $description ) < 12 ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'Please describe your website in a bit more detail.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$prompt = "Propose the pages for a demo WordPress website based on this request:\n\n"
+			. '"' . $description . '"' . "\n\n"
+			. "Rules:\n"
+			. "- 1 to " . self::MAX_REVIEW_PAGES . " pages — typically 3-5; a SINGLE landing page when the request calls for one. The FIRST page is always {\"slug\":\"home\",\"title\":\"Home\"}.\n"
+			. "- Page titles in the language the request is WRITTEN in (the business's location or cuisine does not change the language).\n"
+			. "- brief: one sentence on what the page should contain.\n"
+			. "- Return ONLY compact JSON: {\"pages\":[{\"slug\":\"home\",\"title\":\"Home\",\"brief\":\"...\"}]}";
+
+		$result = $this->proxy->claude_json(
+			'You plan WordPress demo websites. Return only valid JSON with no markdown formatting.',
+			$prompt,
+			700
+		);
+
+		if ( is_wp_error( $result ) || empty( $result['pages'] ) || ! is_array( $result['pages'] ) ) {
+			$detail = is_wp_error( $result ) ? $result->get_error_message() : 'empty';
+			wp_send_json_error(
+				array(
+					'code'    => 'suggest_failed',
+					'message' => esc_html__( 'Could not suggest pages right now.', 'inspiro-starter-sites' ),
+					'detail'  => $detail,
+				)
+			);
+		}
+
+		$pages = $this->sanitize_review_pages( $result['pages'] );
+
+		if ( ! $pages ) {
+			wp_send_json_error( array( 'code' => 'suggest_failed', 'message' => esc_html__( 'Could not suggest pages right now.', 'inspiro-starter-sites' ) ) );
+		}
+
+		wp_send_json_success( array( 'pages' => $pages ) );
+	}
+
+	/**
+	 * Sanitize a user/AI-provided page list into unique, capped page entries.
+	 *
+	 * @param array $raw    Entries: [ 'slug' => ?, 'title' => ..., 'brief' => ? ].
+	 * @return array[] Clean pages (slug, title, brief).
+	 */
+	private function sanitize_review_pages( $raw ) {
+		$clean      = array();
+		$used_slugs = array();
+
+		if ( ! is_array( $raw ) ) {
+			return $clean;
+		}
+
+		foreach ( array_slice( $raw, 0, self::MAX_REVIEW_PAGES ) as $entry ) {
+			if ( ! is_array( $entry ) ) {
+				continue;
+			}
+
+			$title = mb_substr( sanitize_text_field( (string) ( isset( $entry['title'] ) ? $entry['title'] : '' ) ), 0, 120 );
+			$slug  = sanitize_title( (string) ( isset( $entry['slug'] ) ? $entry['slug'] : '' ) );
+			$brief = mb_substr( sanitize_text_field( (string) ( isset( $entry['brief'] ) ? $entry['brief'] : '' ) ), 0, 800 );
+
+			if ( '' === $title ) {
+				continue;
+			}
+			if ( '' === $slug ) {
+				$slug = sanitize_title( $title );
+			}
+			if ( '' === $slug ) {
+				continue;
+			}
+
+			$base = $slug;
+			$n    = 2;
+			while ( isset( $used_slugs[ $slug ] ) ) {
+				$slug = $base . '-' . $n;
+				$n++;
+			}
+			$used_slugs[ $slug ] = true;
+
+			$clean[] = array(
+				'slug'  => $slug,
+				'title' => $title,
+				'brief' => $brief ? $brief : sprintf( 'A "%s" page for this site — pick fitting sections and write matching copy.', $title ),
+			);
+		}
+
+		return $clean;
 	}
 
 	/* ---------------------------------------------------------------------
@@ -1032,8 +1160,17 @@ class AiDemoGenerator {
 	 * @param string $description User's site description.
 	 * @return string
 	 */
-	private function plan_prompt( $description, $style_instruction = '', $palette_colors = array(), $use_theme_var = false ) {
+	private function plan_prompt( $description, $style_instruction = '', $palette_colors = array(), $use_theme_var = false, $approved_pages = array() ) {
 		$direction = '';
+
+		if ( $approved_pages ) {
+			$list = array();
+			foreach ( $approved_pages as $page ) {
+				$list[] = $page['slug'] . ' — ' . $page['title'] . ' — ' . $page['brief'];
+			}
+			$direction .= "- PAGES (approved by the user, mandatory): the site has EXACTLY these pages, in this order — use these slugs and titles verbatim in \"pages\" and expand each brief into 2-4 sentences describing that page's sections and layout:\n  "
+				. implode( "\n  ", $list ) . "\n";
+		}
 		if ( $style_instruction ) {
 			$direction .= "- ART DIRECTION STYLE (selected by the user, mandatory): " . $style_instruction . ".\n";
 		}
@@ -1051,7 +1188,7 @@ class AiDemoGenerator {
 			. '"' . $description . '"' . "\n\n"
 			. "Return a site plan plus the site's full stylesheet. Rules:\n"
 			. $direction
-			. "- 3 to 5 pages. The FIRST page is always the homepage with slug \"home\". Pick inner pages that fit the business (about, services, menu, portfolio, contact...).\n"
+			. "- 1 to 5 pages — typically 3-5; a SINGLE landing page when the request calls for it (e.g. a product launch, event, or one-pager). The FIRST page is always the homepage with slug \"home\". Pick inner pages that fit the business (about, services, menu, portfolio, contact...).\n"
 			. "- Each page gets a \"brief\": 2-4 sentences describing its sections, layout ideas and content angle. Make pages structurally DIFFERENT from each other.\n"
 			. "- LANGUAGE: write ALL copy (site title, tagline, briefs, page names) in the language the request itself is WRITTEN in, unless it explicitly asks for another language. The business's location, nationality or cuisine does NOT change the language: an English request about a roastery in Porto or an Italian restaurant gets ENGLISH copy and English page names.\n"
 			. "- \"css\" is the complete design system for the whole site. Requirements:\n"
@@ -1059,7 +1196,7 @@ class AiDemoGenerator {
 			. "  * EVERY custom class name starts with the prefix ai- (.ai-hero, .ai-card, .ai-grid...) so the active theme's own classes can never collide with the design.\n"
 			. "  * CSS custom properties on .iss-ai-demo for the palette and fonts.\n"
 			. "  * A distinctive art direction for THIS business: real palette, expressive display typography from widely-available system font stacks (e.g. Georgia, 'Iowan Old Style', 'Avenir Next', Futura, 'Gill Sans', Palatino, ui-serif, ui-rounded...), fluid type and section padding with clamp().\n"
-			. "  * Must define: .ai-kicker (eyebrow label), a responsive grid (.ai-grid.ai-cols-2, .ai-cols-3, .ai-cols-4 via CSS grid, collapsing on mobile with @media), .ai-card styles, and section spacing/typography.\n"
+			. "  * Must define: .ai-kicker (eyebrow label), a responsive grid (.ai-grid.ai-cols-2, .ai-cols-3, .ai-cols-4 via CSS grid, collapsing on mobile with @media), .ai-card styles, section spacing/typography, and .ai-container { max-width: 1140px; margin-inline: auto; } used inside full-bleed sections so their content aligns with the site's content column.\n"
 			. "  * Do NOT define button styles (.ai-btn) — buttons are rendered as native WordPress buttons from the \"brand\" tokens below. Do NOT underline links inside buttons (scope generic link styles to content, e.g. .iss-ai-demo p a).\n"
 			. "  * The stylesheet is the source of truth for the FULL design — every section class used in pages (including .ai-section, .ai-card, heroes) must be completely styled here: backgrounds, padding, spacing, colors. A page must look right from this CSS alone.\n"
 			. "  * Style images (border-radius etc.) and vary section backgrounds so the site has rhythm.\n"
@@ -1096,7 +1233,7 @@ class AiDemoGenerator {
 			. "Write the page BODY as HTML in exactly this dialect:\n"
 			. "- Allowed elements: <section>, <div>, <h1>-<h6>, <p>, <span>, <img>, <a>, <ul>/<ol>/<li>, <blockquote>, <details>/<summary>, <figure>/<figcaption>, <hr>, inline <strong>/<em>/<br>, and small decorative inline <svg> icons (fill='currentColor', no scripts).\n"
 			. "- Structure: 4 to 7 top-level <section> elements with meaningful classes from the stylesheet (all custom classes carry the ai- prefix). Exactly ONE <h1> on the page, in the first section. Do NOT wrap the page in a .iss-ai-demo container — that wrapper is added automatically.\n"
-			. "- Section colors: every section whose CSS class gives it a solid background color must ALSO declare data-bg='#hex' (plus data-text='#hex' when the text is light) with the same colors — these become native, user-editable block colors layered on top of the CSS.\n"
+			. "- Section widths: sections WITHOUT a painted background are centered at the site's content width automatically — design them as normal content columns. Sections WITH a painted background span the full viewport: declare data-bg='#hex' for solid colors (plus data-text='#hex' when the text is light — these become native, user-editable block colors layered on top of the CSS) or data-full='1' for gradient/photo backgrounds. Inside full-bleed sections, wrap the content in a container div whose class the stylesheet constrains (max-width + margin-inline auto) so text lines up with the site's content column.\n"
 			. "- Images: NEVER use src. Write <img data-query='english photo search phrase' data-orientation='landscape' alt='...'> (or data-orientation='portrait' for people/tall crops). 2-6 images where the design calls for them; queries specific and photogenic, no brand names. The homepage hero should normally feature a photo (styled by your CSS) — a photo-less hero is only acceptable when the art direction truly demands it.\n"
 			. "- Buttons: <a class='ai-btn' href='#page:contact'>Label</a> (or class='ai-btn ai-btn-outline' for the secondary variant) — they are converted to native WordPress buttons automatically. ALL internal links use href='#page:slug' with a slug from the page list above.\n"
 			. "- Do NOT include a site header, logo, navigation menu/bar, or site footer — the WordPress theme already renders those around your content. Start with the page's first content section and end with its last content section. Never use <header>, <nav> or <footer> elements.\n"
@@ -1108,10 +1245,13 @@ class AiDemoGenerator {
 	/**
 	 * Validate and sanitize the AI-returned plan into a trusted structure.
 	 *
-	 * @param array $plan Raw decoded plan.
+	 * @param array $plan     Raw decoded plan.
+	 * @param array $approved User-approved pages — when present, they are
+	 *                        authoritative for slugs/titles/order; the AI's
+	 *                        expanded briefs are merged in by slug.
 	 * @return array|\WP_Error
 	 */
-	private function sanitize_plan( $plan ) {
+	private function sanitize_plan( $plan, $approved = array() ) {
 		if ( empty( $plan['pages'] ) || ! is_array( $plan['pages'] ) ) {
 			return new \WP_Error( 'ai_invalid_plan', esc_html__( 'The AI returned an unusable site plan. Please try again.', 'inspiro-starter-sites' ) );
 		}
@@ -1172,6 +1312,26 @@ class AiDemoGenerator {
 				'title' => $title,
 				'brief' => $brief,
 			);
+		}
+
+		// User-approved pages are authoritative: keep their slugs, titles and
+		// order exactly; take the AI's expanded briefs where it provided them.
+		if ( $approved ) {
+			$ai_briefs = array();
+			foreach ( $clean['pages'] as $page ) {
+				if ( '' !== $page['brief'] ) {
+					$ai_briefs[ $page['slug'] ] = $page['brief'];
+				}
+			}
+
+			$clean['pages'] = array();
+			foreach ( $approved as $page ) {
+				$clean['pages'][] = array(
+					'slug'  => $page['slug'],
+					'title' => $page['title'],
+					'brief' => isset( $ai_briefs[ $page['slug'] ] ) ? $ai_briefs[ $page['slug'] ] : $page['brief'],
+				);
+			}
 		}
 
 		if ( empty( $clean['pages'] ) ) {
@@ -1292,35 +1452,35 @@ class AiDemoGenerator {
 	private function style_options() {
 		return array(
 			'minimal'   => array(
-				'label'  => esc_html__( 'Minimal', 'inspiro-starter-sites' ),
+				'label'  => __( 'Minimal', 'inspiro-starter-sites' ),
 				'prompt' => 'ultra-minimal and restrained — lots of whitespace, typographic hierarchy does the work, few decorative elements',
 			),
 			'editorial' => array(
-				'label'  => esc_html__( 'Editorial', 'inspiro-starter-sites' ),
+				'label'  => __( 'Editorial', 'inspiro-starter-sites' ),
 				'prompt' => 'editorial magazine feel — serif display type, pull quotes, asymmetric layouts, generous imagery',
 			),
 			'bold'      => array(
-				'label'  => esc_html__( 'Big Type', 'inspiro-starter-sites' ),
+				'label'  => __( 'Big Type', 'inspiro-starter-sites' ),
 				'prompt' => 'big-type — oversized confident display headlines, high contrast, graphic blocks of color',
 			),
 			'luxury'    => array(
-				'label'  => esc_html__( 'Luxury', 'inspiro-starter-sites' ),
+				'label'  => __( 'Luxury', 'inspiro-starter-sites' ),
 				'prompt' => 'luxury — refined serif typography, muted sophisticated palette, generous spacing, understated elegance',
 			),
 			'corporate' => array(
-				'label'  => esc_html__( 'Corporate', 'inspiro-starter-sites' ),
+				'label'  => __( 'Corporate', 'inspiro-starter-sites' ),
 				'prompt' => 'clean corporate — structured grids, professional and trustworthy, clear hierarchy',
 			),
 			'playful'   => array(
-				'label'  => esc_html__( 'Playful', 'inspiro-starter-sites' ),
+				'label'  => __( 'Playful', 'inspiro-starter-sites' ),
 				'prompt' => 'playful and colourful — rounded shapes, energetic accent colors, friendly voice',
 			),
 			'retro'     => array(
-				'label'  => esc_html__( 'Retro', 'inspiro-starter-sites' ),
+				'label'  => __( 'Retro', 'inspiro-starter-sites' ),
 				'prompt' => 'retro-vintage character — warm aged tones, classic typographic flavor, subtle texture feel (CSS only)',
 			),
 			'dark'      => array(
-				'label'  => esc_html__( 'Dark', 'inspiro-starter-sites' ),
+				'label'  => __( 'Dark', 'inspiro-starter-sites' ),
 				'prompt' => 'dark mode throughout — near-black backgrounds on every section, one luminous accent color, glowing highlights',
 			),
 		);
@@ -1367,9 +1527,9 @@ class AiDemoGenerator {
 				$palettes[ 'theme-' . sanitize_key( $palette_id ) ] = array(
 					'label'     => $is_active
 						/* translators: %s: theme palette name */
-						? sprintf( esc_html__( 'Theme: %s (current)', 'inspiro-starter-sites' ), $label )
+						? sprintf( __( 'Theme: %s (current)', 'inspiro-starter-sites' ), $label )
 						/* translators: %s: theme palette name */
-						: sprintf( esc_html__( 'Theme: %s', 'inspiro-starter-sites' ), $label ),
+						: sprintf( __( 'Theme: %s', 'inspiro-starter-sites' ), $label ),
 					'colors'    => $colors,
 					// Only the ACTIVE palette matches the live CSS variable.
 					'theme_var' => $is_active,
@@ -1379,27 +1539,27 @@ class AiDemoGenerator {
 
 		return $palettes + array(
 			'warm'   => array(
-				'label'  => esc_html__( 'Warm earth', 'inspiro-starter-sites' ),
+				'label'  => __( 'Warm earth', 'inspiro-starter-sites' ),
 				'colors' => array( '#C4580A', '#2B1D12', '#FAF3E7' ),
 			),
 			'ocean'  => array(
-				'label'  => esc_html__( 'Ocean', 'inspiro-starter-sites' ),
+				'label'  => __( 'Ocean', 'inspiro-starter-sites' ),
 				'colors' => array( '#0E2A3A', '#1B7F79', '#F2EFE6' ),
 			),
 			'forest' => array(
-				'label'  => esc_html__( 'Forest', 'inspiro-starter-sites' ),
+				'label'  => __( 'Forest', 'inspiro-starter-sites' ),
 				'colors' => array( '#1F3D2B', '#9CB49A', '#F4F1E8' ),
 			),
 			'berry'  => array(
-				'label'  => esc_html__( 'Berry', 'inspiro-starter-sites' ),
+				'label'  => __( 'Berry', 'inspiro-starter-sites' ),
 				'colors' => array( '#5B2333', '#C9A227', '#F6EEEA' ),
 			),
 			'mono'   => array(
-				'label'  => esc_html__( 'Monochrome', 'inspiro-starter-sites' ),
+				'label'  => __( 'Monochrome', 'inspiro-starter-sites' ),
 				'colors' => array( '#111111', '#666666', '#F5F5F5' ),
 			),
 			'pastel' => array(
-				'label'  => esc_html__( 'Pastel', 'inspiro-starter-sites' ),
+				'label'  => __( 'Pastel', 'inspiro-starter-sites' ),
 				'colors' => array( '#A3B18A', '#E8C4C4', '#FDF8F0' ),
 			),
 		);
