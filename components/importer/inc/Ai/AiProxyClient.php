@@ -211,7 +211,9 @@ class AiProxyClient {
 	 * @return string|WP_Error
 	 */
 	private function request_claude( array $body, $heartbeat = null ) {
+		$t0     = microtime( true );
 		$result = $this->post_with_heartbeat( $this->endpoint( 'claude' ), wp_json_encode( $body ), $heartbeat );
+		self::log_timing( 'claude:' . ( isset( $body['task'] ) ? $body['task'] : 'raw' ), $t0 );
 
 		if ( is_wp_error( $result ) ) {
 			error_log( '[inspiro-starter-sites AI] proxy transport error: ' . $result->get_error_message() ); // phpcs:ignore
@@ -333,6 +335,7 @@ class AiProxyClient {
 	 * @return array[] List of [ 'id' => int, 'url' => string ] (resized URL). Empty on failure.
 	 */
 	public function pexels_photos( $query, $per_page = 3, $orientation = 'landscape' ) {
+		$t0       = microtime( true );
 		$response = wp_remote_post(
 			$this->endpoint( 'pexels' ),
 			array(
@@ -348,6 +351,8 @@ class AiProxyClient {
 				'timeout' => 30,
 			)
 		);
+
+		self::log_timing( 'pexels:' . $query, $t0 );
 
 		if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
 			return array();
@@ -534,6 +539,20 @@ class AiProxyClient {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Timing probe for performance analysis. Off by default; enable with
+	 * `add_filter( 'inspiro_starter_sites/ai_timing', '__return_true' )` —
+	 * durations land in the PHP error log tagged [iss-ai-timing].
+	 *
+	 * @param string $label Operation label.
+	 * @param float  $t0    microtime(true) at operation start.
+	 */
+	public static function log_timing( $label, $t0 ) {
+		if ( apply_filters( 'inspiro_starter_sites/ai_timing', false ) ) {
+			error_log( sprintf( '[iss-ai-timing] %-40s %6.2fs', $label, microtime( true ) - $t0 ) ); // phpcs:ignore
+		}
 	}
 
 	/**

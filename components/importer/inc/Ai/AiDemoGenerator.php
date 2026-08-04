@@ -1448,7 +1448,9 @@ class AiDemoGenerator {
 			}
 
 			if ( ! empty( $item['image_query'] ) ) {
-				$images = $this->resolve_images( $item['image_query'], 1, $state['used_photo_ids'], $state['plan']['site_title'], $plan_id, array( $stream, 'tick' ) );
+				// Featured images: the portfolio grid renders registered crop
+				// sizes, so these DO generate thumbnails.
+				$images = $this->resolve_images( $item['image_query'], 1, $state['used_photo_ids'], $state['plan']['site_title'], $plan_id, array( $stream, 'tick' ), 'landscape', true );
 				if ( $images ) {
 					set_post_thumbnail( $post_id, $images[0]['id'] );
 					$state['used_photo_ids'][] = $images[0]['photo_id'];
@@ -1770,10 +1772,19 @@ class AiDemoGenerator {
 	 * @param string        $orientation landscape|portrait|square.
 	 * @return array[] Zero or more [ 'id' => attachment ID, 'url' => URL, 'photo_id' => pexels ID ]
 	 */
-	private function resolve_images( $query, $count, array $used_ids, $site_title, $plan_id = '', $heartbeat = null, $orientation = 'landscape' ) {
+	private function resolve_images( $query, $count, array $used_ids, $site_title, $plan_id = '', $heartbeat = null, $orientation = 'landscape', $generate_sizes = false ) {
 		$count  = max( 1, (int) $count );
 		$photos = $this->proxy->pexels_photos( $query, $count + 4, $orientation );
 		$images = array();
+
+		// Content images render at `full` (already web-sized: Pexels w=1920),
+		// so the 17 registered thumbnail sizes this install would generate are
+		// never displayed — skipping them saves ~1s per image. Featured images
+		// (portfolio grid, blog thumbnails) pass $generate_sizes = true since
+		// their blocks render registered crop sizes.
+		if ( ! $generate_sizes ) {
+			add_filter( 'intermediate_image_sizes_advanced', '__return_empty_array', 100 );
+		}
 
 		foreach ( $photos as $photo ) {
 			if ( count( $images ) >= $count ) {
@@ -1791,6 +1802,10 @@ class AiDemoGenerator {
 			if ( $heartbeat ) {
 				call_user_func( $heartbeat );
 			}
+		}
+
+		if ( ! $generate_sizes ) {
+			remove_filter( 'intermediate_image_sizes_advanced', '__return_empty_array', 100 );
 		}
 
 		return $images;
@@ -1812,7 +1827,9 @@ class AiDemoGenerator {
 			require_once ABSPATH . 'wp-admin/includes/image.php';
 		}
 
+		$t0            = microtime( true );
 		$attachment_id = media_sideload_image( $photo['url'], 0, sanitize_text_field( $site_title . ' — ' . $query ), 'id' );
+		AiProxyClient::log_timing( 'sideload:' . $query, $t0 );
 
 		if ( is_wp_error( $attachment_id ) ) {
 			return null;
