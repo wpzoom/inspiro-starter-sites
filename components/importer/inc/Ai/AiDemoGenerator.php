@@ -205,6 +205,7 @@ class AiDemoGenerator {
 					'step3_hint'       => __( 'Open your new site or fine-tune pages in the editor', 'inspiro-starter-sites' ),
 					'plan_item'        => __( 'Site design, copy & structure', 'inspiro-starter-sites' ),
 					'portfolio_item'   => __( 'Portfolio plugin & sample projects', 'inspiro-starter-sites' ),
+					'forms_item'       => __( 'Contact form (WPZOOM Forms)', 'inspiro-starter-sites' ),
 					'finalize_item'    => __( 'Menu, footer & homepage setup', 'inspiro-starter-sites' ),
 					'continue'         => __( 'Continue', 'inspiro-starter-sites' ),
 					'enhance'          => __( 'Enhance with AI', 'inspiro-starter-sites' ),
@@ -620,6 +621,10 @@ class AiDemoGenerator {
 					'needed'        => ! empty( $plan['portfolio']['needed'] ) && ! empty( $plan['portfolio']['items'] ),
 					'plugin_active' => post_type_exists( 'portfolio_item' ),
 				),
+				'forms'      => array(
+					'needed'        => ! empty( $plan['contact_form_needed'] ),
+					'plugin_active' => post_type_exists( 'wpzf-form' ),
+				),
 			)
 		);
 	}
@@ -844,6 +849,12 @@ class AiDemoGenerator {
 					$state['plan']['pages']
 				),
 				'portfolio_needed' => ! empty( $state['plan']['portfolio']['needed'] ) && ! empty( $state['plan']['portfolio']['items'] ),
+				// The site has blog/news posts → pages may embed the native
+				// recent-posts Query Loop instead of faking article lists.
+				'posts_feed'       => ! empty( $state['plan']['blog']['needed'] ),
+				// A real WPZOOM Forms form can be placed on the contact page
+				// (checked at build time — the plugin installs right before).
+				'has_contact_form' => ! empty( $state['plan']['contact_form_needed'] ) && post_type_exists( 'wpzf-form' ),
 			),
 			array( $stream, 'tick' )
 		);
@@ -958,6 +969,36 @@ class AiDemoGenerator {
 			$stream->finish_error( array( 'message' => $page_id->get_error_message() ) );
 		}
 
+		$this->create_dummy_posts( $state, $plan_id, $stream );
+
+		$state['created_pages'][ $index ] = (int) $page_id;
+		set_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id, $state, HOUR_IN_SECONDS );
+
+		$stream->finish_success(
+			array(
+				'page_id'  => (int) $page_id,
+				'edit_url' => get_edit_post_link( $page_id, 'raw' ),
+			)
+		);
+	}
+
+	/**
+	 * Create the demo's dummy blog posts (plan-provided titles/teasers with
+	 * generic fallbacks, placeholder bodies + shared placeholder thumbnail).
+	 * Called from the blog-page build, and from finalize for demos whose
+	 * news-style pages use the recent-posts Query Loop without a dedicated
+	 * blog page. Idempotent per generation via $state['created_posts'].
+	 *
+	 * @param array             $state   Plan state (created_posts updated).
+	 * @param string            $plan_id Plan ID (cleanup meta tag).
+	 * @param StreamingResponse $stream  Keep-alive responder.
+	 * @return int[] Created post IDs.
+	 */
+	private function create_dummy_posts( array &$state, $plan_id, StreamingResponse $stream ) {
+		if ( ! empty( $state['created_posts'] ) ) {
+			return $state['created_posts'];
+		}
+
 		$briefs = isset( $state['plan']['blog']['posts'] ) && is_array( $state['plan']['blog']['posts'] )
 			? $state['plan']['blog']['posts']
 			: array();
@@ -1022,19 +1063,9 @@ class AiDemoGenerator {
 			$stream->tick();
 		}
 
-		$state['created_pages'][ $index ] = (int) $page_id;
-		$state['created_posts']           = array_merge(
-			isset( $state['created_posts'] ) ? $state['created_posts'] : array(),
-			$created
-		);
-		set_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id, $state, HOUR_IN_SECONDS );
+		$state['created_posts'] = $created;
 
-		$stream->finish_success(
-			array(
-				'page_id'  => (int) $page_id,
-				'edit_url' => get_edit_post_link( $page_id, 'raw' ),
-			)
-		);
+		return $created;
 	}
 
 	/**
@@ -1147,6 +1178,13 @@ class AiDemoGenerator {
 		$stream->begin();
 
 		$this->create_portfolio_items( $state, $plan_id, $stream );
+
+		// Demos with a news/blog facet but no dedicated Blog page still need
+		// the posts their recent-posts Query Loops display. Idempotent — a
+		// built blog page already created them.
+		if ( ! empty( $state['plan']['blog']['needed'] ) ) {
+			$this->create_dummy_posts( $state, $plan_id, $stream );
+		}
 
 		ksort( $created_pages );
 
@@ -1364,14 +1402,27 @@ class AiDemoGenerator {
 				$contact_lines[] = esc_html( $footer[ $key ] );
 			}
 		}
-		if ( $contact_lines ) {
+
+		// Native social icon buttons under the contact details.
+		$social_markup = ! empty( $footer['social'] ) && is_array( $footer['social'] )
+			? HtmlToBlocks::social_links_markup( $footer['social'] )
+			: '';
+
+		if ( $contact_lines || $social_markup ) {
 			$heading = ! empty( $footer['contact_heading'] ) ? $footer['contact_heading'] : __( 'Contact', 'inspiro-starter-sites' );
 
-			$widgets['footer_2'] = sprintf(
-				"<!-- wp:heading {\"level\":3} -->\n<h3 class=\"wp-block-heading\">%s</h3>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>%s</p>\n<!-- /wp:paragraph -->",
-				esc_html( $heading ),
-				implode( '<br>', $contact_lines )
+			$content = sprintf(
+				"<!-- wp:heading {\"level\":3} -->\n<h3 class=\"wp-block-heading\">%s</h3>\n<!-- /wp:heading -->",
+				esc_html( $heading )
 			);
+			if ( $contact_lines ) {
+				$content .= sprintf( "\n\n<!-- wp:paragraph -->\n<p>%s</p>\n<!-- /wp:paragraph -->", implode( '<br>', $contact_lines ) );
+			}
+			if ( $social_markup ) {
+				$content .= "\n\n" . $social_markup;
+			}
+
+			$widgets['footer_2'] = $content;
 		}
 
 		if ( ! $widgets ) {
@@ -1692,6 +1743,18 @@ class AiDemoGenerator {
 					$clean['footer'][ $key ] = $clean_text( $plan['footer'][ $key ], 300 );
 				}
 			}
+
+			// Social networks for the footer icons (whitelist-validated).
+			$clean['footer']['social'] = array();
+			if ( ! empty( $plan['footer']['social'] ) && is_array( $plan['footer']['social'] ) ) {
+				$allowed = array( 'instagram', 'facebook', 'x', 'twitter', 'youtube', 'linkedin', 'tiktok', 'pinterest', 'vimeo' );
+				foreach ( array_slice( $plan['footer']['social'], 0, 5 ) as $network ) {
+					$network = strtolower( sanitize_key( (string) $network ) );
+					if ( in_array( $network, $allowed, true ) ) {
+						$clean['footer']['social'][] = $network;
+					}
+				}
+			}
 		}
 
 		// Fonts: whitelist-validated (loaded locally via the theme's WPTT
@@ -1784,19 +1847,39 @@ class AiDemoGenerator {
 			return new \WP_Error( 'ai_invalid_plan', esc_html__( 'The AI returned an unusable site plan. Please try again.', 'inspiro-starter-sites' ) );
 		}
 
-		// A blog-like page is never designed as a static page: it becomes the
-		// real WordPress posts page (assigned in finalize) and the demo gets a
-		// few actual posts instead. Mark the first match only.
+		// Blog/news handling, two flavors:
+		//  - an EXACT "Blog" page becomes the real WordPress posts page
+		//    (empty shell, assigned in finalize) — is_blog;
+		//  - any other news-style page (News, Local News, Journal, Stories…)
+		//    stays a DESIGNED page whose post listing is a native Query Loop
+		//    — posts_feed. Both flavors get real dummy posts generated.
+		$has_blog_facet = false;
 		foreach ( $clean['pages'] as $i => $page ) {
-			if ( in_array( $page['slug'], array( 'blog', 'news', 'journal', 'articles' ), true )
-				|| preg_match( '/^(blog|news|journal|articles?)$/i', $page['title'] )
-			) {
+			if ( ! $has_blog_facet && ( 'blog' === $page['slug'] || preg_match( '/^blog$/i', $page['title'] ) ) ) {
 				$clean['pages'][ $i ]['is_blog'] = true;
+				$has_blog_facet                  = true;
+				continue;
+			}
+			if ( preg_match( '/(^|[-\s])(blog|news|journal|articles?|stories)([-\s]|$)/i', $page['slug'] . ' ' . $page['title'] ) ) {
+				$clean['pages'][ $i ]['posts_feed'] = true;
+				$has_blog_facet                     = true;
+			}
+		}
+
+		// Contact page → the demo gets a real WPZOOM Forms contact form
+		// (plugin installed in the background, like the portfolio).
+		$clean['contact_form_needed'] = false;
+		foreach ( $clean['pages'] as $page ) {
+			if ( preg_match( '/contact|kontakt/i', $page['slug'] . ' ' . $page['title'] ) ) {
+				$clean['contact_form_needed'] = true;
 				break;
 			}
 		}
 
-		$clean['blog'] = array( 'posts' => array() );
+		$clean['blog'] = array(
+			'needed' => $has_blog_facet,
+			'posts'  => array(),
+		);
 		if ( ! empty( $plan['blog']['posts'] ) && is_array( $plan['blog']['posts'] ) ) {
 			foreach ( array_slice( $plan['blog']['posts'], 0, 4 ) as $post ) {
 				if ( ! is_array( $post ) || empty( $post['title'] ) ) {

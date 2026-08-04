@@ -362,6 +362,9 @@ jQuery( function ( $ ) {
 		if ( planState.portfolio && planState.portfolio.needed ) {
 			$list.append( $( '<li>' ).attr( 'data-item', 'portfolio' ).text( t.portfolio_item || '' ) );
 		}
+		if ( planState.forms && planState.forms.needed && ! planState.forms.plugin_active ) {
+			$list.append( $( '<li>' ).attr( 'data-item', 'forms' ).text( t.forms_item || '' ) );
+		}
 		$.each( planState.pages || [], function ( i, page ) {
 			$list.append( $( '<li>' ).attr( 'data-item', 'page-' + i ).text( page.title ) );
 		} );
@@ -591,7 +594,9 @@ jQuery( function ( $ ) {
 				planState = response.data;
 				renderProgressPages();
 				ensurePortfolioPlugin( function () {
-					buildNextPage( 0 );
+					ensureFormsPlugin( function () {
+						buildNextPage( 0 );
+					} );
 				} );
 			} )
 			.fail( function ( xhr, textStatus ) {
@@ -621,6 +626,26 @@ jQuery( function ( $ ) {
 		ajax( 'inspiro_starter_sites_install_plugin', { slug: 'wpzoom-portfolio' }, 120000 )
 			.always( function () {
 				markProgressItem( 'portfolio', 'is-done' );
+				next();
+			} );
+	}
+
+	// Install/activate WPZOOM Forms in the background when the demo has a
+	// contact page — activation seeds the default form the contact page
+	// embeds. Failures don't stop the run; the form is simply omitted.
+	function ensureFormsPlugin( next ) {
+		var forms = planState.forms || {};
+
+		if ( ! forms.needed || forms.plugin_active ) {
+			next();
+			return;
+		}
+
+		markProgressItem( 'forms', 'is-active' );
+
+		ajax( 'inspiro_starter_sites_install_plugin', { slug: 'wpzoom-forms' }, 120000 )
+			.always( function () {
+				markProgressItem( 'forms', 'is-done' );
 				next();
 			} );
 	}

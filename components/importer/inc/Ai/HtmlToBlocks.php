@@ -214,11 +214,20 @@ class HtmlToBlocks {
 
 			case 'div':
 			case 'aside':
-				// Placeholder for the WPZOOM Portfolio grid block.
-				if ( 'portfolio' === trim( $el->getAttribute( 'data-block' ) ) ) {
-					return \WP_Block_Type_Registry::get_instance()->is_registered( 'wpzoom-blocks/portfolio' )
-						? '<!-- wp:wpzoom-blocks/portfolio /-->'
-						: '';
+				switch ( trim( $el->getAttribute( 'data-block' ) ) ) {
+					case 'portfolio':
+						// Placeholder for the WPZOOM Portfolio grid block.
+						return \WP_Block_Type_Registry::get_instance()->is_registered( 'wpzoom-blocks/portfolio' )
+							? '<!-- wp:wpzoom-blocks/portfolio /-->'
+							: '';
+					case 'recent-posts':
+						return $this->recent_posts_block( $el );
+					case 'social':
+						return self::social_links_markup( explode( ',', (string) $el->getAttribute( 'data-networks' ) ) );
+					case 'gallery':
+						return $this->gallery_block( $el );
+					case 'contact-form':
+						return $this->contact_form_block();
 				}
 				// ai-cols-N wrappers become native columns blocks.
 				if ( preg_match( '/\bai-cols-([2-4])\b/', $el->getAttribute( 'class' ), $m ) ) {
@@ -393,6 +402,173 @@ class HtmlToBlocks {
 		}
 
 		return sprintf( "<!-- wp:paragraph%s -->\n<p%s>%s</p>\n<!-- /wp:paragraph -->", $attrs, $class, $inner );
+	}
+
+	/**
+	 * <div data-block='recent-posts' data-count='3'> → native Query Loop grid
+	 * of the site's real posts (featured image, date, title, excerpt). Fully
+	 * dynamic: it always shows whatever the user publishes later.
+	 *
+	 * @param \DOMElement $el
+	 * @return string
+	 */
+	private function recent_posts_block( $el ) {
+		$count   = (int) $el->getAttribute( 'data-count' );
+		$count   = max( 2, min( 6, $count ? $count : 3 ) );
+		$columns = min( 3, $count );
+
+		$query_attrs = array(
+			'query' => array(
+				'perPage'  => $count,
+				'pages'    => 0,
+				'offset'   => 0,
+				'postType' => 'post',
+				'order'    => 'desc',
+				'orderBy'  => 'date',
+				'inherit'  => false,
+			),
+		);
+
+		return '<!-- wp:query ' . wp_json_encode( $query_attrs ) . " -->\n"
+			. '<div class="wp-block-query">'
+			. '<!-- wp:post-template {"layout":{"type":"grid","columnCount":' . $columns . '}} -->' . "\n"
+			. '<!-- wp:post-featured-image {"isLink":true,"aspectRatio":"3/2"} /-->' . "\n"
+			. '<!-- wp:post-date {"isLink":false,"fontSize":"small"} /-->' . "\n"
+			. '<!-- wp:post-title {"level":3,"isLink":true} /-->' . "\n"
+			. '<!-- wp:post-excerpt {"moreText":"","excerptLength":18} /-->' . "\n"
+			. "<!-- /wp:post-template -->\n"
+			. "<!-- wp:query-no-results -->\n"
+			. '<!-- wp:paragraph --><p>' . esc_html__( 'Fresh posts are coming soon — check back shortly.', 'inspiro-starter-sites' ) . "</p><!-- /wp:paragraph -->\n"
+			. "<!-- /wp:query-no-results --></div>\n"
+			. '<!-- /wp:query -->';
+	}
+
+	/**
+	 * Native social icon buttons for a list of network slugs. Shared with the
+	 * footer-widget builder (hence static). Demo URLs point at the networks'
+	 * home pages so the icons are functional-looking but never a dead 404.
+	 *
+	 * @param string[] $networks Requested network slugs.
+	 * @return string '' when nothing valid was requested.
+	 */
+	public static function social_links_markup( array $networks ) {
+		$whitelist = array(
+			'instagram' => 'https://instagram.com',
+			'facebook'  => 'https://facebook.com',
+			'x'         => 'https://x.com',
+			'twitter'   => 'https://x.com',
+			'youtube'   => 'https://youtube.com',
+			'linkedin'  => 'https://linkedin.com',
+			'tiktok'    => 'https://tiktok.com',
+			'pinterest' => 'https://pinterest.com',
+			'vimeo'     => 'https://vimeo.com',
+		);
+
+		$items = array();
+		$seen  = array();
+		foreach ( $networks as $network ) {
+			$network = strtolower( trim( (string) $network ) );
+			$service = 'twitter' === $network ? 'x' : $network;
+			if ( ! isset( $whitelist[ $network ] ) || isset( $seen[ $service ] ) ) {
+				continue;
+			}
+			$seen[ $service ] = true;
+			$items[]          = sprintf(
+				'<!-- wp:social-link {"url":"%s","service":"%s"} /-->',
+				esc_url( $whitelist[ $network ] ),
+				esc_attr( $service )
+			);
+			if ( count( $items ) >= 5 ) {
+				break;
+			}
+		}
+
+		if ( ! $items ) {
+			return '';
+		}
+
+		return '<!-- wp:social-links {"iconColor":"contrast","className":"is-style-logos-only","style":{"spacing":{"blockGap":{"left":"18px"}}}} -->' . "\n"
+			. '<ul class="wp-block-social-links has-icon-color is-style-logos-only">' . implode( '', $items ) . "</ul>\n"
+			. '<!-- /wp:social-links -->';
+	}
+
+	/**
+	 * <div data-block='gallery'><img data-query='...'>…</div> → native
+	 * gallery block of sideloaded photos (3-column, cropped).
+	 *
+	 * @param \DOMElement $el
+	 * @return string
+	 */
+	private function gallery_block( $el ) {
+		$images = array();
+
+		foreach ( $el->getElementsByTagName( 'img' ) as $img ) {
+			if ( count( $images ) >= 8 ) {
+				break;
+			}
+			$query = trim( $img->getAttribute( 'data-query' ) );
+			if ( '' === $query ) {
+				continue;
+			}
+			$image = call_user_func( $this->image_resolver, $query, 'landscape' );
+			if ( $image ) {
+				$image['alt'] = trim( $img->getAttribute( 'alt' ) );
+				$images[]     = $image;
+			}
+		}
+
+		if ( count( $images ) < 2 ) {
+			return '';
+		}
+
+		$columns = min( 3, count( $images ) );
+		$inner   = '';
+		foreach ( $images as $image ) {
+			$inner .= sprintf(
+				"<!-- wp:image {\"id\":%d,\"sizeSlug\":\"large\",\"linkDestination\":\"none\"} -->\n<figure class=\"wp-block-image size-large\"><img src=\"%s\" alt=\"%s\" class=\"wp-image-%d\"/></figure>\n<!-- /wp:image -->\n\n",
+				(int) $image['id'],
+				esc_url( $image['url'] ),
+				esc_attr( $image['alt'] ),
+				(int) $image['id']
+			);
+		}
+
+		return '<!-- wp:gallery {"columns":' . $columns . ',"linkTo":"none"} -->' . "\n"
+			. '<figure class="wp-block-gallery has-nested-images columns-' . $columns . ' is-cropped">' . "\n"
+			. trim( $inner ) . "\n"
+			. "</figure>\n"
+			. '<!-- /wp:gallery -->';
+	}
+
+	/**
+	 * <div data-block='contact-form'> → the WPZOOM Forms block bound to the
+	 * first published form (the plugin seeds an example form on activation).
+	 * Empty when the plugin/form isn't available — the block REQUIRES a valid
+	 * formId (a bare block renders an admin-facing error instead).
+	 *
+	 * @return string
+	 */
+	private function contact_form_block() {
+		if ( ! \WP_Block_Type_Registry::get_instance()->is_registered( 'wpzoom-forms/form-block' ) ) {
+			return '';
+		}
+
+		$forms = get_posts(
+			array(
+				'post_type'   => 'wpzf-form',
+				'post_status' => 'publish',
+				'numberposts' => 1,
+				'orderby'     => 'ID',
+				'order'       => 'ASC',
+				'fields'      => 'ids',
+			)
+		);
+
+		if ( ! $forms ) {
+			return '';
+		}
+
+		return '<!-- wp:wpzoom-forms/form-block {"formId":' . (int) $forms[0] . '} /-->';
 	}
 
 	private function image_block( $el, $caption ) {
