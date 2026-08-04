@@ -75,6 +75,10 @@ jQuery( function ( $ ) {
 	// Simple stroke icons for the idea cards (currentColor, 20x20 viewBox).
 	var IDEA_ICONS = {
 		camera:       '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="6" width="16" height="11" rx="2"/><circle cx="10" cy="11.5" r="3.2"/><path d="M7 6l1.2-2h3.6L13 6"/></svg>',
+		video:        '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="5.5" width="11" height="9" rx="2"/><path d="M13 9l5-2.5v7L13 11"/></svg>',
+		film:         '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="8.5" width="14" height="8" rx="1.5"/><path d="M3.2 8.3L4.5 4.5l12.8 1.9-.8 2.1M7.5 5l1.6 3M11.5 5.6l1.6 3"/></svg>',
+		pen:          '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 17l1-4L14.5 2.5a1.4 1.4 0 012 0l1 1a1.4 1.4 0 010 2L7 16z"/><path d="M12 5l3 3"/></svg>',
+		briefcase:    '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.5" y="6.5" width="15" height="10" rx="2"/><path d="M7 6.5V5a2 2 0 012-2h2a2 2 0 012 2v1.5M2.5 11h15"/></svg>',
 		restaurant:   '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 2v7M4 2v4a2 2 0 004 0V2M6 9v9"/><path d="M13 2c1.8 0 3 1.7 3 4s-1.2 4-3 4v8"/></svg>',
 		wellness:     '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M10 3c1.8 1.6 2.8 3.6 2.8 5.7 0 2-1 3.9-2.8 5.3-1.8-1.4-2.8-3.3-2.8-5.3C7.2 6.6 8.2 4.6 10 3z"/><path d="M3.5 9.5c2.4.4 4.3 1.6 5.4 3.6M16.5 9.5c-2.4.4-4.3 1.6-5.4 3.6M10 14v3.5"/></svg>',
 		architecture: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 17h14M4 17V7l6-4 6 4v10"/><path d="M8 17v-4h4v4M8 8h1M11 8h1"/></svg>',

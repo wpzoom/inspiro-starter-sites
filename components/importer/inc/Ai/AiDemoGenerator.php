@@ -170,6 +170,26 @@ class AiDemoGenerator {
 						'text'  => __( 'A portfolio site for a wedding photographer based in Lisbon, with a moody, elegant style.', 'inspiro-starter-sites' ),
 					),
 					array(
+						'icon'  => 'video',
+						'title' => __( 'Video production studio', 'inspiro-starter-sites' ),
+						'text'  => __( 'A site for a video production studio in Berlin creating brand films and commercials, with a bold showreel-first design.', 'inspiro-starter-sites' ),
+					),
+					array(
+						'icon'  => 'film',
+						'title' => __( 'Wedding videographer', 'inspiro-starter-sites' ),
+						'text'  => __( 'A cinematic portfolio for a wedding videographer filming elopements across Tuscany.', 'inspiro-starter-sites' ),
+					),
+					array(
+						'icon'  => 'pen',
+						'title' => __( 'Creative agency', 'inspiro-starter-sites' ),
+						'text'  => __( 'A portfolio site for a small design studio crafting brand identities for tech startups.', 'inspiro-starter-sites' ),
+					),
+					array(
+						'icon'  => 'briefcase',
+						'title' => __( 'Business consulting', 'inspiro-starter-sites' ),
+						'text'  => __( 'A professional site for a consulting firm helping mid-size companies modernize their operations.', 'inspiro-starter-sites' ),
+					),
+					array(
 						'icon'  => 'restaurant',
 						'title' => __( 'Restaurant', 'inspiro-starter-sites' ),
 						'text'  => __( 'A website for a small family-run Italian restaurant with a seasonal menu and cozy atmosphere.', 'inspiro-starter-sites' ),
