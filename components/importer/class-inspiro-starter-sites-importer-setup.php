@@ -823,7 +823,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 					array(
 						'import_file_name'         => 'Events / Conference',
 						'import_preview_image_url' => 'https://www.wpzoom.com/wp-content/uploads/2019/06/inspiro-events-conference.png',
-						'preview_url'              => 'https://demo.wpzoom.com/inspiro-event/',
+						'preview_url'              => 'https://demo.wpzoom.com/inspiro-event-elementor/',
 					),
 					array(
 						'import_file_name'         => 'NowMag Magazine',
