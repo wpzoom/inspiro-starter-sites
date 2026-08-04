@@ -59,6 +59,7 @@ class AiDemoGenerator {
 		}
 
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 20 );
+		add_action( 'wp_head', array( $this, 'print_demo_css' ), 100 );
 
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_quota', array( $this, 'ajax_quota' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_generate', array( $this, 'ajax_generate' ) );
@@ -344,8 +345,8 @@ class AiDemoGenerator {
 			);
 		}
 
-		// Image search + sideloads can exceed short server idle timeouts on
-		// slow connections — stream keep-alive bytes between operations.
+		// The page build includes a Claude call (~30-60s) plus image
+		// sideloads — stream keep-alive bytes throughout.
 		$stream = new StreamingResponse();
 		$stream->begin();
 
@@ -359,30 +360,52 @@ class AiDemoGenerator {
 
 		$page = $state['plan']['pages'][ $index ];
 
-		// Resolve section images: Pexels search via proxy + sideload to the
-		// media library. Failures degrade to image-less sections.
-		$sections = array();
-		foreach ( $page['sections'] as $section ) {
-			if ( ! empty( $section['image_query'] ) ) {
-				$image = $this->resolve_image( $section['image_query'], $state['used_photo_ids'], $state['plan']['site_title'], $plan_id );
-				if ( $image ) {
-					$section['image']         = $image;
-					$state['used_photo_ids'][] = $image['photo_id'];
-				}
-				$stream->tick();
-			}
-			$sections[] = $section;
+		// One Claude call designs this page as HTML against the shared
+		// stylesheet generated in the plan step.
+		$html = $this->proxy->claude_text(
+			$this->page_system_prompt(),
+			$this->page_prompt( $state, $index ),
+			9000,
+			array( $stream, 'tick' )
+		);
+
+		if ( is_wp_error( $html ) ) {
+			$stream->finish_error(
+				array(
+					'message' => $html->get_error_message(),
+					'detail'  => $html->get_error_code(),
+				)
+			);
 		}
 
-		// Permalinks for button targets: pages that don't exist yet get their
-		// pretty-permalink guess, which resolves correctly once created.
+		$html = preg_replace( '/^```(?:html)?\s*|\s*```$/s', '', trim( $html ) );
+
+		// Permalinks for internal links: pages that don't exist yet get their
+		// pretty-permalink guess; ajax_finalize() rewrites collisions.
 		$page_links = array();
 		foreach ( $state['plan']['pages'] as $p ) {
 			$page_links[ $p['slug'] ] = ( 'home' === $p['slug'] ) ? home_url( '/' ) : home_url( '/' . $p['slug'] . '/' );
 		}
 
-		$composer = new BlockComposer( $page_links );
-		$content  = $composer->compose_page( $sections, $page );
+		// Convert the AI HTML into native blocks; <img data-query> tags are
+		// resolved to sideloaded Pexels photos as they're encountered.
+		$generator = $this; // For PHP 7.4 closure clarity.
+		$resolver  = function ( $query, $orientation ) use ( $generator, &$state, $plan_id, $stream ) {
+			$images = $generator->resolve_images( $query, 1, $state['used_photo_ids'], $state['plan']['site_title'], $plan_id, array( $stream, 'tick' ), $orientation );
+			if ( ! $images ) {
+				return null;
+			}
+			$state['used_photo_ids'][] = $images[0]['photo_id'];
+			$stream->tick();
+			return $images[0];
+		};
+
+		$converter = new HtmlToBlocks( $page_links, $resolver );
+		$content   = $converter->convert( $html, $page['slug'] );
+
+		if ( '' === $content ) {
+			$stream->finish_error( array( 'message' => esc_html__( 'The AI returned an unusable page design. Please try again.', 'inspiro-starter-sites' ) ) );
+		}
 
 		$post_id = wp_insert_post(
 			wp_slash(
@@ -526,6 +549,10 @@ class AiDemoGenerator {
 			update_option( 'page_on_front', $front_id );
 		}
 
+		// Footer content goes into the theme's real footer widget areas —
+		// generated pages never carry their own footer.
+		$footer_widget_ids = $this->populate_footer_widgets( $state['plan'] );
+
 		// Record the generation so the content can be identified (and cleaned
 		// up) later. Post meta on each page carries the same plan ID.
 		$demos = get_option( self::DEMOS_OPTION, array() );
@@ -534,8 +561,10 @@ class AiDemoGenerator {
 		$demos[ $plan_id ] = array(
 			'site_title'  => $state['plan']['site_title'],
 			'description' => $state['description'],
+			'css'         => isset( $state['plan']['css'] ) ? $state['plan']['css'] : '',
 			'pages'       => array_values( $created_pages ),
 			'menu_id'     => $menu_id && ! is_wp_error( $menu_id ) ? (int) $menu_id : 0,
+			'widgets'     => $footer_widget_ids,
 			'created_at'  => current_time( 'mysql' ),
 		);
 
@@ -557,6 +586,77 @@ class AiDemoGenerator {
 	/* ---------------------------------------------------------------------
 	 * Internals
 	 * ------------------------------------------------------------------ */
+
+	/**
+	 * Fill the theme's footer widget areas (footer_1 / footer_2) with two
+	 * block widgets built from the plan's footer content: an about blurb and
+	 * the contact details. Returns the created widget IDs for cleanup.
+	 *
+	 * @param array $plan Sanitized plan.
+	 * @return string[] Widget IDs (e.g. [ 'block-7', 'block-8' ]).
+	 */
+	private function populate_footer_widgets( array $plan ) {
+		$footer = isset( $plan['footer'] ) && is_array( $plan['footer'] ) ? $plan['footer'] : array();
+
+		$widgets = array();
+
+		if ( ! empty( $footer['about'] ) ) {
+			$widgets['footer_1'] = sprintf(
+				"<!-- wp:heading {\"level\":3} -->\n<h3 class=\"wp-block-heading\">%s</h3>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>%s</p>\n<!-- /wp:paragraph -->",
+				esc_html( $plan['site_title'] ),
+				esc_html( $footer['about'] )
+			);
+		}
+
+		$contact_lines = array();
+		foreach ( array( 'email', 'phone', 'address' ) as $key ) {
+			if ( ! empty( $footer[ $key ] ) ) {
+				$contact_lines[] = esc_html( $footer[ $key ] );
+			}
+		}
+		if ( $contact_lines ) {
+			$heading = ! empty( $footer['contact_heading'] ) ? $footer['contact_heading'] : __( 'Contact', 'inspiro-starter-sites' );
+
+			$widgets['footer_2'] = sprintf(
+				"<!-- wp:heading {\"level\":3} -->\n<h3 class=\"wp-block-heading\">%s</h3>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>%s</p>\n<!-- /wp:paragraph -->",
+				esc_html( $heading ),
+				implode( '<br>', $contact_lines )
+			);
+		}
+
+		if ( ! $widgets ) {
+			return array();
+		}
+
+		$instances = get_option( 'widget_block', array() );
+		$instances = is_array( $instances ) ? $instances : array();
+
+		$next = 2;
+		foreach ( array_keys( $instances ) as $key ) {
+			if ( is_numeric( $key ) && (int) $key >= $next ) {
+				$next = (int) $key + 1;
+			}
+		}
+
+		$sidebars = wp_get_sidebars_widgets();
+		$created  = array();
+
+		foreach ( $widgets as $sidebar_id => $content ) {
+			$instances[ $next ] = array( 'content' => $content );
+			$widget_id          = 'block-' . $next;
+			$created[]          = $widget_id;
+
+			// The AI demo owns these footer areas — replace their contents.
+			$sidebars[ $sidebar_id ] = array( $widget_id );
+			$next++;
+		}
+
+		$instances['_multiwidget'] = 1;
+		update_option( 'widget_block', $instances );
+		wp_set_sidebars_widgets( $sidebars );
+
+		return $created;
+	}
 
 	/**
 	 * Permanently delete all previously AI-generated content: pages and the
@@ -586,9 +686,35 @@ class AiDemoGenerator {
 			wp_delete_post( $post_id, true );
 		}
 
-		// Drop the stored records of the deleted demos.
+		// Remove footer widgets created by the demos being deleted, then drop
+		// their stored records.
 		$demos = get_option( self::DEMOS_OPTION, array() );
 		if ( is_array( $demos ) && $demos ) {
+			$remove_widget_ids = array();
+			foreach ( $demos as $record_plan_id => $record ) {
+				if ( $record_plan_id !== $keep_plan_id && ! empty( $record['widgets'] ) && is_array( $record['widgets'] ) ) {
+					$remove_widget_ids = array_merge( $remove_widget_ids, $record['widgets'] );
+				}
+			}
+
+			if ( $remove_widget_ids ) {
+				$instances = get_option( 'widget_block', array() );
+				$instances = is_array( $instances ) ? $instances : array();
+				foreach ( $remove_widget_ids as $widget_id ) {
+					$number = (int) str_replace( 'block-', '', $widget_id );
+					unset( $instances[ $number ] );
+				}
+				update_option( 'widget_block', $instances );
+
+				$sidebars = wp_get_sidebars_widgets();
+				foreach ( $sidebars as $sidebar_id => $widget_ids ) {
+					if ( is_array( $widget_ids ) ) {
+						$sidebars[ $sidebar_id ] = array_values( array_diff( $widget_ids, $remove_widget_ids ) );
+					}
+				}
+				wp_set_sidebars_widgets( $sidebars );
+			}
+
 			$demos = array_intersect_key( $demos, array( $keep_plan_id => true ) );
 			update_option( self::DEMOS_OPTION, $demos, false );
 		}
@@ -609,51 +735,88 @@ class AiDemoGenerator {
 	}
 
 	/**
-	 * Search Pexels and sideload the first unused photo into the media library.
+	 * Search Pexels once and sideload up to $count unused photos.
 	 *
-	 * @param string $query      English search phrase.
-	 * @param array  $used_ids   Pexels photo IDs already used in this plan.
-	 * @param string $site_title Used for the attachment description.
-	 * @param string $plan_id    Plan ID stamped on the attachment for cleanup.
-	 * @return array|null [ 'id' => attachment ID, 'url' => URL, 'photo_id' => pexels ID ]
+	 * @param string        $query      English search phrase.
+	 * @param int           $count      Photos needed.
+	 * @param array         $used_ids   Pexels photo IDs already used in this plan.
+	 * @param string        $site_title Used for the attachment description.
+	 * @param string        $plan_id     Plan ID stamped on attachments for cleanup.
+	 * @param callable|null $heartbeat   Keep-alive tick between downloads.
+	 * @param string        $orientation landscape|portrait|square.
+	 * @return array[] Zero or more [ 'id' => attachment ID, 'url' => URL, 'photo_id' => pexels ID ]
 	 */
-	private function resolve_image( $query, array $used_ids, $site_title, $plan_id = '' ) {
-		$photos = $this->proxy->pexels_photos( $query, 5 );
+	private function resolve_images( $query, $count, array $used_ids, $site_title, $plan_id = '', $heartbeat = null, $orientation = 'landscape' ) {
+		$count  = max( 1, (int) $count );
+		$photos = $this->proxy->pexels_photos( $query, $count + 4, $orientation );
+		$images = array();
 
 		foreach ( $photos as $photo ) {
+			if ( count( $images ) >= $count ) {
+				break;
+			}
 			if ( in_array( $photo['id'], $used_ids, true ) ) {
 				continue;
 			}
 
-			if ( ! function_exists( 'media_sideload_image' ) ) {
-				require_once ABSPATH . 'wp-admin/includes/media.php';
-				require_once ABSPATH . 'wp-admin/includes/file.php';
-				require_once ABSPATH . 'wp-admin/includes/image.php';
+			$image = $this->sideload_photo( $photo, $query, $site_title, $plan_id );
+			if ( $image ) {
+				$images[]   = $image;
+				$used_ids[] = $image['photo_id'];
 			}
-
-			$attachment_id = media_sideload_image( $photo['url'], 0, sanitize_text_field( $site_title . ' — ' . $query ), 'id' );
-
-			if ( is_wp_error( $attachment_id ) ) {
-				continue;
+			if ( $heartbeat ) {
+				call_user_func( $heartbeat );
 			}
-
-			$url = wp_get_attachment_image_url( $attachment_id, 'full' );
-			if ( ! $url ) {
-				continue;
-			}
-
-			if ( $plan_id ) {
-				update_post_meta( $attachment_id, self::GENERATED_META_KEY, $plan_id );
-			}
-
-			return array(
-				'id'       => (int) $attachment_id,
-				'url'      => $url,
-				'photo_id' => (int) $photo['id'],
-			);
 		}
 
-		return null;
+		return $images;
+	}
+
+	/**
+	 * Sideload one Pexels photo into the media library.
+	 *
+	 * @param array  $photo      [ 'id' => pexels ID, 'url' => remote URL ]
+	 * @param string $query      Search phrase (for the attachment description).
+	 * @param string $site_title Used for the attachment description.
+	 * @param string $plan_id    Plan ID stamped on the attachment for cleanup.
+	 * @return array|null [ 'id' => attachment ID, 'url' => URL, 'photo_id' => pexels ID ]
+	 */
+	private function sideload_photo( array $photo, $query, $site_title, $plan_id = '' ) {
+		if ( ! function_exists( 'media_sideload_image' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/media.php';
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			require_once ABSPATH . 'wp-admin/includes/image.php';
+		}
+
+		$attachment_id = media_sideload_image( $photo['url'], 0, sanitize_text_field( $site_title . ' — ' . $query ), 'id' );
+
+		if ( is_wp_error( $attachment_id ) ) {
+			return null;
+		}
+
+		$url = wp_get_attachment_image_url( $attachment_id, 'full' );
+		if ( ! $url ) {
+			return null;
+		}
+
+		if ( $plan_id ) {
+			update_post_meta( $attachment_id, self::GENERATED_META_KEY, $plan_id );
+		}
+
+		return array(
+			'id'       => (int) $attachment_id,
+			'url'      => $url,
+			'photo_id' => (int) $photo['id'],
+		);
+	}
+
+	/**
+	 * Shared design-quality directive for both prompts.
+	 *
+	 * @return string
+	 */
+	private function design_directive() {
+		return 'NEVER use generic AI-generated aesthetics: overused font stacks, cliched color schemes (particularly purple gradients on white or dark backgrounds), predictable centered-hero-then-three-cards layouts, or cookie-cutter design without context-specific character. Commit to a distinctive art direction that fits the specific business: a real palette, expressive display typography, generous whitespace, and cohesive rhythm across sections.';
 	}
 
 	/**
@@ -662,7 +825,20 @@ class AiDemoGenerator {
 	 * @return string
 	 */
 	private function system_prompt() {
-		return 'You are a senior web designer and copywriter who creates WordPress demo websites. Return only valid JSON with no markdown formatting.';
+		return 'You are an award-winning web designer and copywriter who creates WordPress demo websites. '
+			. $this->design_directive()
+			. ' Return only valid JSON with no markdown formatting.';
+	}
+
+	/**
+	 * System prompt for the per-page HTML call.
+	 *
+	 * @return string
+	 */
+	private function page_system_prompt() {
+		return 'You are an award-winning web designer building one page of a demo website. '
+			. $this->design_directive()
+			. ' Return only raw HTML with no markdown fences and no commentary.';
 	}
 
 	/**
@@ -672,29 +848,56 @@ class AiDemoGenerator {
 	 * @return string
 	 */
 	private function plan_prompt( $description ) {
-		return "Create a complete demo website plan for the following request:\n\n"
+		return "Design a complete demo website for the following request:\n\n"
 			. '"' . $description . '"' . "\n\n"
-			. "Rules:\n"
-			. "- 3 to 5 pages. The FIRST page is always the homepage with slug \"home\".\n"
-			. "- Pick inner pages that fit the business (e.g. about, services, menu, portfolio, contact).\n"
-			. "- Write all visible copy in the language the request itself is WRITTEN in, unless it explicitly asks for another language. The nationality or cuisine of the business does NOT change the language: an English request about an Italian restaurant gets English copy.\n"
-			. "- Demo-quality copy: headings max 8 words, paragraphs 1-3 short sentences. Invent realistic but fictional business details (name, email, phone, address).\n"
-			. "- image_query values: short English photo search phrases (2-4 words), specific and photogenic, no brand names, no text-heavy subjects.\n"
-			. "- button_page must be the slug of one of the pages in this plan.\n"
-			. "- Each page has 3 to 6 sections. The homepage starts with a \"hero\" section; use \"hero\" only on the homepage.\n"
-			. "- Available section types and their fields:\n"
-			. "  hero: heading, text, button_text, button_page, image_query\n"
-			. "  text: heading, paragraphs (array of 1-3 strings)\n"
-			. "  features: heading, intro (optional), items (exactly 3 of {title, text})\n"
-			. "  media_text: heading, text, media_position (\"left\" or \"right\"), image_query, optional button_text + button_page\n"
-			. "  quote: text, author\n"
-			. "  faq: heading, items (3-5 of {question, answer})\n"
-			. "  cta: heading, text, button_text, button_page\n"
-			. "  contact: heading, text, email, phone, address\n"
-			. "- Vary the section types across pages; the contact page must include a \"contact\" section.\n"
-			. "- Never include a literal double-quote character (\") inside any string value; use curly quotes instead.\n"
+			. "Return a site plan plus the site's full stylesheet. Rules:\n"
+			. "- 3 to 5 pages. The FIRST page is always the homepage with slug \"home\". Pick inner pages that fit the business (about, services, menu, portfolio, contact...).\n"
+			. "- Each page gets a \"brief\": 2-4 sentences describing its sections, layout ideas and content angle. Make pages structurally DIFFERENT from each other.\n"
+			. "- LANGUAGE: write ALL copy (site title, tagline, briefs, page names) in the language the request itself is WRITTEN in, unless it explicitly asks for another language. The business's location, nationality or cuisine does NOT change the language: an English request about a roastery in Porto or an Italian restaurant gets ENGLISH copy and English page names.\n"
+			. "- \"css\" is the complete design system for the whole site. Requirements:\n"
+			. "  * EVERY selector is scoped under .ai-demo (e.g. \".ai-demo .hero { ... }\"). Style element defaults too (.ai-demo h2, .ai-demo p...).\n"
+			. "  * CSS custom properties on .ai-demo for the palette and fonts.\n"
+			. "  * A distinctive art direction for THIS business: real palette, expressive display typography from widely-available system font stacks (e.g. Georgia, 'Iowan Old Style', 'Avenir Next', Futura, 'Gill Sans', Palatino, ui-serif, ui-rounded...), fluid type and section padding with clamp().\n"
+			. "  * Must define: .kicker (eyebrow label), .btn (solid button) and .btn.btn-outline, a responsive grid (.grid.cols-2, .cols-3, .cols-4 via CSS grid, collapsing on mobile with @media), .card styles, and dark + light section variants (e.g. .section--dark).\n"
+			. "  * Style images (border-radius etc.) and vary section backgrounds so the site has rhythm.\n"
+			. "  * Gradients, shadows, borders, CSS-only transitions are welcome. NO url(), NO @import, NO external fonts, NO JavaScript, NO double-quote characters anywhere in the CSS (use single quotes).\n"
+			. "  * Roughly 150-250 lines.\n"
+			. "- \"footer\": short content for the theme's footer widget areas (the theme renders the site footer — pages must NOT contain their own): about = 1-2 sentence blurb about the business, contact_heading = a short localized heading like Contact, plus fictional email, phone, address.\n"
+			. "- Never include a literal double-quote character (\") inside any JSON string value; in CSS use single quotes, in copy use curly quotes.\n"
 			. "- Return ONLY compact JSON matching exactly this shape:\n"
-			. '{"site_title":"...","tagline":"...","pages":[{"slug":"home","title":"Home","sections":[{"type":"hero","heading":"...","text":"...","button_text":"...","button_page":"contact","image_query":"..."}]}]}';
+			. '{"site_title":"...","tagline":"...","css":".ai-demo{...} .ai-demo .hero{...}","footer":{"about":"...","contact_heading":"...","email":"...","phone":"...","address":"..."},"pages":[{"slug":"home","title":"Home","brief":"..."}]}';
+	}
+
+	/**
+	 * User prompt for a single page's HTML.
+	 *
+	 * @param array $state Plan state.
+	 * @param int   $index Page index.
+	 * @return string
+	 */
+	private function page_prompt( array $state, $index ) {
+		$plan  = $state['plan'];
+		$page  = $plan['pages'][ $index ];
+		$pages = array();
+		foreach ( $plan['pages'] as $p ) {
+			$pages[] = $p['slug'] . ' (' . $p['title'] . ')';
+		}
+
+		return 'Build the "' . $page['title'] . '" page (slug: ' . $page['slug'] . ') of the demo site "' . $plan['site_title'] . '" — ' . $plan['tagline'] . ".\n\n"
+			. 'Original request: "' . $state['description'] . "\"\n"
+			. 'Site pages (for internal links): ' . implode( ', ', $pages ) . "\n"
+			. 'Page brief: ' . $page['brief'] . "\n\n"
+			. "The site's stylesheet is below. Build the page WITH these classes (plus semantic extra classes only if the stylesheet defines them):\n\n"
+			. $plan['css'] . "\n\n"
+			. "Write the page BODY as HTML in exactly this dialect:\n"
+			. "- Allowed elements: <section>, <div>, <h1>-<h6>, <p>, <span>, <img>, <a>, <ul>/<ol>/<li>, <blockquote>, <details>/<summary>, <figure>/<figcaption>, <hr>, inline <strong>/<em>/<br>, and small decorative inline <svg> icons (fill='currentColor', no scripts).\n"
+			. "- Structure: 4 to 7 top-level <section> elements with meaningful classes from the stylesheet. Exactly ONE <h1> on the page, in the first section.\n"
+			. "- Images: NEVER use src. Write <img data-query='english photo search phrase' data-orientation='landscape' alt='...'> (or data-orientation='portrait' for people/tall crops). 2-6 images where the design calls for them; queries specific and photogenic, no brand names.\n"
+			. "- Buttons: <a class='btn' href='#page:contact'>Label</a> (or class='btn btn-outline'). ALL internal links use href='#page:slug' with a slug from the page list above.\n"
+			. "- Do NOT include a site header, logo, navigation menu/bar, or site footer — the WordPress theme already renders those around your content. Start with the page's first content section and end with its last content section. Never use <header>, <nav> or <footer> elements.\n"
+			. "- NO <style>, NO <script>, NO style= attributes, NO src attributes, NO external resources.\n"
+			. "- Copy: demo-quality and concise — headings punchy, paragraphs 1-3 short sentences, realistic fictional details. Write in the language the original request is WRITTEN in (the business's location or cuisine does not change the language).\n"
+			. "- Return ONLY the HTML.";
 	}
 
 	/**
@@ -712,13 +915,25 @@ class AiDemoGenerator {
 			return mb_substr( sanitize_text_field( wp_strip_all_tags( (string) $value ) ), 0, $max );
 		};
 
-		$allowed_types = array( 'hero', 'text', 'features', 'media_text', 'quote', 'faq', 'cta', 'contact' );
-
 		$clean = array(
 			'site_title' => $clean_text( isset( $plan['site_title'] ) ? $plan['site_title'] : '', 120 ),
 			'tagline'    => $clean_text( isset( $plan['tagline'] ) ? $plan['tagline'] : '', 200 ),
+			'css'        => $this->sanitize_css( isset( $plan['css'] ) ? $plan['css'] : '' ),
+			'footer'     => array(),
 			'pages'      => array(),
 		);
+
+		if ( ! empty( $plan['footer'] ) && is_array( $plan['footer'] ) ) {
+			foreach ( array( 'about', 'contact_heading', 'email', 'phone', 'address' ) as $key ) {
+				if ( isset( $plan['footer'][ $key ] ) ) {
+					$clean['footer'][ $key ] = $clean_text( $plan['footer'][ $key ], 300 );
+				}
+			}
+		}
+
+		if ( '' === $clean['css'] ) {
+			return new \WP_Error( 'ai_invalid_plan', esc_html__( 'The AI returned an unusable site design. Please try again.', 'inspiro-starter-sites' ) );
+		}
 
 		$seen_slugs = array();
 
@@ -729,69 +944,17 @@ class AiDemoGenerator {
 
 			$slug  = sanitize_title( isset( $page['slug'] ) ? (string) $page['slug'] : '' );
 			$title = $clean_text( isset( $page['title'] ) ? $page['title'] : '', 120 );
+			$brief = $clean_text( isset( $page['brief'] ) ? $page['brief'] : '', 800 );
 
 			if ( '' === $slug || '' === $title || isset( $seen_slugs[ $slug ] ) ) {
 				continue;
 			}
 			$seen_slugs[ $slug ] = true;
 
-			$sections = array();
-			$raw_sections = ( ! empty( $page['sections'] ) && is_array( $page['sections'] ) ) ? $page['sections'] : array();
-
-			foreach ( array_slice( $raw_sections, 0, self::MAX_SECTIONS_PER_PAGE ) as $section ) {
-				if ( ! is_array( $section ) || empty( $section['type'] ) || ! in_array( $section['type'], $allowed_types, true ) ) {
-					continue;
-				}
-
-				$s = array( 'type' => $section['type'] );
-
-				foreach ( array( 'heading', 'text', 'intro', 'button_text', 'author', 'email', 'phone', 'address' ) as $key ) {
-					if ( isset( $section[ $key ] ) ) {
-						$s[ $key ] = $clean_text( $section[ $key ] );
-					}
-				}
-
-				if ( isset( $section['button_page'] ) ) {
-					$s['button_page'] = sanitize_title( (string) $section['button_page'] );
-				}
-				if ( isset( $section['media_position'] ) ) {
-					$s['media_position'] = ( 'right' === $section['media_position'] ) ? 'right' : 'left';
-				}
-				if ( isset( $section['image_query'] ) ) {
-					$s['image_query'] = $clean_text( $section['image_query'], 80 );
-				}
-				if ( ! empty( $section['paragraphs'] ) && is_array( $section['paragraphs'] ) ) {
-					$s['paragraphs'] = array_map( $clean_text, array_slice( $section['paragraphs'], 0, 4 ) );
-				}
-				if ( ! empty( $section['items'] ) && is_array( $section['items'] ) ) {
-					$s['items'] = array();
-					foreach ( array_slice( $section['items'], 0, 6 ) as $item ) {
-						if ( ! is_array( $item ) ) {
-							continue;
-						}
-						$clean_item = array();
-						foreach ( array( 'title', 'text', 'question', 'answer' ) as $key ) {
-							if ( isset( $item[ $key ] ) ) {
-								$clean_item[ $key ] = $clean_text( $item[ $key ] );
-							}
-						}
-						if ( $clean_item ) {
-							$s['items'][] = $clean_item;
-						}
-					}
-				}
-
-				$sections[] = $s;
-			}
-
-			if ( ! $sections ) {
-				continue;
-			}
-
 			$clean['pages'][] = array(
-				'slug'     => $slug,
-				'title'    => $title,
-				'sections' => $sections,
+				'slug'  => $slug,
+				'title' => $title,
+				'brief' => $brief,
 			);
 		}
 
@@ -804,5 +967,62 @@ class AiDemoGenerator {
 		}
 
 		return $clean;
+	}
+
+	/**
+	 * Sanitize the AI stylesheet. Valid CSS never needs '<', '>' outside
+	 * selectors' combinators, or backslash escapes for our use — stripping
+	 * '<' and '\' neutralizes markup/escape injection while keeping the
+	 * design intact ('>' combinators are preserved).
+	 *
+	 * @param string $css
+	 * @return string
+	 */
+	private function sanitize_css( $css ) {
+		$css = (string) $css;
+		$css = str_replace( array( '<', '\\' ), '', $css );
+		$css = preg_replace( '/@import[^;]*;?/i', '', $css );
+		$css = preg_replace( '/url\s*\(/i', 'noop(', $css );
+		$css = trim( mb_substr( $css, 0, 60000 ) );
+
+		// Must actually be scoped to the demo wrapper.
+		if ( false === strpos( $css, '.ai-demo' ) ) {
+			return '';
+		}
+
+		return $css;
+	}
+
+	/**
+	 * Print the active AI demo stylesheet on generated pages.
+	 */
+	public function print_demo_css() {
+		if ( ! is_singular( 'page' ) ) {
+			return;
+		}
+
+		$plan_id = get_post_meta( get_queried_object_id(), self::GENERATED_META_KEY, true );
+		if ( ! $plan_id ) {
+			return;
+		}
+
+		$css   = '';
+		$demos = get_option( self::DEMOS_OPTION, array() );
+
+		if ( is_array( $demos ) && ! empty( $demos[ $plan_id ]['css'] ) ) {
+			$css = $demos[ $plan_id ]['css'];
+		} else {
+			// Mid-generation preview (not finalized yet) — read the transient.
+			$state = $this->get_plan_state( $plan_id );
+			if ( $state && ! empty( $state['plan']['css'] ) ) {
+				$css = $state['plan']['css'];
+			}
+		}
+
+		if ( '' === $css ) {
+			return;
+		}
+
+		echo "\n<style id=\"inspiro-starter-sites-ai-css\">\n" . $css . "\n</style>\n"; // phpcs:ignore WordPress.Security.EscapeOutput -- sanitized in sanitize_css().
 	}
 }

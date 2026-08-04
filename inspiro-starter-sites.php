@@ -85,6 +85,8 @@ function inspiro_starter_sites_classes() {
 	// Load the AI demo generator (explicit requires — the importer's Composer
 	// autoloader may be dumped optimized, which wouldn't pick up new classes).
 	require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/inc/Ai/StreamingResponse.php';
+	require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/inc/Ai/SectionLibrary.php';
+	require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/inc/Ai/HtmlToBlocks.php';
 	require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/inc/Ai/AiProxyClient.php';
 	require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/inc/Ai/BlockComposer.php';
 	require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/inc/Ai/AiDemoGenerator.php';

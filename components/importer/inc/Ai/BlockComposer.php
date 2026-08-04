@@ -48,14 +48,26 @@ class BlockComposer {
 		}
 
 		foreach ( $sections as $section ) {
-			$type   = isset( $section['type'] ) ? $section['type'] : '';
-			$method = 'section_' . $type;
+			// Designed template from the section library first (real layouts
+			// ported from inspiro-patterns); generic markup as fallback.
+			$markup = SectionLibrary::render( $section, $this->page_links );
 
-			if ( method_exists( $this, $method ) ) {
-				$markup = $this->$method( $section, $is_first );
-				if ( '' !== $markup ) {
-					$blocks[] = $markup;
+			if ( null === $markup ) {
+				// Generic renderers expect a single 'image'.
+				if ( empty( $section['image'] ) && ! empty( $section['images'][0] ) ) {
+					$section['image'] = $section['images'][0];
 				}
+
+				$type   = isset( $section['type'] ) ? $section['type'] : '';
+				$method = 'section_' . $type;
+
+				if ( method_exists( $this, $method ) ) {
+					$markup = $this->$method( $section, $is_first );
+				}
+			}
+
+			if ( $markup ) {
+				$blocks[] = $markup;
 			}
 			$is_first = false;
 		}

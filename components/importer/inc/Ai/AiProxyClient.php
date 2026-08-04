@@ -95,10 +95,44 @@ class AiProxyClient {
 	 * @return array|WP_Error Decoded JSON object.
 	 */
 	public function claude_json( $system, $prompt, $max_tokens = 12000, $heartbeat = null ) {
+		$text = $this->claude_text( $system, $prompt, $max_tokens, $heartbeat );
+
+		if ( is_wp_error( $text ) ) {
+			return $text;
+		}
+
+		// Strip markdown fences, then slice out the first brace-balanced
+		// object so stray prose before/after the JSON can't break the parse.
+		$text = preg_replace( '/^```(?:json)?\s*|\s*```$/s', '', trim( $text ) );
+		$text = $this->extract_json_object( $text );
+
+		$decoded = json_decode( $text, true );
+
+		if ( ! is_array( $decoded ) ) {
+			return new WP_Error( 'ai_parse_error', __( 'The AI returned a malformed response. Please try again.', 'inspiro-starter-sites' ) );
+		}
+
+		return $decoded;
+	}
+
+	/**
+	 * Ask Claude (via the proxy) for raw text (e.g. an HTML document).
+	 *
+	 * @param string        $system     System prompt.
+	 * @param string        $prompt     User prompt.
+	 * @param int           $max_tokens Completion cap.
+	 * @param callable|null $heartbeat  Keep-alive callback (see claude_json()).
+	 * @return string|WP_Error Concatenated text content.
+	 */
+	public function claude_text( $system, $prompt, $max_tokens = 12000, $heartbeat = null ) {
 		$body = array(
 			'model'      => self::MODEL,
 			'max_tokens' => (int) $max_tokens,
 			'stream'     => false,
+			// No-op on Sonnet 4.6/Haiku 4.5, but keeps generation on the fast
+			// path if the proxy is switched to a model where thinking is on
+			// by default (Sonnet 5+).
+			'thinking'   => array( 'type' => 'disabled' ),
 			'system'     => $system,
 			'messages'   => array(
 				array(
@@ -147,18 +181,7 @@ class AiProxyClient {
 			return new WP_Error( 'ai_empty', __( 'The AI returned an empty response. Please try again.', 'inspiro-starter-sites' ) );
 		}
 
-		// Strip markdown fences, then slice out the first brace-balanced
-		// object so stray prose before/after the JSON can't break the parse.
-		$text = preg_replace( '/^```(?:json)?\s*|\s*```$/s', '', trim( $text ) );
-		$text = $this->extract_json_object( $text );
-
-		$decoded = json_decode( $text, true );
-
-		if ( ! is_array( $decoded ) ) {
-			return new WP_Error( 'ai_parse_error', __( 'The AI returned a malformed response. Please try again.', 'inspiro-starter-sites' ) );
-		}
-
-		return $decoded;
+		return $text;
 	}
 
 	/**
@@ -235,11 +258,12 @@ class AiProxyClient {
 	/**
 	 * Search Pexels via the proxy.
 	 *
-	 * @param string $query    Search phrase (English works best).
-	 * @param int    $per_page Photos to request (max 15).
+	 * @param string $query       Search phrase (English works best).
+	 * @param int    $per_page    Photos to request (max 15).
+	 * @param string $orientation landscape|portrait|square.
 	 * @return array[] List of [ 'id' => int, 'url' => string ] (resized URL). Empty on failure.
 	 */
-	public function pexels_photos( $query, $per_page = 3 ) {
+	public function pexels_photos( $query, $per_page = 3, $orientation = 'landscape' ) {
 		$response = wp_remote_post(
 			$this->endpoint( 'pexels' ),
 			array(
@@ -249,7 +273,7 @@ class AiProxyClient {
 						'query'       => $query,
 						'per_page'    => min( max( 1, (int) $per_page ), 15 ),
 						'size'        => 'medium',
-						'orientation' => 'landscape',
+						'orientation' => in_array( $orientation, array( 'landscape', 'portrait', 'square' ), true ) ? $orientation : 'landscape',
 					)
 				),
 				'timeout' => 30,

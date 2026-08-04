@@ -301,10 +301,11 @@ jQuery( function ( $ ) {
 		var fraction = 0.4 + ( 0.5 * ( index / total ) );
 		setProgress( sprintf( t.step_page || '', index + 1, total, pages[ index ].title ), fraction );
 
+		// Each page build now includes its own AI design call (~30-60s).
 		ajax( 'inspiro_starter_sites_ai_build_page', {
 			plan_id:    planState.plan_id,
 			page_index: index
-		}, 180000 )
+		}, 300000 )
 			.done( function ( response ) {
 				if ( ! response || ! response.success ) {
 					// A single failed page shouldn't kill the run — note it and continue.
