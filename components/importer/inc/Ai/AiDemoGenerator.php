@@ -64,6 +64,7 @@ class AiDemoGenerator {
 		add_action( 'enqueue_block_assets', array( $this, 'enqueue_editor_demo_css' ) );
 
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_quota', array( $this, 'ajax_quota' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_connect', array( $this, 'ajax_connect' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_enhance_prompt', array( $this, 'ajax_enhance_prompt' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_suggest_pages', array( $this, 'ajax_suggest_pages' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_generate', array( $this, 'ajax_generate' ) );
@@ -247,6 +248,16 @@ class AiDemoGenerator {
 					'try_again'        => __( 'Try again', 'inspiro-starter-sites' ),
 					'close'            => __( 'Close', 'inspiro-starter-sites' ),
 					'page_failed'      => __( 'One of the pages could not be created, continuing with the rest…', 'inspiro-starter-sites' ),
+					'connect_title'    => __( 'Activate free AI generations', 'inspiro-starter-sites' ),
+					'connect_text'     => __( 'Enter your email to connect this site to the WPZOOM AI service and unlock your free demo generations.', 'inspiro-starter-sites' ),
+					'connect_email_ph' => __( 'you@example.com', 'inspiro-starter-sites' ),
+					'connect_consent'  => __( 'Send me occasional WPZOOM news, tips and special offers', 'inspiro-starter-sites' ),
+					'connect_privacy'  => __( 'Privacy Policy', 'inspiro-starter-sites' ),
+					'connect_button'   => __( 'Connect & start', 'inspiro-starter-sites' ),
+					'connecting'       => __( 'Connecting…', 'inspiro-starter-sites' ),
+					'connect_invalid'  => __( 'Please enter a valid email address.', 'inspiro-starter-sites' ),
+					/* translators: %s: connected email address */
+					'connected_as'     => __( 'Connected as %s', 'inspiro-starter-sites' ),
 				),
 			)
 		);
@@ -259,15 +270,51 @@ class AiDemoGenerator {
 	public function ajax_quota() {
 		Helpers::verify_ajax_call();
 
+		// Free generations require an email registration with the WPZOOM AI
+		// server first — without one, tell the UI to show the connect step
+		// instead of quota numbers.
+		if ( ! $this->proxy->is_connected() ) {
+			wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info() ) ) );
+		}
+
 		$quota = $this->proxy->quota( 'check' );
 
 		if ( is_wp_error( $quota ) ) {
+			if ( 'ai_registration_required' === $quota->get_error_code() ) {
+				// The server no longer recognizes our key (e.g. wiped data) —
+				// forget it so the user can re-connect.
+				$this->proxy->disconnect();
+				wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info() ) ) );
+			}
 			wp_send_json_error( array( 'message' => $quota->get_error_message() ) );
 		}
 
-		// Tell the UI about a previously generated demo so it can warn the
-		// user that generating a new one replaces it.
-		$previous       = null;
+		wp_send_json_success( array_merge( $this->quota_payload( $quota ), array( 'previous' => $this->previous_demo_info() ) ) );
+	}
+
+	/**
+	 * Shared quota/connection response shape for ajax_quota + ajax_connect.
+	 *
+	 * @param array|null $quota Server quota data, or null when not connected.
+	 * @return array
+	 */
+	private function quota_payload( $quota ) {
+		return array(
+			'connected' => null !== $quota,
+			'email'     => $this->proxy->connected_email(),
+			'used'      => isset( $quota['used'] ) ? (int) $quota['used'] : 0,
+			'limit'     => isset( $quota['limit'] ) ? (int) $quota['limit'] : 0,
+			'remaining' => isset( $quota['remaining'] ) ? (int) $quota['remaining'] : 0,
+		);
+	}
+
+	/**
+	 * Info about a previously generated demo so the UI can warn the user
+	 * that generating a new one replaces it.
+	 *
+	 * @return array|null
+	 */
+	private function previous_demo_info() {
 		$previous_pages = get_posts(
 			array(
 				'post_type'   => 'page',
@@ -278,24 +325,47 @@ class AiDemoGenerator {
 			)
 		);
 
-		if ( $previous_pages ) {
-			$demos = get_option( self::DEMOS_OPTION, array() );
-			$last  = ( is_array( $demos ) && $demos ) ? end( $demos ) : array();
-
-			$previous = array(
-				'site_title' => isset( $last['site_title'] ) ? $last['site_title'] : '',
-				'page_count' => count( $previous_pages ),
-			);
+		if ( ! $previous_pages ) {
+			return null;
 		}
 
-		wp_send_json_success(
-			array(
-				'used'      => isset( $quota['used'] ) ? (int) $quota['used'] : 0,
-				'limit'     => isset( $quota['limit'] ) ? (int) $quota['limit'] : 0,
-				'remaining' => isset( $quota['remaining'] ) ? (int) $quota['remaining'] : 0,
-				'previous'  => $previous,
-			)
+		$demos = get_option( self::DEMOS_OPTION, array() );
+		$last  = ( is_array( $demos ) && $demos ) ? end( $demos ) : array();
+
+		return array(
+			'site_title' => isset( $last['site_title'] ) ? $last['site_title'] : '',
+			'page_count' => count( $previous_pages ),
 		);
+	}
+
+	/* ---------------------------------------------------------------------
+	 * AJAX: connect (email registration with the WPZOOM AI server)
+	 * ------------------------------------------------------------------ */
+
+	public function ajax_connect() {
+		Helpers::verify_ajax_call();
+
+		$email   = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
+		$consent = ! empty( $_POST['consent'] );
+
+		if ( '' === $email || ! is_email( $email ) ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'Please enter a valid email address.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$result = $this->proxy->connect( $email, $consent );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		// Return the quota right away so the UI can swap the connect card for
+		// the generator without a second round trip.
+		$quota = $this->proxy->quota( 'check' );
+
+		wp_send_json_success( array_merge(
+			$this->quota_payload( is_wp_error( $quota ) ? array() : $quota ),
+			array( 'previous' => $this->previous_demo_info() )
+		) );
 	}
 
 	/* ---------------------------------------------------------------------
@@ -349,6 +419,15 @@ class AiDemoGenerator {
 		$quota = $this->proxy->quota( 'consume' );
 
 		if ( is_wp_error( $quota ) ) {
+			if ( 'ai_registration_required' === $quota->get_error_code() ) {
+				$this->proxy->disconnect();
+				wp_send_json_error(
+					array(
+						'code'    => 'registration_required',
+						'message' => esc_html__( 'Please connect with your email first.', 'inspiro-starter-sites' ),
+					)
+				);
+			}
 			wp_send_json_error( array( 'message' => esc_html__( 'The AI service is currently unreachable. Please try again later.', 'inspiro-starter-sites' ) ) );
 		}
 

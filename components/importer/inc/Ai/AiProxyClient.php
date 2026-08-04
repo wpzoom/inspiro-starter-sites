@@ -35,6 +35,14 @@ class AiProxyClient {
 	const MODEL = 'claude-sonnet-4-6';
 
 	/**
+	 * Options holding the email registration issued by the proxy's
+	 * /ai-connect endpoint. The site_key authorizes quota calls; without it
+	 * the server answers `registration_required`.
+	 */
+	const SITE_KEY_OPTION = 'inspiro_starter_sites_ai_site_key';
+	const EMAIL_OPTION    = 'inspiro_starter_sites_ai_email';
+
+	/**
 	 * Proxy REST base, e.g. https://ai.wpzoom.com/wp-json/services/v1
 	 *
 	 * @return string
@@ -366,10 +374,80 @@ class AiProxyClient {
 	}
 
 	/**
+	 * Whether this site holds a registration key from /ai-connect.
+	 *
+	 * @return bool
+	 */
+	public function is_connected() {
+		return '' !== (string) get_option( self::SITE_KEY_OPTION, '' );
+	}
+
+	/**
+	 * The email the site is registered with (empty when not connected).
+	 *
+	 * @return string
+	 */
+	public function connected_email() {
+		return (string) get_option( self::EMAIL_OPTION, '' );
+	}
+
+	/**
+	 * Register this site + email with the proxy and store the issued site_key.
+	 * Free generations require this — the server keys the quota by email.
+	 *
+	 * @param string $email   User email.
+	 * @param bool   $consent Whether the user opted into WPZOOM marketing emails.
+	 * @return array|WP_Error [ 'email' => string ] on success.
+	 */
+	public function connect( $email, $consent = false ) {
+		$response = wp_remote_post(
+			$this->endpoint( 'ai-connect' ),
+			array(
+				'headers' => array( 'Content-Type' => 'application/json' ),
+				'body'    => wp_json_encode(
+					array(
+						'email'   => $email,
+						'consent' => $consent ? 1 : 0,
+					)
+				),
+				'timeout' => 15,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return new WP_Error( 'ai_connect_unreachable', $response->get_error_message() );
+		}
+
+		$code = (int) wp_remote_retrieve_response_code( $response );
+		$data = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( $code < 200 || $code >= 300 || ! is_array( $data ) || empty( $data['success'] ) || empty( $data['site_key'] ) ) {
+			$msg = ( is_array( $data ) && ! empty( $data['message'] ) ) ? $data['message'] : ( 'HTTP ' . $code );
+			return new WP_Error( 'ai_connect_error', $msg );
+		}
+
+		update_option( self::SITE_KEY_OPTION, sanitize_text_field( (string) $data['site_key'] ), false );
+		update_option( self::EMAIL_OPTION, sanitize_email( (string) ( isset( $data['email'] ) ? $data['email'] : $email ) ), false );
+
+		return array( 'email' => $this->connected_email() );
+	}
+
+	/**
+	 * Forget the stored registration (e.g. when the server no longer
+	 * recognizes the site_key).
+	 */
+	public function disconnect() {
+		delete_option( self::SITE_KEY_OPTION );
+		delete_option( self::EMAIL_OPTION );
+	}
+
+	/**
 	 * Query or mutate the server-side free-generation quota for this site.
 	 *
 	 * @param string $action check|consume|refund
-	 * @return array|WP_Error [ 'used' => int, 'limit' => int, 'remaining' => int, 'allowed' => bool ]
+	 * @return array|WP_Error [ 'used' => int, 'limit' => int, 'remaining' => int, 'allowed' => bool ].
+	 *                        Error code `ai_registration_required` means the site
+	 *                        must (re)connect with an email first.
 	 */
 	public function quota( $action ) {
 		$response = wp_remote_post(
@@ -378,8 +456,9 @@ class AiProxyClient {
 				'headers' => array( 'Content-Type' => 'application/json' ),
 				'body'    => wp_json_encode(
 					array(
-						'action'  => $action,
-						'feature' => self::FEATURE,
+						'action'   => $action,
+						'feature'  => self::FEATURE,
+						'site_key' => (string) get_option( self::SITE_KEY_OPTION, '' ),
 					)
 				),
 				'timeout' => 15,
@@ -394,6 +473,9 @@ class AiProxyClient {
 		$data = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( $code < 200 || $code >= 300 || ! is_array( $data ) || empty( $data['success'] ) ) {
+			if ( is_array( $data ) && isset( $data['code'] ) && 'registration_required' === $data['code'] ) {
+				return new WP_Error( 'ai_registration_required', __( 'Connect with your email to use free AI generations.', 'inspiro-starter-sites' ) );
+			}
 			$msg = ( is_array( $data ) && isset( $data['message'] ) ) ? $data['message'] : ( 'HTTP ' . $code );
 			return new WP_Error( 'ai_quota_error', $msg );
 		}

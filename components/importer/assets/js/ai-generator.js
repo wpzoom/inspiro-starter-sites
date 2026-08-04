@@ -22,7 +22,8 @@ jQuery( function ( $ ) {
 
 	var built     = false;
 	var running   = false;
-	var quota     = null; // { used, limit, remaining }
+	var quota     = null; // { connected, email, used, limit, remaining }
+	var connected = false; // Email registration with the WPZOOM AI server.
 	var planState = null; // { plan_id, pages: [...] }
 
 	function esc( s ) {
@@ -134,12 +135,29 @@ jQuery( function ( $ ) {
 					'<p class="iss-ai-intro">' + esc( t.intro || '' ) + '</p>' +
 					steps +
 					'<div class="iss-ai-sidebar-footer">' +
+						'<span class="iss-ai-connected-email js-iss-ai-connected-email" hidden></span>' +
 						'<span class="iss-ai-quota js-iss-ai-quota">' + esc( t.quota_loading || '' ) + '</span>' +
 					'</div>' +
 				'</aside>' +
 
 				'<div class="iss-ai-main">' +
 					'<div class="iss-ai-body">' +
+
+						// Step: connect — email registration with the WPZOOM AI
+						// server, required before any free generation.
+						'<div class="iss-ai-step iss-ai-step-connect" data-step="connect">' +
+							'<div class="iss-ai-connect-card">' +
+								'<h3>' + esc( t.connect_title || '' ) + '</h3>' +
+								'<p class="iss-ai-connect-text">' + esc( t.connect_text || '' ) + '</p>' +
+								'<div class="iss-ai-connect-row">' +
+									'<input type="email" class="iss-ai-connect-email js-iss-ai-connect-email" placeholder="' + esc( t.connect_email_ph || '' ) + '" autocomplete="email">' +
+									'<button type="button" class="button button-primary js-iss-ai-connect">' + esc( t.connect_button || '' ) + '</button>' +
+								'</div>' +
+								'<label class="iss-ai-connect-consent"><input type="checkbox" class="js-iss-ai-connect-consent"> <span>' + esc( t.connect_consent || '' ) + '</span></label>' +
+								'<p class="iss-ai-connect-privacy"><a href="https://www.wpzoom.com/privacy-policy/" target="_blank" rel="noopener">' + esc( t.connect_privacy || '' ) + '</a></p>' +
+								'<p class="iss-ai-error js-iss-ai-connect-error" hidden></p>' +
+							'</div>' +
+						'</div>' +
 
 						// Step: input.
 						'<div class="iss-ai-step iss-ai-step-input is-active" data-step="input">' +
@@ -250,8 +268,8 @@ jQuery( function ( $ ) {
 		$root.find( '.js-iss-ai-generate' ).toggle( 'input' === step );
 		$root.find( '.js-iss-ai-build' ).toggle( 'plan' === step );
 
-		// Sidebar step indicator: input/plan → 1, progress → 2, done → 3.
-		var current = ( 'input' === step || 'plan' === step ) ? 1 : ( 'progress' === step ? 2 : 3 );
+		// Sidebar step indicator: connect/input/plan → 1, progress → 2, done → 3.
+		var current = ( 'connect' === step || 'input' === step || 'plan' === step ) ? 1 : ( 'progress' === step ? 2 : 3 );
 		$root.find( '.js-iss-ai-steps li' ).each( function () {
 			var num = parseInt( $( this ).attr( 'data-step-num' ), 10 );
 			$( this )
@@ -370,12 +388,24 @@ jQuery( function ( $ ) {
 				$quota.text( '' );
 				return;
 			}
-			quota = response.data;
-			renderQuota();
-			renderReplaceNotice( response.data.previous );
+			applyQuotaResponse( response.data );
 		} ).fail( function () {
 			$quota.text( '' );
 		} );
+	}
+
+	// Shared for the quota check and the connect call (both return the same
+	// shape). Not connected yet → swap the generator for the email step.
+	function applyQuotaResponse( data ) {
+		quota     = data;
+		connected = !! data.connected;
+
+		renderQuota();
+		renderReplaceNotice( data.previous );
+
+		if ( ! connected ) {
+			showStep( 'connect' );
+		}
 	}
 
 	// Prominent warning when a previously generated AI demo exists: it will
@@ -398,10 +428,20 @@ jQuery( function ( $ ) {
 
 	function renderQuota() {
 		var $quota = $root.find( '.js-iss-ai-quota' );
-		if ( ! quota ) {
+		var $email = $root.find( '.js-iss-ai-connected-email' );
+
+		if ( ! quota || false === quota.connected ) {
 			$quota.text( '' );
+			$email.attr( 'hidden', 'hidden' ).text( '' );
 			return;
 		}
+
+		if ( quota.email ) {
+			$email.text( sprintf( t.connected_as || '%s', quota.email ) ).removeAttr( 'hidden' );
+		} else {
+			$email.attr( 'hidden', 'hidden' ).text( '' );
+		}
+
 		if ( quota.remaining <= 0 ) {
 			$quota.text( t.quota_none || '' ).addClass( 'is-exhausted' );
 			$root.find( '.js-iss-ai-generate' ).prop( 'disabled', true );
@@ -515,6 +555,14 @@ jQuery( function ( $ ) {
 			pages:       JSON.stringify( pages )
 		}, 300000 )
 			.done( function ( response ) {
+				if ( response && ! response.success && response.data && 'registration_required' === response.data.code ) {
+					// Server no longer recognizes our registration — re-ask for
+					// the email instead of showing a dead-end error.
+					running   = false;
+					connected = false;
+					showStep( 'connect' );
+					return;
+				}
 				if ( ! response || ! response.success || ! response.data || ! response.data.plan_id ) {
 					failWith( responseMessage( response ), responseDetail( response ) );
 					return;
@@ -787,6 +835,54 @@ jQuery( function ( $ ) {
 		if ( ! running ) {
 			showStep( 'input' );
 			refreshQuota();
+		}
+	} );
+
+	/* -----------------------------------------------------------------
+	 * Connect (email registration)
+	 * -------------------------------------------------------------- */
+
+	function submitConnect() {
+		var $email  = $root.find( '.js-iss-ai-connect-email' );
+		var $button = $root.find( '.js-iss-ai-connect' );
+		var $error  = $root.find( '.js-iss-ai-connect-error' );
+		var email   = $.trim( $email.val() || '' );
+
+		// Light client-side check; the server validates for real.
+		if ( ! email || email.indexOf( '@' ) < 1 || email.indexOf( '.' ) < 0 ) {
+			$error.text( t.connect_invalid || '' ).removeAttr( 'hidden' );
+			return;
+		}
+		$error.attr( 'hidden', 'hidden' );
+		$button.prop( 'disabled', true ).text( t.connecting || '' );
+
+		ajax( 'inspiro_starter_sites_ai_connect', {
+			email:   email,
+			consent: $root.find( '.js-iss-ai-connect-consent' ).is( ':checked' ) ? '1' : ''
+		}, 30000 )
+			.done( function ( response ) {
+				$button.prop( 'disabled', false ).text( t.connect_button || '' );
+				if ( ! response || ! response.success || ! response.data ) {
+					$error.text( responseMessage( response ) ).removeAttr( 'hidden' );
+					return;
+				}
+				applyQuotaResponse( response.data );
+				if ( response.data.connected ) {
+					showStep( 'input' );
+				}
+			} )
+			.fail( function () {
+				$button.prop( 'disabled', false ).text( t.connect_button || '' );
+				$error.text( t.error_generic || '' ).removeAttr( 'hidden' );
+			} );
+	}
+
+	$root.on( 'click', '.js-iss-ai-connect', submitConnect );
+
+	$root.on( 'keydown', '.js-iss-ai-connect-email', function ( e ) {
+		if ( 'Enter' === e.key ) {
+			e.preventDefault();
+			submitConnect();
 		}
 	} );
 } );
