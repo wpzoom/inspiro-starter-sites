@@ -598,11 +598,16 @@ body.iss-ai-open {
 }
 
 .iss-ai-verify-code {
-	max-width: 160px;
+	max-width: 180px;
 	font-size: 18px;
 	letter-spacing: 6px;
 	font-variant-numeric: tabular-nums;
 	text-align: center;
+}
+
+.iss-ai-verify-code::placeholder {
+	font-size: 13px;
+	letter-spacing: normal;
 }
 
 .iss-ai-verify-links {

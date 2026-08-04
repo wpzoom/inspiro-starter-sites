@@ -156,7 +156,7 @@ jQuery( function ( $ ) {
 										'<input type="email" class="iss-ai-connect-email js-iss-ai-connect-email" placeholder="' + esc( t.connect_email_ph || '' ) + '" autocomplete="email">' +
 										'<button type="button" class="button button-primary js-iss-ai-connect">' + esc( t.connect_button || '' ) + '</button>' +
 									'</div>' +
-									'<label class="iss-ai-connect-consent"><input type="checkbox" class="js-iss-ai-connect-consent"> <span>' + esc( t.connect_consent || '' ) + '</span></label>' +
+									'<label class="iss-ai-connect-consent"><input type="checkbox" class="js-iss-ai-connect-consent" checked> <span>' + esc( t.connect_consent || '' ) + '</span></label>' +
 									'<p class="iss-ai-connect-privacy"><a href="https://www.wpzoom.com/privacy-policy/" target="_blank" rel="noopener">' + esc( t.connect_privacy || '' ) + '</a></p>' +
 								'</div>' +
 								'<div class="js-iss-ai-connect-mode-verify" hidden>' +
@@ -986,6 +986,9 @@ jQuery( function ( $ ) {
 	$root.on( 'click', '.js-iss-ai-disconnect', function () {
 		if ( running ) {
 			return; // A build in flight still needs the registration.
+		}
+		if ( ! window.confirm( t.disconnect_confirm || '' ) ) {
+			return;
 		}
 		var $btn = $( this ).prop( 'disabled', true );
 

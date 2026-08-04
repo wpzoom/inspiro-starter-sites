@@ -271,6 +271,7 @@ class AiDemoGenerator {
 					'code_sent'        => __( 'A new code is on its way.', 'inspiro-starter-sites' ),
 					'change_email'     => __( 'Use a different email', 'inspiro-starter-sites' ),
 					'disconnect'       => __( 'Disconnect', 'inspiro-starter-sites' ),
+					'disconnect_confirm' => __( 'Disconnect this site from the WPZOOM AI service? Your free generations stay linked to your email, so you can reconnect anytime.', 'inspiro-starter-sites' ),
 				),
 			)
 		);
