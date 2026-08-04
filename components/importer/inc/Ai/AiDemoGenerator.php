@@ -800,15 +800,29 @@ class AiDemoGenerator {
 		$stream = new StreamingResponse();
 		$stream->begin();
 
-		// The previous AI demo is deleted only now — after the new plan has
-		// been generated successfully — so a failed generation never destroys
-		// the existing demo. Runs once, before the first page is built.
-		if ( 0 === $index && ! empty( $state['replace'] ) ) {
-			$this->delete_previous_ai_demos( $plan_id );
+		if ( 0 === $index ) {
+			// WordPress' sample content ("Hello world!" post, "Sample Page")
+			// would pollute the generated demo — the blog listing especially.
+			// Same cleanup the classic importer runs at import start, done
+			// only now, after the plan call succeeded.
+			Helpers::delete_default_posts();
+
+			// The previous AI demo is deleted only now — after the new plan
+			// has been generated successfully — so a failed generation never
+			// destroys the existing demo. Runs once, before the first page.
+			if ( ! empty( $state['replace'] ) ) {
+				$this->delete_previous_ai_demos( $plan_id );
+			}
 			$stream->tick();
 		}
 
 		$page = $state['plan']['pages'][ $index ];
+
+		// A blog page is never a designed static page: it becomes the real
+		// WordPress posts page (assigned in finalize) plus a few actual posts.
+		if ( ! empty( $page['is_blog'] ) ) {
+			$this->build_blog_page( $state, $plan_id, $index, $page, $stream );
+		}
 
 		// One Claude call designs this page as HTML against the shared
 		// stylesheet generated in the plan step (prompt assembled server-side).
@@ -903,6 +917,202 @@ class AiDemoGenerator {
 				'page_id'  => (int) $post_id,
 				'edit_url' => get_edit_post_link( $post_id, 'raw' ),
 			)
+		);
+	}
+
+	/**
+	 * Build the blog: an empty page (assigned as the WordPress posts page in
+	 * finalize) and a few dummy posts — no AI call. Titles, excerpts and
+	 * image queries come from the plan's "blog" field when present (the plan
+	 * call already produced them at no extra cost), with generic fallbacks;
+	 * bodies are placeholder copy the user is expected to replace. Streams
+	 * its own success/error response and never returns.
+	 *
+	 * @param array             $state   Plan state.
+	 * @param string            $plan_id Plan ID (cleanup meta tag).
+	 * @param int               $index   Page index in the plan.
+	 * @param array             $page    The blog page entry (slug/title).
+	 * @param StreamingResponse $stream  Keep-alive responder.
+	 */
+	private function build_blog_page( array $state, $plan_id, $index, array $page, StreamingResponse $stream ) {
+		// The page itself stays empty — WordPress renders the post listing
+		// here once it is assigned as the posts page.
+		$page_id = wp_insert_post(
+			wp_slash(
+				array(
+					'post_type'    => 'page',
+					'post_status'  => 'publish',
+					'post_title'   => $page['title'],
+					'post_name'    => $page['slug'],
+					'post_content' => '',
+					'menu_order'   => $index,
+					'meta_input'   => array(
+						self::GENERATED_META_KEY => $plan_id,
+					),
+				)
+			),
+			true
+		);
+
+		if ( is_wp_error( $page_id ) ) {
+			$stream->finish_error( array( 'message' => $page_id->get_error_message() ) );
+		}
+
+		$briefs = isset( $state['plan']['blog']['posts'] ) && is_array( $state['plan']['blog']['posts'] )
+			? $state['plan']['blog']['posts']
+			: array();
+
+		// Generic fallbacks when the plan didn't propose posts.
+		$fallbacks = array(
+			array(
+				'title' => esc_html__( 'Welcome to our new website', 'inspiro-starter-sites' ),
+				'topic' => '',
+			),
+			array(
+				'title' => esc_html__( 'Behind the scenes', 'inspiro-starter-sites' ),
+				'topic' => '',
+			),
+			array(
+				'title' => esc_html__( 'News and updates', 'inspiro-starter-sites' ),
+				'topic' => '',
+			),
+		);
+
+		$briefs = array_slice( array_merge( $briefs, array_slice( $fallbacks, count( $briefs ) ) ), 0, 4 );
+
+		// One shared placeholder thumbnail for every post — a single download
+		// instead of per-post photo searches keeps this step near-instant.
+		$thumb_id = $this->sideload_placeholder_image( $plan_id, $state['plan']['site_title'] );
+		$stream->tick();
+
+		$bodies   = $this->placeholder_post_bodies();
+		$created  = array();
+		$days_ago = 2;
+
+		foreach ( $briefs as $i => $brief ) {
+			$post_id = wp_insert_post(
+				wp_slash(
+					array(
+						'post_type'    => 'post',
+						'post_status'  => 'publish',
+						'post_title'   => $brief['title'],
+						'post_excerpt' => $brief['topic'],
+						'post_content' => $bodies[ $i % count( $bodies ) ],
+						// Spread publish dates into the recent past so the
+						// blog reads as alive, not generated in one second.
+						'post_date'    => gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) - $days_ago * DAY_IN_SECONDS ),
+						'meta_input'   => array(
+							self::GENERATED_META_KEY => $plan_id,
+						),
+					)
+				),
+				true
+			);
+
+			if ( is_wp_error( $post_id ) ) {
+				continue;
+			}
+			$days_ago += wp_rand( 5, 11 );
+
+			if ( $thumb_id ) {
+				set_post_thumbnail( $post_id, $thumb_id );
+			}
+
+			$created[] = (int) $post_id;
+			$stream->tick();
+		}
+
+		$state['created_pages'][ $index ] = (int) $page_id;
+		$state['created_posts']           = array_merge(
+			isset( $state['created_posts'] ) ? $state['created_posts'] : array(),
+			$created
+		);
+		set_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id, $state, HOUR_IN_SECONDS );
+
+		$stream->finish_success(
+			array(
+				'page_id'  => (int) $page_id,
+				'edit_url' => get_edit_post_link( $page_id, 'raw' ),
+			)
+		);
+	}
+
+	/**
+	 * Sideload the shared placeholder image used as the dummy posts'
+	 * featured image. Tagged with the plan ID so the delete flow removes it.
+	 *
+	 * @param string $plan_id    Plan ID (cleanup meta tag).
+	 * @param string $site_title For the attachment description.
+	 * @return int Attachment ID (0 on failure — posts just go without).
+	 */
+	private function sideload_placeholder_image( $plan_id, $site_title ) {
+		if ( ! function_exists( 'media_sideload_image' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/media.php';
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			require_once ABSPATH . 'wp-admin/includes/image.php';
+		}
+
+		/**
+		 * Filter the placeholder image URL used for demo blog post thumbnails.
+		 *
+		 * @param string $url
+		 */
+		$url = apply_filters( 'inspiro_starter_sites/ai_placeholder_image', 'https://ai.wpzoom.com/img/placeholder.png' );
+
+		$attachment_id = media_sideload_image(
+			$url,
+			0,
+			sprintf(
+				/* translators: %s: generated demo site title */
+				esc_html__( 'Placeholder image — %s', 'inspiro-starter-sites' ),
+				$site_title
+			),
+			'id'
+		);
+
+		if ( is_wp_error( $attachment_id ) ) {
+			return 0;
+		}
+
+		update_post_meta( $attachment_id, self::GENERATED_META_KEY, $plan_id );
+
+		return (int) $attachment_id;
+	}
+
+	/**
+	 * Placeholder post bodies (native block markup, three varied structures).
+	 * Deliberately generic filler the user replaces with real writing.
+	 *
+	 * @return string[]
+	 */
+	private function placeholder_post_bodies() {
+		$p = static function ( $text ) {
+			return '<!-- wp:paragraph --><p>' . $text . '</p><!-- /wp:paragraph -->';
+		};
+		$h2 = static function ( $text ) {
+			return '<!-- wp:heading --><h2 class="wp-block-heading">' . $text . '</h2><!-- /wp:heading -->';
+		};
+
+		$lorem1 = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis dapibus posuere velit aliquet. Cras justo odio, dapibus ac facilisis in, egestas eget quam.';
+		$lorem2 = 'Vestibulum id ligula porta felis euismod semper. Maecenas faucibus mollis interdum. Donec ullamcorper nulla non metus auctor fringilla, sed posuere consectetur est at lobortis.';
+		$lorem3 = 'Curabitur blandit tempus porttitor. Nullam quis risus eget urna mollis ornare vel eu leo. Aenean lacinia bibendum nulla sed consectetur.';
+
+		$list =
+			'<!-- wp:list --><ul class="wp-block-list">' .
+				'<!-- wp:list-item --><li>Cras mattis consectetur purus sit amet fermentum.</li><!-- /wp:list-item -->' .
+				'<!-- wp:list-item --><li>Donec sed odio dui, non porta gravida at eget metus.</li><!-- /wp:list-item -->' .
+				'<!-- wp:list-item --><li>Nulla vitae elit libero, a pharetra augue.</li><!-- /wp:list-item -->' .
+			'</ul><!-- /wp:list -->';
+
+		$quote =
+			'<!-- wp:quote --><blockquote class="wp-block-quote">' .
+				'<!-- wp:paragraph --><p>Etiam porta sem malesuada magna mollis euismod. Sed posuere consectetur est at lobortis.</p><!-- /wp:paragraph -->' .
+			'</blockquote><!-- /wp:quote -->';
+
+		return array(
+			implode( "\n\n", array( $p( $lorem1 ), $p( $lorem2 ), $h2( 'Duis mollis est non commodo' ), $p( $lorem3 ), $list, $p( $lorem2 ) ) ),
+			implode( "\n\n", array( $p( $lorem2 ), $quote, $p( $lorem1 ), $h2( 'Aenean eu leo quam' ), $p( $lorem3 ) ) ),
+			implode( "\n\n", array( $p( $lorem3 ), $p( $lorem1 ), $h2( 'Morbi leo risus porta' ), $list, $p( $lorem2 ) ) ),
 		);
 	}
 
@@ -1026,6 +1236,20 @@ class AiDemoGenerator {
 			update_option( 'page_on_front', $front_id );
 		}
 
+		// Blog page → the real WordPress posts page, so the post listing
+		// renders there natively (the page itself is an empty shell).
+		foreach ( $pages as $i => $p ) {
+			if ( ! empty( $p['is_blog'] ) && isset( $created_pages[ $i ] ) ) {
+				update_option( 'page_for_posts', (int) $created_pages[ $i ] );
+				break;
+			}
+		}
+
+		// A previously imported classic demo leaves a `layout-{demo}` body
+		// class via this option, and its demo-specific theme CSS would bleed
+		// into the AI design — the AI demo owns the site's look from here.
+		delete_option( 'inspiro_demo_layout' );
+
 		// Footer content goes into the theme's real footer widget areas —
 		// generated pages never carry their own footer.
 		$footer_widget_ids = $this->populate_footer_widgets( $state['plan'] );
@@ -1040,6 +1264,7 @@ class AiDemoGenerator {
 			'description' => $state['description'],
 			'css'         => trim( ( ! empty( $state['plan']['font_css'] ) ? $state['plan']['font_css'] . "\n" : '' ) . ( isset( $state['plan']['css'] ) ? $state['plan']['css'] : '' ) ),
 			'pages'       => array_values( $created_pages ),
+			'posts'       => isset( $state['created_posts'] ) ? array_values( $state['created_posts'] ) : array(),
 			'menu_id'     => $menu_id && ! is_wp_error( $menu_id ) ? (int) $menu_id : 0,
 			'widgets'     => $footer_widget_ids,
 			'created_at'  => current_time( 'mysql' ),
@@ -1215,7 +1440,7 @@ class AiDemoGenerator {
 
 		$post_ids = get_posts(
 			array(
-				'post_type'   => array( 'page', 'attachment', 'portfolio_item' ),
+				'post_type'   => array( 'page', 'post', 'attachment', 'portfolio_item' ),
 				'post_status' => 'any',
 				'numberposts' => -1,
 				'fields'      => 'ids',
@@ -1223,21 +1448,32 @@ class AiDemoGenerator {
 			)
 		);
 
-		$counts        = array(
+		$counts             = array(
 			'pages'       => 0,
 			'attachments' => 0,
 		);
-		$front_page_id = (int) get_option( 'page_on_front' );
-		$front_deleted = false;
+		$front_page_id      = (int) get_option( 'page_on_front' );
+		$front_deleted      = false;
+		$posts_page_id      = (int) get_option( 'page_for_posts' );
+		$posts_page_deleted = false;
 
 		foreach ( $post_ids as $post_id ) {
 			$type = get_post_type( $post_id );
 			if ( (int) $post_id === $front_page_id ) {
 				$front_deleted = true;
 			}
+			if ( (int) $post_id === $posts_page_id ) {
+				$posts_page_deleted = true;
+			}
 			if ( wp_delete_post( $post_id, true ) ) {
 				$counts[ 'attachment' === $type ? 'attachments' : 'pages' ]++;
 			}
+		}
+
+		// The posts page pointed at a deleted AI blog page. Safe to reset even
+		// mid-replace: the new demo's finalize reassigns it when needed.
+		if ( $posts_page_deleted ) {
+			update_option( 'page_for_posts', 0 );
 		}
 
 		// Collect record data before dropping the records.
@@ -1546,6 +1782,31 @@ class AiDemoGenerator {
 
 		if ( empty( $clean['pages'] ) ) {
 			return new \WP_Error( 'ai_invalid_plan', esc_html__( 'The AI returned an unusable site plan. Please try again.', 'inspiro-starter-sites' ) );
+		}
+
+		// A blog-like page is never designed as a static page: it becomes the
+		// real WordPress posts page (assigned in finalize) and the demo gets a
+		// few actual posts instead. Mark the first match only.
+		foreach ( $clean['pages'] as $i => $page ) {
+			if ( in_array( $page['slug'], array( 'blog', 'news', 'journal', 'articles' ), true )
+				|| preg_match( '/^(blog|news|journal|articles?)$/i', $page['title'] )
+			) {
+				$clean['pages'][ $i ]['is_blog'] = true;
+				break;
+			}
+		}
+
+		$clean['blog'] = array( 'posts' => array() );
+		if ( ! empty( $plan['blog']['posts'] ) && is_array( $plan['blog']['posts'] ) ) {
+			foreach ( array_slice( $plan['blog']['posts'], 0, 4 ) as $post ) {
+				if ( ! is_array( $post ) || empty( $post['title'] ) ) {
+					continue;
+				}
+				$clean['blog']['posts'][] = array(
+					'title' => $clean_text( $post['title'], 150 ),
+					'topic' => $clean_text( isset( $post['topic'] ) ? $post['topic'] : '', 300 ),
+				);
+			}
 		}
 
 		if ( '' === $clean['site_title'] ) {
