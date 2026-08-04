@@ -71,10 +71,28 @@ jQuery( function ( $ ) {
 	 * Modal
 	 * -------------------------------------------------------------- */
 
+	// Simple stroke icons for the idea cards (currentColor, 20x20 viewBox).
+	var IDEA_ICONS = {
+		camera:       '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="6" width="16" height="11" rx="2"/><circle cx="10" cy="11.5" r="3.2"/><path d="M7 6l1.2-2h3.6L13 6"/></svg>',
+		restaurant:   '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 2v7M4 2v4a2 2 0 004 0V2M6 9v9"/><path d="M13 2c1.8 0 3 1.7 3 4s-1.2 4-3 4v8"/></svg>',
+		wellness:     '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M10 3c1.8 1.6 2.8 3.6 2.8 5.7 0 2-1 3.9-2.8 5.3-1.8-1.4-2.8-3.3-2.8-5.3C7.2 6.6 8.2 4.6 10 3z"/><path d="M3.5 9.5c2.4.4 4.3 1.6 5.4 3.6M16.5 9.5c-2.4.4-4.3 1.6-5.4 3.6M10 14v3.5"/></svg>',
+		architecture: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 17h14M4 17V7l6-4 6 4v10"/><path d="M8 17v-4h4v4M8 8h1M11 8h1"/></svg>',
+		fitness:      '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 10h2M16 10h2M6 6v8M14 6v8M6 10h8"/><rect x="4.4" y="7" width="1.6" height="6" rx="0.5"/><rect x="14" y="7" width="1.6" height="6" rx="0.5"/></svg>',
+		travel:       '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 16l5.5-9 3.5 5.5L13 9l5 7z"/><circle cx="14.5" cy="4.5" r="1.5"/></svg>'
+	};
+
 	function buildModal() {
 		var ideas = '';
 		$.each( config.ideas || [], function ( i, idea ) {
-			ideas += '<button type="button" class="iss-ai-idea js-iss-ai-idea">' + esc( idea ) + '</button>';
+			// Back-compat: ideas may be plain strings or {icon,title,text}.
+			if ( typeof idea === 'string' ) {
+				ideas += '<button type="button" class="iss-ai-idea js-iss-ai-idea" data-text="' + esc( idea ) + '">' + esc( idea ) + '</button>';
+				return;
+			}
+			ideas += '<button type="button" class="iss-ai-idea js-iss-ai-idea" data-text="' + esc( idea.text || '' ) + '">' +
+				'<span class="iss-ai-idea-icon">' + ( IDEA_ICONS[ idea.icon ] || IDEA_ICONS.camera ) + '</span>' +
+				'<span class="iss-ai-idea-body"><strong>' + esc( idea.title || '' ) + '</strong><em>' + esc( idea.text || '' ) + '</em></span>' +
+			'</button>';
 		} );
 
 		// Design style + palette chips ("" = let the AI decide).
@@ -459,7 +477,8 @@ jQuery( function ( $ ) {
 	} );
 
 	$root.on( 'click', '.js-iss-ai-idea', function () {
-		$root.find( '.js-iss-ai-description' ).val( $( this ).text() ).trigger( 'focus' );
+		var text = $( this ).attr( 'data-text' ) || $( this ).text();
+		$root.find( '.js-iss-ai-description' ).val( text ).trigger( 'focus' );
 	} );
 
 	// Standalone "delete the AI demo" — meta-scoped server-side, so only

@@ -48,12 +48,30 @@ class HtmlToBlocks {
 	private $image_resolver;
 
 	/**
+	 * Brand tokens from the plan (accent, accent_text, radius) — used to
+	 * build native wp:button blocks so their colors are editable in the
+	 * block UI instead of living in the stylesheet.
+	 *
+	 * @var array
+	 */
+	private $brand = array();
+
+	/**
 	 * @param array    $page_links     slug => URL map.
 	 * @param callable $image_resolver fn( string $query, string $orientation ): ?array
+	 * @param array    $brand          [ 'accent' => hex, 'accent_text' => hex, 'radius' => css length ]
 	 */
-	public function __construct( array $page_links, callable $image_resolver ) {
+	public function __construct( array $page_links, callable $image_resolver, array $brand = array() ) {
 		$this->page_links     = $page_links;
 		$this->image_resolver = $image_resolver;
+		$this->brand          = wp_parse_args(
+			$brand,
+			array(
+				'accent'      => '#1d1d1f',
+				'accent_text' => '#ffffff',
+				'radius'      => '8px',
+			)
+		);
 	}
 
 	/**
@@ -89,7 +107,7 @@ class HtmlToBlocks {
 			return '';
 		}
 
-		$blocks = $this->convert_children( $body );
+		$blocks = $this->convert_children( $body, true );
 		if ( '' === trim( $blocks ) ) {
 			return '';
 		}
@@ -113,9 +131,12 @@ class HtmlToBlocks {
 	 * consecutive button anchors into one wp:buttons row.
 	 *
 	 * @param \DOMNode $parent
+	 * @param bool     $top_level Body-level children: divs are treated as
+	 *                            full-width sections (models sometimes write
+	 *                            divs where the dialect says section).
 	 * @return string
 	 */
-	private function convert_children( \DOMNode $parent ) {
+	private function convert_children( \DOMNode $parent, $top_level = false ) {
 		$blocks         = array();
 		$pending_buttons = array();
 
@@ -147,7 +168,12 @@ class HtmlToBlocks {
 
 			$flush_buttons();
 
-			$block = $this->convert_element( $node );
+			if ( $top_level && in_array( $node->nodeName, array( 'div', 'aside' ), true ) ) {
+				$block = $this->group_block( $node, true );
+			} else {
+				$block = $this->convert_element( $node );
+			}
+
 			if ( '' !== $block ) {
 				$blocks[] = $block;
 			}
@@ -195,7 +221,13 @@ class HtmlToBlocks {
 				return $this->paragraph_block( $el );
 
 			case 'span':
-				// Stray block-level span (e.g. a kicker) — treat as paragraph.
+			case 'strong':
+			case 'em':
+			case 'b':
+			case 'i':
+			case 'mark':
+				// Stray block-level inline element (kickers, big stat
+				// numbers) — wrap as a paragraph, keeping the class.
 				return $this->paragraph_block( $el, $this->classes( $el ) );
 
 			case 'img':
@@ -240,14 +272,22 @@ class HtmlToBlocks {
 	 * ------------------------------------------------------------------ */
 
 	private function group_block( $el, $full_width ) {
+		// The converter adds the demo wrapper itself — if the AI also wrapped
+		// the page in one, unwrap it instead of nesting (its children are
+		// top-level sections).
+		$classes = $this->classes( $el );
+		if ( false !== strpos( ' ' . $classes . ' ', ' iss-ai-demo ' ) || false !== strpos( ' ' . $classes . ' ', ' ai-demo ' ) ) {
+			return $this->convert_children( $el, true );
+		}
+
 		$inner = $this->convert_children( $el );
 		if ( '' === trim( $inner ) ) {
 			return '';
 		}
 
-		$classes = $this->classes( $el );
-		$attrs   = array( 'layout' => array( 'type' => 'default' ) );
-		$class   = 'wp-block-group';
+		$attrs = array( 'layout' => array( 'type' => 'default' ) );
+		$class = 'wp-block-group';
+		$style = '';
 
 		if ( $full_width ) {
 			$attrs = array( 'align' => 'full' ) + $attrs;
@@ -258,10 +298,30 @@ class HtmlToBlocks {
 			$class             .= ' ' . $classes;
 		}
 
+		// data-bg / data-text become native block colors — editable in the
+		// block UI, and inline styles that no theme rule can override.
+		$bg   = sanitize_hex_color( trim( $el->getAttribute( 'data-bg' ) ) );
+		$text = sanitize_hex_color( trim( $el->getAttribute( 'data-text' ) ) );
+
+		if ( $bg || $text ) {
+			$attrs['style'] = array( 'color' => array() );
+			if ( $bg ) {
+				$attrs['style']['color']['background'] = $bg;
+				$class .= ' has-background';
+				$style .= 'background-color:' . $bg . ';';
+			}
+			if ( $text ) {
+				$attrs['style']['color']['text'] = $text;
+				$class .= ' has-text-color';
+				$style .= 'color:' . $text . ';';
+			}
+		}
+
 		return sprintf(
-			"<!-- wp:group %s -->\n<div class=\"%s\">%s</div>\n<!-- /wp:group -->",
+			"<!-- wp:group %s -->\n<div class=\"%s\"%s>%s</div>\n<!-- /wp:group -->",
 			wp_json_encode( $attrs ),
 			esc_attr( $class ),
+			$style ? ' style="' . esc_attr( rtrim( $style, ';' ) ) . '"' : '',
 			"\n" . $inner . "\n"
 		);
 	}
@@ -370,25 +430,64 @@ class HtmlToBlocks {
 	}
 
 	private function buttons_block( array $anchors ) {
-		// Buttons are kept as verbatim anchors inside a Custom HTML block —
-		// NOT wp:button. The theme styles both `.btn` and
-		// `.wp-block-button__link`, which visually collides with the AI's
-		// button design; a bare anchor is styled only by the demo stylesheet,
-		// exactly as the AI designed it.
+		// Native wp:button blocks, colored via the plan's brand tokens as
+		// block-level attributes (inline styles beat the theme's
+		// .wp-block-button__link defaults, and the colors are editable in
+		// the block UI). No custom className: the AI stylesheet must never
+		// style buttons, or the theme/AI double-styling returns.
+		$accent = $this->brand['accent'];
+		$text   = $this->brand['accent_text'];
+		$radius = $this->brand['radius'];
+
 		$buttons = array();
 
 		foreach ( $anchors as $a ) {
-			$classes = $this->classes( $a );
+			$is_outline = false !== strpos( $a->getAttribute( 'class' ), 'outline' );
+			$href       = esc_url( $this->resolve_href( $a->getAttribute( 'href' ) ) );
+			$label      = $this->inline_html( $a );
 
-			$buttons[] = sprintf(
-				'<a class="%s" href="%s">%s</a>',
-				esc_attr( $classes ),
-				esc_url( $this->resolve_href( $a->getAttribute( 'href' ) ) ),
-				$this->inline_html( $a )
-			);
+			if ( $is_outline ) {
+				$attrs = array(
+					'className' => 'is-style-outline',
+					'style'     => array(
+						'border' => array( 'radius' => $radius ),
+						'color'  => array( 'text' => $accent ),
+					),
+				);
+				$buttons[] = sprintf(
+					"<!-- wp:button %s -->\n<div class=\"wp-block-button is-style-outline\"><a class=\"wp-block-button__link has-text-color wp-element-button\" style=\"border-radius:%s;color:%s\" href=\"%s\">%s</a></div>\n<!-- /wp:button -->",
+					wp_json_encode( $attrs ),
+					esc_attr( $radius ),
+					esc_attr( $accent ),
+					$href,
+					$label
+				);
+			} else {
+				$attrs = array(
+					'style' => array(
+						'border' => array( 'radius' => $radius ),
+						'color'  => array(
+							'background' => $accent,
+							'text'       => $text,
+						),
+					),
+				);
+				$buttons[] = sprintf(
+					"<!-- wp:button %s -->\n<div class=\"wp-block-button\"><a class=\"wp-block-button__link has-text-color has-background wp-element-button\" style=\"border-radius:%s;color:%s;background-color:%s\" href=\"%s\">%s</a></div>\n<!-- /wp:button -->",
+					wp_json_encode( $attrs ),
+					esc_attr( $radius ),
+					esc_attr( $text ),
+					esc_attr( $accent ),
+					$href,
+					$label
+				);
+			}
 		}
 
-		return sprintf( "<!-- wp:html -->\n%s\n<!-- /wp:html -->", implode( "\n", $buttons ) );
+		return sprintf(
+			"<!-- wp:buttons -->\n<div class=\"wp-block-buttons\">%s</div>\n<!-- /wp:buttons -->",
+			implode( "\n\n", $buttons )
+		);
 	}
 
 	private function list_block( $el ) {

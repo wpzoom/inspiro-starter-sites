@@ -136,12 +136,36 @@ class AiDemoGenerator {
 					$this->palette_options()
 				),
 				'ideas'      => array(
-					esc_html__( 'A portfolio site for a wedding photographer based in Lisbon, with a moody, elegant style.', 'inspiro-starter-sites' ),
-					esc_html__( 'A website for a small family-run Italian restaurant with a seasonal menu and cozy atmosphere.', 'inspiro-starter-sites' ),
-					esc_html__( 'A yoga studio site offering morning classes, workshops, and private sessions.', 'inspiro-starter-sites' ),
-					esc_html__( 'A site for an architecture firm specializing in sustainable residential design.', 'inspiro-starter-sites' ),
-					esc_html__( 'A personal site for a fitness coach offering online training programs.', 'inspiro-starter-sites' ),
-					esc_html__( 'A website for a boutique travel agency organizing hiking tours in the Alps.', 'inspiro-starter-sites' ),
+					array(
+						'icon'  => 'camera',
+						'title' => esc_html__( 'Photography portfolio', 'inspiro-starter-sites' ),
+						'text'  => esc_html__( 'A portfolio site for a wedding photographer based in Lisbon, with a moody, elegant style.', 'inspiro-starter-sites' ),
+					),
+					array(
+						'icon'  => 'restaurant',
+						'title' => esc_html__( 'Restaurant', 'inspiro-starter-sites' ),
+						'text'  => esc_html__( 'A website for a small family-run Italian restaurant with a seasonal menu and cozy atmosphere.', 'inspiro-starter-sites' ),
+					),
+					array(
+						'icon'  => 'wellness',
+						'title' => esc_html__( 'Yoga studio', 'inspiro-starter-sites' ),
+						'text'  => esc_html__( 'A yoga studio site offering morning classes, workshops, and private sessions.', 'inspiro-starter-sites' ),
+					),
+					array(
+						'icon'  => 'architecture',
+						'title' => esc_html__( 'Architecture firm', 'inspiro-starter-sites' ),
+						'text'  => esc_html__( 'A site for an architecture firm specializing in sustainable residential design.', 'inspiro-starter-sites' ),
+					),
+					array(
+						'icon'  => 'fitness',
+						'title' => esc_html__( 'Fitness coach', 'inspiro-starter-sites' ),
+						'text'  => esc_html__( 'A personal site for a fitness coach offering online training programs.', 'inspiro-starter-sites' ),
+					),
+					array(
+						'icon'  => 'travel',
+						'title' => esc_html__( 'Travel agency', 'inspiro-starter-sites' ),
+						'text'  => esc_html__( 'A website for a boutique travel agency organizing hiking tours in the Alps.', 'inspiro-starter-sites' ),
+					),
 				),
 				'texts'      => array(
 					'title'            => esc_html__( 'Generate a demo with AI', 'inspiro-starter-sites' ),
@@ -153,11 +177,11 @@ class AiDemoGenerator {
 					'palette_label'    => esc_html__( 'Color palette', 'inspiro-starter-sites' ),
 					'auto'             => esc_html__( 'Let AI decide', 'inspiro-starter-sites' ),
 					'describe_label'   => esc_html__( 'Describe your website', 'inspiro-starter-sites' ),
-					'step1'            => esc_html__( 'Describe & style', 'inspiro-starter-sites' ),
+					'step1'            => esc_html__( 'Describe and style', 'inspiro-starter-sites' ),
 					'step1_hint'       => esc_html__( 'Tell the AI about the website and pick a look', 'inspiro-starter-sites' ),
 					'step2'            => esc_html__( 'AI builds your demo', 'inspiro-starter-sites' ),
 					'step2_hint'       => esc_html__( 'Design, copy, photos and pages — about a minute per page', 'inspiro-starter-sites' ),
-					'step3'            => esc_html__( 'Review & edit', 'inspiro-starter-sites' ),
+					'step3'            => esc_html__( 'Review and edit', 'inspiro-starter-sites' ),
 					'step3_hint'       => esc_html__( 'Open your new site or fine-tune pages in the editor', 'inspiro-starter-sites' ),
 					'plan_item'        => esc_html__( 'Site design, copy & structure', 'inspiro-starter-sites' ),
 					'finalize_item'    => esc_html__( 'Menu, footer & homepage setup', 'inspiro-starter-sites' ),
@@ -471,7 +495,8 @@ class AiDemoGenerator {
 			return $images[0];
 		};
 
-		$converter = new HtmlToBlocks( $page_links, $resolver );
+		$brand     = isset( $state['plan']['brand'] ) ? $state['plan']['brand'] : array();
+		$converter = new HtmlToBlocks( $page_links, $resolver, $brand );
 		$content   = $converter->convert( $html, $page['slug'] );
 
 		if ( '' === $content ) {
@@ -1034,14 +1059,17 @@ class AiDemoGenerator {
 			. "  * EVERY custom class name starts with the prefix ai- (.ai-hero, .ai-card, .ai-grid...) so the active theme's own classes can never collide with the design.\n"
 			. "  * CSS custom properties on .iss-ai-demo for the palette and fonts.\n"
 			. "  * A distinctive art direction for THIS business: real palette, expressive display typography from widely-available system font stacks (e.g. Georgia, 'Iowan Old Style', 'Avenir Next', Futura, 'Gill Sans', Palatino, ui-serif, ui-rounded...), fluid type and section padding with clamp().\n"
-			. "  * Must define: .ai-kicker (eyebrow label), .ai-btn (solid button, fully styled: background, color, padding, border, radius) and .ai-btn.ai-btn-outline, a responsive grid (.ai-grid.ai-cols-2, .ai-cols-3, .ai-cols-4 via CSS grid, collapsing on mobile with @media), .ai-card styles, and dark + light section variants (e.g. .ai-section--dark).\n"
+			. "  * Must define: .ai-kicker (eyebrow label), a responsive grid (.ai-grid.ai-cols-2, .ai-cols-3, .ai-cols-4 via CSS grid, collapsing on mobile with @media), .ai-card styles, and section spacing/typography.\n"
+			. "  * Do NOT define button styles (.ai-btn) — buttons are rendered as native WordPress buttons from the \"brand\" tokens below. Do NOT underline links inside buttons (scope generic link styles to content, e.g. .iss-ai-demo p a).\n"
+			. "  * The stylesheet is the source of truth for the FULL design — every section class used in pages (including .ai-section, .ai-card, heroes) must be completely styled here: backgrounds, padding, spacing, colors. A page must look right from this CSS alone.\n"
 			. "  * Style images (border-radius etc.) and vary section backgrounds so the site has rhythm.\n"
 			. "  * Gradients, shadows, borders, CSS-only transitions are welcome. NO url(), NO @import, NO external fonts, NO JavaScript, NO double-quote characters anywhere in the CSS (use single quotes).\n"
 			. "  * Roughly 150-250 lines.\n"
 			. "- \"footer\": short content for the theme's footer widget areas (the theme renders the site footer — pages must NOT contain their own): about = 1-2 sentence blurb about the business, contact_heading = a short localized heading like Contact, plus fictional email, phone, address.\n"
+			. "- \"brand\": tokens used to render native WordPress buttons and accents: accent (hex background of primary buttons), accent_text (hex text color on the accent, must be readable), radius (button corner radius like 8px, 999px for pills, 0px for sharp).\n"
 			. "- Never include a literal double-quote character (\") inside any JSON string value; in CSS use single quotes, in copy use curly quotes.\n"
 			. "- Return ONLY compact JSON matching exactly this shape:\n"
-			. '{"site_title":"...","tagline":"...","css":".ai-demo{...} .ai-demo .hero{...}","footer":{"about":"...","contact_heading":"...","email":"...","phone":"...","address":"..."},"pages":[{"slug":"home","title":"Home","brief":"..."}]}';
+			. '{"site_title":"...","tagline":"...","css":".iss-ai-demo{...} .iss-ai-demo .ai-hero{...}","brand":{"accent":"#c4580a","accent_text":"#ffffff","radius":"8px"},"footer":{"about":"...","contact_heading":"...","email":"...","phone":"...","address":"..."},"pages":[{"slug":"home","title":"Home","brief":"..."}]}';
 	}
 
 	/**
@@ -1067,9 +1095,10 @@ class AiDemoGenerator {
 			. $plan['css'] . "\n\n"
 			. "Write the page BODY as HTML in exactly this dialect:\n"
 			. "- Allowed elements: <section>, <div>, <h1>-<h6>, <p>, <span>, <img>, <a>, <ul>/<ol>/<li>, <blockquote>, <details>/<summary>, <figure>/<figcaption>, <hr>, inline <strong>/<em>/<br>, and small decorative inline <svg> icons (fill='currentColor', no scripts).\n"
-			. "- Structure: 4 to 7 top-level <section> elements with meaningful classes from the stylesheet (all custom classes carry the ai- prefix). Exactly ONE <h1> on the page, in the first section.\n"
-			. "- Images: NEVER use src. Write <img data-query='english photo search phrase' data-orientation='landscape' alt='...'> (or data-orientation='portrait' for people/tall crops). 2-6 images where the design calls for them; queries specific and photogenic, no brand names.\n"
-			. "- Buttons: <a class='ai-btn' href='#page:contact'>Label</a> (or class='ai-btn ai-btn-outline'). ALL internal links use href='#page:slug' with a slug from the page list above.\n"
+			. "- Structure: 4 to 7 top-level <section> elements with meaningful classes from the stylesheet (all custom classes carry the ai- prefix). Exactly ONE <h1> on the page, in the first section. Do NOT wrap the page in a .iss-ai-demo container — that wrapper is added automatically.\n"
+			. "- Section colors: every section whose CSS class gives it a solid background color must ALSO declare data-bg='#hex' (plus data-text='#hex' when the text is light) with the same colors — these become native, user-editable block colors layered on top of the CSS.\n"
+			. "- Images: NEVER use src. Write <img data-query='english photo search phrase' data-orientation='landscape' alt='...'> (or data-orientation='portrait' for people/tall crops). 2-6 images where the design calls for them; queries specific and photogenic, no brand names. The homepage hero should normally feature a photo (styled by your CSS) — a photo-less hero is only acceptable when the art direction truly demands it.\n"
+			. "- Buttons: <a class='ai-btn' href='#page:contact'>Label</a> (or class='ai-btn ai-btn-outline' for the secondary variant) — they are converted to native WordPress buttons automatically. ALL internal links use href='#page:slug' with a slug from the page list above.\n"
 			. "- Do NOT include a site header, logo, navigation menu/bar, or site footer — the WordPress theme already renders those around your content. Start with the page's first content section and end with its last content section. Never use <header>, <nav> or <footer> elements.\n"
 			. "- NO <style>, NO <script>, NO style= attributes, NO src attributes, NO external resources.\n"
 			. "- Copy: demo-quality and concise — headings punchy, paragraphs 1-3 short sentences, realistic fictional details. Write in the language the original request is WRITTEN in (the business's location or cuisine does not change the language).\n"
@@ -1106,6 +1135,17 @@ class AiDemoGenerator {
 				}
 			}
 		}
+
+		// Brand tokens for native buttons/accents (validated, with fallbacks).
+		$raw_brand      = ( ! empty( $plan['brand'] ) && is_array( $plan['brand'] ) ) ? $plan['brand'] : array();
+		$accent         = isset( $raw_brand['accent'] ) ? sanitize_hex_color( trim( (string) $raw_brand['accent'] ) ) : '';
+		$accent_text    = isset( $raw_brand['accent_text'] ) ? sanitize_hex_color( trim( (string) $raw_brand['accent_text'] ) ) : '';
+		$radius         = isset( $raw_brand['radius'] ) && preg_match( '/^\d{1,3}(px|rem|em|%)$/', trim( (string) $raw_brand['radius'] ) ) ? trim( (string) $raw_brand['radius'] ) : '';
+		$clean['brand'] = array(
+			'accent'      => $accent ? $accent : '#1d1d1f',
+			'accent_text' => $accent_text ? $accent_text : '#ffffff',
+			'radius'      => $radius ? $radius : '8px',
+		);
 
 		if ( '' === $clean['css'] ) {
 			return new \WP_Error( 'ai_invalid_plan', esc_html__( 'The AI returned an unusable site design. Please try again.', 'inspiro-starter-sites' ) );
@@ -1166,9 +1206,17 @@ class AiDemoGenerator {
 			return '';
 		}
 
-		// Small reset neutralizing theme styles that would otherwise
-		// interfere inside the demo scope (figure gutters, image sizing).
-		$css .= "\n.iss-ai-demo figure{margin:0}.iss-ai-demo img{height:auto;max-width:100%}.iss-ai-demo .wp-block-image{margin:0}";
+		// Bridge rules appended after the AI CSS:
+		// - neutralize theme styles that interfere inside the demo scope;
+		// - buttons must never inherit the AI's generic link underline;
+		// - a baseline vertical rhythm so missing AI rules can't leave
+		//   elements glued together (AI selectors are more specific and win).
+		$css .= "\n.iss-ai-demo figure{margin:0}.iss-ai-demo img{height:auto;max-width:100%}.iss-ai-demo .wp-block-image{margin:0}"
+			. ".iss-ai-demo .wp-block-button__link{text-decoration:none}"
+			. ".iss-ai-demo .wp-block-buttons{display:flex;flex-wrap:wrap;gap:.75rem}"
+			. ".iss-ai-demo h1,.iss-ai-demo h2,.iss-ai-demo h3,.iss-ai-demo h4{margin-top:0;margin-bottom:.5em}"
+			. ".iss-ai-demo p{margin-top:0;margin-bottom:1em}"
+			. ".iss-ai-demo p:last-child,.iss-ai-demo h2:last-child,.iss-ai-demo h3:last-child{margin-bottom:0}";
 
 		return $css;
 	}
