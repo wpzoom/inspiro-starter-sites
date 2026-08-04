@@ -199,6 +199,8 @@ $platform_labels = array(
 
 <div class="inspiro-starter-sites-feedback-root js-inspiro-starter-sites-feedback-root" hidden></div>
 
+<div class="iss-ai-root js-iss-ai-root" hidden></div>
+
 <ol class="wpz-onboard_content-main-steps">
 	<li id="step-choose-design" class="wpz-onboard_content-main-step step-1 step-choose-design">
 		<form method="post" action="#">
@@ -373,6 +375,16 @@ $platform_labels = array(
 					</li>
 					<?php endif; ?>
 				<?php endforeach; ?>
+					<?php if ( class_exists( '\Inspiro\Starter_Sites\Ai\AiDemoGenerator' ) && \Inspiro\Starter_Sites\Ai\AiDemoGenerator::is_enabled() ) : ?>
+						<li class="inspiro-starter-sites-demo-suggest-card inspiro-starter-sites-demo-ai-card">
+							<button type="button" class="inspiro-starter-sites-demo-suggest-tile inspiro-starter-sites-demo-ai-tile js-inspiro-starter-sites-ai-generate">
+								<span class="inspiro-starter-sites-demo-badge inspiro-starter-sites-demo-badge-new iss-ai-tile-badge"><?php esc_html_e( 'Beta', 'inspiro-starter-sites' ); ?></span>
+								<span class="inspiro-starter-sites-demo-suggest-tile__icon" aria-hidden="true">&#10024;</span>
+								<span class="inspiro-starter-sites-demo-suggest-tile__label"><?php esc_html_e( 'Generate a demo with AI', 'inspiro-starter-sites' ); ?></span>
+								<span class="inspiro-starter-sites-demo-suggest-tile__hint"><?php esc_html_e( 'Describe your website and AI will build a few pages for you', 'inspiro-starter-sites' ); ?></span>
+							</button>
+						</li>
+					<?php endif; ?>
 					<li class="inspiro-starter-sites-demo-suggest-card">
 						<button type="button" class="inspiro-starter-sites-demo-suggest-tile js-inspiro-starter-sites-suggest-demo">
 							<span class="inspiro-starter-sites-demo-suggest-tile__icon" aria-hidden="true">+</span>

@@ -50,6 +50,16 @@ if ( ! defined( 'INSPIRO_STARTER_SITES_FEEDBACK_ENDPOINT' ) ) {
 	define( 'INSPIRO_STARTER_SITES_FEEDBACK_ENDPOINT', 'https://ai.wpzoom.com/simple-demo-feedback-endpoint.php' );
 }
 
+/**
+ * WPZOOM AI proxy used by the "Generate a demo with AI" feature. All AI calls
+ * (Claude, Pexels, quota) go through this server — no API keys on user sites.
+ * Override the constant (e.g. point at a local/staging proxy) or use the
+ * 'inspiro_starter_sites/ai_endpoint' filter.
+ */
+if ( ! defined( 'INSPIRO_STARTER_SITES_AI_ENDPOINT' ) ) {
+	define( 'INSPIRO_STARTER_SITES_AI_ENDPOINT', 'https://ai.wpzoom.com/wp-json/services/v1' );
+}
+
 // Load the activator class
 require_once INSPIRO_STARTER_SITES_PATH . 'classes/class-inspiro-starter-sites-activator.php';
 
@@ -71,5 +81,13 @@ function inspiro_starter_sites_classes() {
 
 	// Load the starter content notice
 	require_once INSPIRO_STARTER_SITES_PATH . 'components/starter-content-notice.php';
+
+	// Load the AI demo generator (explicit requires — the importer's Composer
+	// autoloader may be dumped optimized, which wouldn't pick up new classes).
+	require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/inc/Ai/StreamingResponse.php';
+	require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/inc/Ai/AiProxyClient.php';
+	require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/inc/Ai/BlockComposer.php';
+	require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/inc/Ai/AiDemoGenerator.php';
+	\Inspiro\Starter_Sites\Ai\AiDemoGenerator::get_instance();
 
 }
