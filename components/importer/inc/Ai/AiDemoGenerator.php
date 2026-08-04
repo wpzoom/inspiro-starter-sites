@@ -624,6 +624,7 @@ class AiDemoGenerator {
 			array(
 				'description'    => $description,
 				'plan'           => $plan,
+				'palette'        => $palette, // chosen palette slug ('' = AI decides)
 				'replace'        => $replace,
 				'created_pages'  => array(), // page index => post ID
 				'used_photo_ids' => array(),
@@ -1318,6 +1319,35 @@ class AiDemoGenerator {
 		// into the AI design — the AI demo owns the site's look from here.
 		delete_option( 'inspiro_demo_layout' );
 
+		// Align the THEME's own accent with the demo so native theme UI
+		// (links, buttons, hovers) matches the generated design. The pre-AI
+		// customizer values are preserved once — the first generation ever —
+		// and restored when the AI demo is fully deleted.
+		if ( false === get_option( 'inspiro_starter_sites_ai_prev_colors', false ) ) {
+			update_option(
+				'inspiro_starter_sites_ai_prev_colors',
+				array(
+					'colorscheme'     => get_theme_mod( 'colorscheme', false ),
+					'color_palette'   => get_theme_mod( 'color_palette', false ),
+					'colorscheme_hex' => get_theme_mod( 'colorscheme_hex', false ),
+				),
+				false
+			);
+		}
+
+		$picked = isset( $state['palette'] ) ? (string) $state['palette'] : '';
+		$accent = isset( $state['plan']['brand']['accent'] ) ? sanitize_hex_color( $state['plan']['brand']['accent'] ) : '';
+
+		if ( 0 === strpos( $picked, 'theme-' ) ) {
+			// A theme palette was picked: make it the site's active palette.
+			set_theme_mod( 'color_palette', substr( $picked, 6 ) );
+		} elseif ( $accent ) {
+			// Custom palette or AI-chosen colors: the demo's accent becomes
+			// the theme's Custom Accent Color.
+			set_theme_mod( 'colorscheme', 'custom' );
+			set_theme_mod( 'colorscheme_hex', $accent );
+		}
+
 		// Footer content goes into the theme's real footer widget areas —
 		// generated pages never carry their own footer.
 		$footer_widget_ids = $this->populate_footer_widgets( $state['plan'] );
@@ -1687,6 +1717,19 @@ class AiDemoGenerator {
 				update_option( 'show_on_front', 'posts' );
 				update_option( 'page_on_front', 0 );
 			}
+
+			// Restore the customizer colors from before the first AI demo.
+			$prev_colors = get_option( 'inspiro_starter_sites_ai_prev_colors' );
+			if ( is_array( $prev_colors ) ) {
+				foreach ( array( 'colorscheme', 'color_palette', 'colorscheme_hex' ) as $mod ) {
+					if ( array_key_exists( $mod, $prev_colors ) && false !== $prev_colors[ $mod ] ) {
+						set_theme_mod( $mod, $prev_colors[ $mod ] );
+					} else {
+						remove_theme_mod( $mod );
+					}
+				}
+			}
+			delete_option( 'inspiro_starter_sites_ai_prev_colors' );
 		}
 
 		return $counts;
@@ -2188,7 +2231,9 @@ class AiDemoGenerator {
 
 		if ( function_exists( 'inspiro_get_color_palettes' ) ) {
 			$theme_palettes = inspiro_get_color_palettes();
-			$active         = get_theme_mod( 'colorscheme', 'default' );
+			// The predefined-palette selection lives in `color_palette`
+			// (`colorscheme` is the light/dark/custom radio).
+			$active = get_theme_mod( 'color_palette', 'default' );
 
 			foreach ( (array) $theme_palettes as $palette_id => $palette ) {
 				if ( empty( $palette['colors'] ) || ! is_array( $palette['colors'] ) ) {
@@ -2218,8 +2263,10 @@ class AiDemoGenerator {
 						/* translators: %s: theme palette name */
 						: sprintf( __( 'Theme: %s', 'inspiro-starter-sites' ), $label ),
 					'colors'    => $colors,
-					// Only the ACTIVE palette matches the live CSS variable.
-					'theme_var' => $is_active,
+					// Any theme palette may bind to the live CSS variable:
+					// finalize activates the picked palette in the customizer,
+					// so the variable always matches by the time pages render.
+					'theme_var' => true,
 				);
 			}
 		}
