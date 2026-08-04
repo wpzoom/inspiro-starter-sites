@@ -270,6 +270,8 @@ class AiDemoGenerator {
 					'step_plan'        => __( 'Designing your site structure and writing the copy…', 'inspiro-starter-sites' ),
 					/* translators: %1$s: current page number, %2$s: total pages, %3$s: page title */
 					'step_page'        => __( 'Creating page %1$s of %2$s: %3$s', 'inspiro-starter-sites' ),
+					/* translators: %1$s: pages completed, %2$s: total pages */
+					'step_pages'       => __( 'Designing your pages — %1$s of %2$s ready…', 'inspiro-starter-sites' ),
 					'step_finalize'    => __( 'Setting up navigation and homepage…', 'inspiro-starter-sites' ),
 					'progress_hint'    => __( 'This usually takes about a minute. Please keep this tab open.', 'inspiro-starter-sites' ),
 					'success_title'    => __( 'Your demo is ready!', 'inspiro-starter-sites' ),
@@ -619,6 +621,15 @@ class AiDemoGenerator {
 		// (the UI shows an explicit, checked-by-default warning checkbox).
 		$replace = ! isset( $_POST['replace'] ) || '0' !== $_POST['replace'];
 
+		// Sample-content and previous-demo cleanup happen NOW — after the plan
+		// succeeded (a failed generation never deletes anything) and before
+		// the page builds, which run in parallel and in no guaranteed order.
+		Helpers::delete_default_posts();
+		if ( $replace ) {
+			$this->delete_previous_ai_demos( $plan_id );
+		}
+		$stream->tick();
+
 		set_transient(
 			self::PLAN_TRANSIENT_PREFIX . $plan_id,
 			array(
@@ -819,38 +830,36 @@ class AiDemoGenerator {
 			wp_send_json_error( array( 'message' => esc_html__( 'This generation session has expired. Please start again.', 'inspiro-starter-sites' ) ) );
 		}
 
+		// Page builds run CONCURRENTLY, so each build owns a per-index result
+		// transient instead of read-modify-writing the shared state (which
+		// would lose updates under parallel requests). Finalize merges them.
+
 		// Idempotency: if this page was already built (e.g. a retried request),
 		// return the existing result instead of duplicating it.
-		if ( isset( $state['created_pages'][ $index ] ) ) {
-			$existing = (int) $state['created_pages'][ $index ];
+		$existing = get_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id . '_p' . $index );
+		if ( is_array( $existing ) && ! empty( $existing['page_id'] ) ) {
 			wp_send_json_success(
 				array(
-					'page_id'  => $existing,
-					'edit_url' => get_edit_post_link( $existing, 'raw' ),
+					'page_id'  => (int) $existing['page_id'],
+					'edit_url' => get_edit_post_link( (int) $existing['page_id'], 'raw' ),
 				)
 			);
 		}
+
+		// Seed photo de-duplication from every page already built (or being
+		// built) so parallel pages rarely pick the same Pexels photo.
+		foreach ( array_keys( $state['plan']['pages'] ) as $i ) {
+			$result = get_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id . '_p' . $i );
+			if ( is_array( $result ) && ! empty( $result['photo_ids'] ) ) {
+				$state['used_photo_ids'] = array_merge( $state['used_photo_ids'], $result['photo_ids'] );
+			}
+		}
+		$state['used_photo_ids'] = array_values( array_unique( $state['used_photo_ids'] ) );
 
 		// The page build includes a Claude call (~30-60s) plus image
 		// sideloads — stream keep-alive bytes throughout.
 		$stream = new StreamingResponse();
 		$stream->begin();
-
-		if ( 0 === $index ) {
-			// WordPress' sample content ("Hello world!" post, "Sample Page")
-			// would pollute the generated demo — the blog listing especially.
-			// Same cleanup the classic importer runs at import start, done
-			// only now, after the plan call succeeded.
-			Helpers::delete_default_posts();
-
-			// The previous AI demo is deleted only now — after the new plan
-			// has been generated successfully — so a failed generation never
-			// destroys the existing demo. Runs once, before the first page.
-			if ( ! empty( $state['replace'] ) ) {
-				$this->delete_previous_ai_demos( $plan_id );
-			}
-			$stream->tick();
-		}
 
 		$page = $state['plan']['pages'][ $index ];
 
@@ -910,13 +919,15 @@ class AiDemoGenerator {
 
 		// Convert the AI HTML into native blocks; <img data-query> tags are
 		// resolved to sideloaded Pexels photos as they're encountered.
-		$generator = $this; // For PHP 7.4 closure clarity.
-		$resolver  = function ( $query, $orientation ) use ( $generator, &$state, $plan_id, $stream ) {
+		$generator       = $this; // For PHP 7.4 closure clarity.
+		$build_photo_ids = array();
+		$resolver        = function ( $query, $orientation ) use ( $generator, &$state, &$build_photo_ids, $plan_id, $stream ) {
 			$images = $generator->resolve_images( $query, 1, $state['used_photo_ids'], $state['plan']['site_title'], $plan_id, array( $stream, 'tick' ), $orientation );
 			if ( ! $images ) {
 				return null;
 			}
 			$state['used_photo_ids'][] = $images[0]['photo_id'];
+			$build_photo_ids[]         = $images[0]['photo_id'];
 			$stream->tick();
 			return $images[0];
 		};
@@ -951,8 +962,14 @@ class AiDemoGenerator {
 			$stream->finish_error( array( 'message' => $post_id->get_error_message() ) );
 		}
 
-		$state['created_pages'][ $index ] = (int) $post_id;
-		set_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id, $state, HOUR_IN_SECONDS );
+		set_transient(
+			self::PLAN_TRANSIENT_PREFIX . $plan_id . '_p' . $index,
+			array(
+				'page_id'   => (int) $post_id,
+				'photo_ids' => $build_photo_ids,
+			),
+			HOUR_IN_SECONDS
+		);
 
 		$stream->finish_success(
 			array(
@@ -1000,10 +1017,16 @@ class AiDemoGenerator {
 			$stream->finish_error( array( 'message' => $page_id->get_error_message() ) );
 		}
 
-		$this->create_dummy_posts( $state, $plan_id, $stream );
+		$post_ids = $this->create_dummy_posts( $state, $plan_id, $stream );
 
-		$state['created_pages'][ $index ] = (int) $page_id;
-		set_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id, $state, HOUR_IN_SECONDS );
+		set_transient(
+			self::PLAN_TRANSIENT_PREFIX . $plan_id . '_p' . $index,
+			array(
+				'page_id'  => (int) $page_id,
+				'post_ids' => $post_ids,
+			),
+			HOUR_IN_SECONDS
+		);
 
 		$stream->finish_success(
 			array(
@@ -1196,8 +1219,29 @@ class AiDemoGenerator {
 			wp_send_json_error( array( 'message' => esc_html__( 'This generation session has expired.', 'inspiro-starter-sites' ) ) );
 		}
 
-		$pages         = $state['plan']['pages'];
-		$created_pages = $state['created_pages'];
+		$pages = $state['plan']['pages'];
+
+		// Merge the per-index build results (pages build in parallel, each
+		// writing its own transient) into the classic state shape.
+		$created_pages = isset( $state['created_pages'] ) ? $state['created_pages'] : array();
+		$created_posts = isset( $state['created_posts'] ) ? $state['created_posts'] : array();
+
+		foreach ( array_keys( $pages ) as $i ) {
+			$result = get_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id . '_p' . $i );
+			if ( ! is_array( $result ) || empty( $result['page_id'] ) ) {
+				continue;
+			}
+			$created_pages[ $i ] = (int) $result['page_id'];
+			if ( ! empty( $result['photo_ids'] ) && is_array( $result['photo_ids'] ) ) {
+				$state['used_photo_ids'] = array_merge( $state['used_photo_ids'], $result['photo_ids'] );
+			}
+			if ( ! empty( $result['post_ids'] ) && is_array( $result['post_ids'] ) ) {
+				$created_posts = array_merge( $created_posts, array_map( 'intval', $result['post_ids'] ) );
+			}
+		}
+
+		$state['used_photo_ids'] = array_values( array_unique( $state['used_photo_ids'] ) );
+		$state['created_posts']  = array_values( array_unique( $created_posts ) );
 
 		if ( empty( $created_pages ) ) {
 			wp_send_json_error( array( 'message' => esc_html__( 'No pages were created.', 'inspiro-starter-sites' ) ) );
@@ -1371,6 +1415,9 @@ class AiDemoGenerator {
 		update_option( self::DEMOS_OPTION, $demos, false );
 
 		delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id );
+		foreach ( array_keys( $pages ) as $i ) {
+			delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id . '_p' . $i );
+		}
 
 		// Fresh permalinks for the new pages.
 		flush_rewrite_rules();
@@ -1678,9 +1725,12 @@ class AiDemoGenerator {
 			wp_set_sidebars_widgets( $sidebars );
 		}
 
-		// Leftover mid-generation state.
+		// Leftover mid-generation state (including per-page build results).
 		foreach ( $remove_plan_ids as $plan ) {
 			delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan );
+			for ( $i = 0; $i < 8; $i++ ) {
+				delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan . '_p' . $i );
+			}
 		}
 
 		$demos = array_intersect_key( $demos, array( $keep_plan_id => true ) );

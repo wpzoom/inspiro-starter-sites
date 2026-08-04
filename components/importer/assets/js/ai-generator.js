@@ -605,9 +605,7 @@ jQuery( function ( $ ) {
 				planState = response.data;
 				renderProgressPages();
 				ensurePortfolioPlugin( function () {
-					ensureFormsPlugin( function () {
-						buildNextPage( 0 );
-					} );
+					ensureFormsPlugin( buildAllPages );
 				} );
 			} )
 			.fail( function ( xhr, textStatus ) {
@@ -661,38 +659,57 @@ jQuery( function ( $ ) {
 			} );
 	}
 
-	function buildNextPage( index ) {
+	// Pages build CONCURRENTLY (each server build owns its own state slot, so
+	// parallel requests can't clobber each other) — 4 sequential ~45s AI calls
+	// become ~2 rounds. Failures don't kill the run; finalize works with
+	// whatever pages made it.
+	function buildAllPages() {
 		var pages = planState.pages || [];
 		var total = pages.length;
+		var CONCURRENCY = Math.min( 3, total );
+		var next = 0;
+		var done = 0;
+		var active = 0;
 
-		if ( index >= total ) {
-			finalize();
-			return;
+		function updateProgress() {
+			// Plan ≈ 40% of the perceived work; pages ≈ 50%; finalize ≈ 10%.
+			var fraction = 0.4 + ( 0.5 * ( done / total ) );
+			setProgress( sprintf( t.step_pages || '', done, total ), fraction );
 		}
 
-		// Plan ≈ 40% of the perceived work; pages ≈ 50%; finalize ≈ 10%.
-		var fraction = 0.4 + ( 0.5 * ( index / total ) );
-		setProgress( sprintf( t.step_page || '', index + 1, total, pages[ index ].title ), fraction );
-		markProgressItem( 'page-' + index, 'is-active' );
-
-		// Each page build now includes its own AI design call (~30-60s).
-		ajax( 'inspiro_starter_sites_ai_build_page', {
-			plan_id:    planState.plan_id,
-			page_index: index
-		}, 300000 )
-			.done( function ( response ) {
-				if ( ! response || ! response.success ) {
-					// A single failed page shouldn't kill the run — note it and continue.
-					setProgress( t.page_failed || '', fraction );
+		function launchNext() {
+			if ( next >= total ) {
+				if ( 0 === active ) {
+					finalize();
 				}
-				markProgressItem( 'page-' + index, 'is-done' );
-				buildNextPage( index + 1 );
-			} )
-			.fail( function () {
-				setProgress( t.page_failed || '', fraction );
-				markProgressItem( 'page-' + index, 'is-done' );
-				buildNextPage( index + 1 );
-			} );
+				return;
+			}
+
+			var index = next++;
+			active++;
+			markProgressItem( 'page-' + index, 'is-active' );
+
+			// Each page build includes its own AI design call (~30-60s).
+			ajax( 'inspiro_starter_sites_ai_build_page', {
+				plan_id:    planState.plan_id,
+				page_index: index
+			}, 300000 )
+				.always( function ( response ) {
+					if ( ! response || ! response.success ) {
+						setProgress( t.page_failed || '', 0.4 + ( 0.5 * ( done / total ) ) );
+					}
+					markProgressItem( 'page-' + index, 'is-done' );
+					done++;
+					active--;
+					updateProgress();
+					launchNext();
+				} );
+		}
+
+		updateProgress();
+		for ( var i = 0; i < CONCURRENCY; i++ ) {
+			launchNext();
+		}
 	}
 
 	function finalize() {
