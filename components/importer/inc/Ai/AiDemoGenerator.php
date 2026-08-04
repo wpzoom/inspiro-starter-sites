@@ -1349,6 +1349,32 @@ class AiDemoGenerator {
 			return;
 		}
 
+		// Portfolio categories: ensure a term per plan category, so the grid
+		// block's filter bar (on by default) becomes functional. Only terms
+		// this generation CREATES get the cleanup meta tag — a pre-existing
+		// category with the same name is reused and never deleted later.
+		$term_ids = array();
+		if ( taxonomy_exists( 'portfolio' ) ) {
+			foreach ( $portfolio['items'] as $item ) {
+				$category = isset( $item['category'] ) ? trim( $item['category'] ) : '';
+				if ( '' === $category || isset( $term_ids[ $category ] ) ) {
+					continue;
+				}
+
+				$existing = term_exists( $category, 'portfolio' );
+				if ( $existing ) {
+					$term_ids[ $category ] = (int) ( is_array( $existing ) ? $existing['term_id'] : $existing );
+					continue;
+				}
+
+				$term = wp_insert_term( $category, 'portfolio' );
+				if ( ! is_wp_error( $term ) ) {
+					$term_ids[ $category ] = (int) $term['term_id'];
+					add_term_meta( (int) $term['term_id'], self::GENERATED_META_KEY, $plan_id );
+				}
+			}
+		}
+
 		foreach ( $portfolio['items'] as $item ) {
 			$post_id = wp_insert_post(
 				wp_slash(
@@ -1365,6 +1391,10 @@ class AiDemoGenerator {
 
 			if ( is_wp_error( $post_id ) || ! $post_id ) {
 				continue;
+			}
+
+			if ( ! empty( $item['category'] ) && isset( $term_ids[ trim( $item['category'] ) ] ) ) {
+				wp_set_object_terms( $post_id, array( $term_ids[ trim( $item['category'] ) ] ), 'portfolio' );
 			}
 
 			if ( ! empty( $item['image_query'] ) ) {
@@ -1535,6 +1565,24 @@ class AiDemoGenerator {
 		// mid-replace: the new demo's finalize reassigns it when needed.
 		if ( $posts_page_deleted ) {
 			update_option( 'page_for_posts', 0 );
+		}
+
+		// Portfolio categories these demos created (term meta carries the plan
+		// ID — pre-existing categories were never tagged, so never deleted).
+		if ( taxonomy_exists( 'portfolio' ) ) {
+			$term_ids = get_terms(
+				array(
+					'taxonomy'   => 'portfolio',
+					'hide_empty' => false,
+					'fields'     => 'ids',
+					'meta_query' => $meta_query, // phpcs:ignore WordPress.DB.SlowDBQuery
+				)
+			);
+			if ( is_array( $term_ids ) ) {
+				foreach ( $term_ids as $term_id ) {
+					wp_delete_term( (int) $term_id, 'portfolio' );
+				}
+			}
 		}
 
 		// Collect record data before dropping the records.
@@ -1791,6 +1839,7 @@ class AiDemoGenerator {
 				$clean['portfolio']['items'][] = array(
 					'title'       => $clean_text( $item['title'], 120 ),
 					'image_query' => $clean_text( isset( $item['image_query'] ) ? $item['image_query'] : '', 80 ),
+					'category'    => $clean_text( isset( $item['category'] ) ? $item['category'] : '', 40 ),
 				);
 			}
 		}
