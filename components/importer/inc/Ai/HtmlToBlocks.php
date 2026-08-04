@@ -487,8 +487,12 @@ class HtmlToBlocks {
 			return '';
 		}
 
-		return '<!-- wp:social-links {"iconColor":"contrast","className":"is-style-logos-only","style":{"spacing":{"blockGap":{"left":"18px"}}}} -->' . "\n"
-			. '<ul class="wp-block-social-links has-icon-color is-style-logos-only">' . implode( '', $items ) . "</ul>\n"
+		// currentColor makes the icons inherit the surrounding text color —
+		// light in the theme's dark footer, dark on light content pages.
+		// Without an icon color, logos-only falls back to BRAND colors and
+		// the X logo (black) disappears on the dark footer.
+		return '<!-- wp:social-links {"iconColorValue":"currentColor","className":"is-style-logos-only","style":{"spacing":{"blockGap":{"left":"18px"}}}} -->' . "\n"
+			. '<ul class="wp-block-social-links has-icon-color is-style-logos-only" style="color:currentColor">' . implode( '', $items ) . "</ul>\n"
 			. '<!-- /wp:social-links -->';
 	}
 

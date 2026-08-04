@@ -1448,9 +1448,11 @@ class AiDemoGenerator {
 
 		$widgets = array();
 
+		// Widget titles are h2: it's the only heading level the shipped
+		// theme's footer styles fully cover (light color on the dark footer).
 		if ( ! empty( $footer['about'] ) ) {
 			$widgets['footer_1'] = sprintf(
-				"<!-- wp:heading {\"level\":3} -->\n<h3 class=\"wp-block-heading\">%s</h3>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>%s</p>\n<!-- /wp:paragraph -->",
+				"<!-- wp:heading -->\n<h2 class=\"wp-block-heading\">%s</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>%s</p>\n<!-- /wp:paragraph -->",
 				esc_html( $plan['site_title'] ),
 				esc_html( $footer['about'] )
 			);
@@ -1472,7 +1474,7 @@ class AiDemoGenerator {
 			$heading = ! empty( $footer['contact_heading'] ) ? $footer['contact_heading'] : __( 'Contact', 'inspiro-starter-sites' );
 
 			$content = sprintf(
-				"<!-- wp:heading {\"level\":3} -->\n<h3 class=\"wp-block-heading\">%s</h3>\n<!-- /wp:heading -->",
+				"<!-- wp:heading -->\n<h2 class=\"wp-block-heading\">%s</h2>\n<!-- /wp:heading -->",
 				esc_html( $heading )
 			);
 			if ( $contact_lines ) {
@@ -2223,6 +2225,30 @@ class AiDemoGenerator {
 		}
 
 		return $palettes + array(
+			'electric' => array(
+				'label'  => __( 'Electric Blue', 'inspiro-starter-sites' ),
+				'colors' => array( '#2E5BFF', '#0B1220', '#F4F7FF' ),
+			),
+			'lime'     => array(
+				'label'  => __( 'Acid Lime', 'inspiro-starter-sites' ),
+				'colors' => array( '#D8F34E', '#101010', '#FAFAF6' ),
+			),
+			'coral'    => array(
+				'label'  => __( 'Coral Pop', 'inspiro-starter-sites' ),
+				'colors' => array( '#FF5A36', '#1E1B18', '#FFF6F1' ),
+			),
+			'magenta'  => array(
+				'label'  => __( 'Magenta', 'inspiro-starter-sites' ),
+				'colors' => array( '#F0257E', '#1A1023', '#FFF3F9' ),
+			),
+			'violet'   => array(
+				'label'  => __( 'Violet', 'inspiro-starter-sites' ),
+				'colors' => array( '#7C3AED', '#140E24', '#F7F4FF' ),
+			),
+			'sunshine' => array(
+				'label'  => __( 'Sunshine', 'inspiro-starter-sites' ),
+				'colors' => array( '#FFC300', '#191400', '#FFFDF2' ),
+			),
 			'warm'   => array(
 				'label'  => __( 'Warm earth', 'inspiro-starter-sites' ),
 				'colors' => array( '#C4580A', '#2B1D12', '#FAF3E7' ),
