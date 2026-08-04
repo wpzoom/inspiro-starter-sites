@@ -568,7 +568,10 @@ class HtmlToBlocks {
 			return '';
 		}
 
-		return '<!-- wp:wpzoom-forms/form-block {"formId":' . (int) $forms[0] . '} /-->';
+		// formId is declared as a STRING attribute (default '-1') — a numeric
+		// value fails schema validation, gets dropped at render, and the
+		// block falls back to 'form not found (ID: -1)'.
+		return '<!-- wp:wpzoom-forms/form-block {"formId":"' . (int) $forms[0] . '"} /-->';
 	}
 
 	private function image_block( $el, $caption ) {
