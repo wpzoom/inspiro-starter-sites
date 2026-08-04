@@ -448,12 +448,15 @@ body.iss-ai-open {
 	border-color: #1d1d1f;
 	background: #1d1d1f;
 	color: #ffffff;
+	/* Ring keeps the active chip readable even when the chip itself is dark
+	   (the Dark style chip is near-black while idle). */
+	box-shadow: 0 0 0 2px #ffffff, 0 0 0 3.5px #1d1d1f;
 }
 
 .iss-ai-swatch {
 	flex: 0 0 auto;
-	width: 12px;
-	height: 12px;
+	width: 16px;
+	height: 16px;
 	border-radius: 50%;
 	display: inline-block;
 	box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
@@ -461,6 +464,96 @@ body.iss-ai-open {
 
 .iss-ai-chip.is-active .iss-ai-swatch {
 	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+/* Style chips: the label's own typography previews the art direction. */
+.iss-ai-style-minimal {
+	font-weight: 300;
+	letter-spacing: 0.12em;
+}
+
+.iss-ai-style-editorial {
+	font-family: Georgia, 'Times New Roman', serif;
+	font-style: italic;
+}
+
+.iss-ai-style-bold {
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: -0.01em;
+}
+
+.iss-ai-style-luxury {
+	font-family: Didot, 'Playfair Display', Georgia, serif;
+	text-transform: uppercase;
+	letter-spacing: 0.16em;
+	font-size: 11px;
+}
+
+.iss-ai-style-corporate {
+	font-weight: 600;
+}
+
+.iss-ai-style-playful {
+	font-family: 'Arial Rounded MT Bold', ui-rounded, 'Nunito', sans-serif;
+	font-weight: 700;
+}
+
+.iss-ai-style-retro {
+	font-family: Georgia, serif;
+	font-variant: small-caps;
+	letter-spacing: 0.05em;
+}
+
+.iss-ai-style-dark {
+	background: #1d1d1f;
+	border-color: #1d1d1f;
+	color: #ffffff;
+}
+
+.iss-ai-style-dark:hover {
+	border-color: #1d1d1f;
+}
+
+/* Typography chips: "Ag" specimen in the style's actual display font. */
+.iss-ai-chip--type {
+	padding: 6px 16px 6px 13px;
+}
+
+.iss-ai-type-sample {
+	flex: 0 0 auto;
+	font-size: 21px;
+	line-height: 1;
+	font-weight: 600;
+}
+
+.iss-ai-font-modern {
+	font-family: 'Inter Tight', 'Helvetica Neue', Arial, sans-serif;
+	letter-spacing: -0.03em;
+}
+
+.iss-ai-font-geometric {
+	font-family: 'Poppins', 'Century Gothic', 'Avenir Next', sans-serif;
+}
+
+.iss-ai-font-expressive {
+	font-family: 'Syne', 'Arial Black', sans-serif;
+	font-weight: 700;
+}
+
+.iss-ai-font-serif-accent {
+	font-family: 'Inter Tight', 'Helvetica Neue', sans-serif;
+}
+
+.iss-ai-font-serif-accent em {
+	font-family: 'Instrument Serif', Georgia, serif;
+	font-style: italic;
+	font-weight: 400;
+	font-size: 23px;
+}
+
+.iss-ai-font-classic {
+	font-family: 'Playfair Display', Georgia, serif;
 }
 
 .iss-ai-error {

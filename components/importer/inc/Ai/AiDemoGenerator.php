@@ -118,6 +118,16 @@ class AiDemoGenerator {
 			$css_ver
 		);
 
+		// Real webfont samples for the typography chips ("Ag" previews).
+		// Served locally through the theme's WPTT loader when available
+		// (GDPR-safe, same pipeline the generated demos use).
+		$preview_fonts = 'https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600&family=Poppins:wght@600&family=Syne:wght@700&family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@600&display=swap';
+		if ( function_exists( 'wptt_get_webfont_styles' ) ) {
+			wp_add_inline_style( 'inspiro-starter-sites-ai-generator-css', wptt_get_webfont_styles( $preview_fonts ) );
+		} else {
+			wp_enqueue_style( 'inspiro-starter-sites-ai-preview-fonts', $preview_fonts, array(), null ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
+		}
+
 		wp_localize_script(
 			'inspiro-starter-sites-ai-generator-js',
 			'inspiro_starter_sites_ai',

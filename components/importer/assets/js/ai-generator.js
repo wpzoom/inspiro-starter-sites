@@ -97,14 +97,21 @@ jQuery( function ( $ ) {
 		} );
 
 		// Design style / typography / palette chips ("" = let the AI decide).
+		// Style chips preview their art direction through the label's own
+		// typography; typography chips carry an "Ag" specimen in the actual
+		// display font (loaded as a local webfont).
 		var styleChips = '<button type="button" class="iss-ai-chip is-active" data-value="">' + esc( t.auto || '' ) + '</button>';
 		$.each( config.styles || {}, function ( slug, label ) {
-			styleChips += '<button type="button" class="iss-ai-chip" data-value="' + esc( slug ) + '">' + esc( label ) + '</button>';
+			styleChips += '<button type="button" class="iss-ai-chip iss-ai-chip--style iss-ai-style-' + esc( slug ) + '" data-value="' + esc( slug ) + '">' + esc( label ) + '</button>';
 		} );
 
 		var typographyChips = '<button type="button" class="iss-ai-chip is-active" data-value="">' + esc( t.auto || '' ) + '</button>';
 		$.each( config.typographies || {}, function ( slug, label ) {
-			typographyChips += '<button type="button" class="iss-ai-chip" data-value="' + esc( slug ) + '">' + esc( label ) + '</button>';
+			var sample = 'serif-accent' === slug ? '<em>A</em>g' : 'Ag';
+			typographyChips += '<button type="button" class="iss-ai-chip iss-ai-chip--type" data-value="' + esc( slug ) + '">' +
+				'<span class="iss-ai-type-sample iss-ai-font-' + esc( slug ) + '" aria-hidden="true">' + sample + '</span>' +
+				'<span>' + esc( label ) + '</span>' +
+			'</button>';
 		} );
 
 		var paletteChips = '<button type="button" class="iss-ai-chip is-active" data-value="">' + esc( t.auto || '' ) + '</button>';
