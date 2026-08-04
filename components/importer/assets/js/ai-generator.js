@@ -95,10 +95,15 @@ jQuery( function ( $ ) {
 			'</button>';
 		} );
 
-		// Design style + palette chips ("" = let the AI decide).
+		// Design style / typography / palette chips ("" = let the AI decide).
 		var styleChips = '<button type="button" class="iss-ai-chip is-active" data-value="">' + esc( t.auto || '' ) + '</button>';
 		$.each( config.styles || {}, function ( slug, label ) {
 			styleChips += '<button type="button" class="iss-ai-chip" data-value="' + esc( slug ) + '">' + esc( label ) + '</button>';
+		} );
+
+		var typographyChips = '<button type="button" class="iss-ai-chip is-active" data-value="">' + esc( t.auto || '' ) + '</button>';
+		$.each( config.typographies || {}, function ( slug, label ) {
+			typographyChips += '<button type="button" class="iss-ai-chip" data-value="' + esc( slug ) + '">' + esc( label ) + '</button>';
 		} );
 
 		var paletteChips = '<button type="button" class="iss-ai-chip is-active" data-value="">' + esc( t.auto || '' ) + '</button>';
@@ -149,6 +154,10 @@ jQuery( function ( $ ) {
 
 							'<p class="iss-ai-field-label">' + esc( t.describe_label || '' ) + '</p>' +
 							'<textarea class="iss-ai-textarea js-iss-ai-description" rows="4" maxlength="1200" placeholder="' + esc( t.placeholder || '' ) + '"></textarea>' +
+							'<div class="iss-ai-enhance-row">' +
+								'<button type="button" class="iss-ai-enhance js-iss-ai-enhance">&#10024; ' + esc( t.enhance || '' ) + '</button>' +
+								'<button type="button" class="iss-ai-enhance-undo js-iss-ai-enhance-undo" hidden>' + esc( t.undo || '' ) + '</button>' +
+							'</div>' +
 							'<div class="iss-ai-ideas">' + ideas + '</div>' +
 
 							'<div class="iss-ai-field-columns">' +
@@ -157,6 +166,9 @@ jQuery( function ( $ ) {
 									'<div class="iss-ai-chips js-iss-ai-style">' + styleChips + '</div>' +
 								'</div>' +
 							'</div>' +
+
+							'<p class="iss-ai-field-label">' + esc( t.typography_label || '' ) + '</p>' +
+							'<div class="iss-ai-chips js-iss-ai-typography">' + typographyChips + '</div>' +
 
 							'<p class="iss-ai-field-label">' + esc( t.palette_label || '' ) + '</p>' +
 							'<div class="iss-ai-chips iss-ai-chips--grid js-iss-ai-palette">' + paletteChips + '</div>' +
@@ -218,6 +230,14 @@ jQuery( function ( $ ) {
 		'</div>';
 
 		$root.html( html );
+
+		// Portal the modal to <body>: the demo page wraps its content in
+		// <div class="... plugins">, which pulls wp-admin's list-table CSS
+		// (e.g. ".plugins p { margin: 0 4px }") onto everything inside.
+		// Outside that subtree, page-context admin rules can't reach us.
+		// Delegated handlers are bound on $root, so they move with it.
+		$root.appendTo( document.body );
+
 		built = true;
 	}
 
@@ -486,6 +506,7 @@ jQuery( function ( $ ) {
 			replace:     replace,
 			style:       $root.find( '.js-iss-ai-style .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
 			palette:     $root.find( '.js-iss-ai-palette .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
+			typography:  $root.find( '.js-iss-ai-typography .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
 			pages:       JSON.stringify( pages )
 		}, 300000 )
 			.done( function ( response ) {
@@ -622,6 +643,48 @@ jQuery( function ( $ ) {
 			.always( function () {
 				$button.prop( 'disabled', false ).text( t.delete_now || '' );
 			} );
+	} );
+
+	// "Enhance with AI": expand a thin description into a vivid brief
+	// (small free call); Undo restores what the user had typed.
+	var enhanceUndoValue = null;
+
+	$root.on( 'click', '.js-iss-ai-enhance', function () {
+		var $button   = $( this );
+		var $textarea = $root.find( '.js-iss-ai-description' );
+		var $error    = $root.find( '.js-iss-ai-input-error' );
+		var current   = $.trim( $textarea.val() || '' );
+
+		if ( current.length < 5 || $button.prop( 'disabled' ) ) {
+			return;
+		}
+		$error.attr( 'hidden', 'hidden' );
+		$button.prop( 'disabled', true ).text( t.enhancing || '' );
+
+		ajax( 'inspiro_starter_sites_ai_enhance_prompt', { description: current }, 60000 )
+			.done( function ( response ) {
+				if ( response && response.success && response.data && response.data.description ) {
+					enhanceUndoValue = current;
+					$textarea.val( response.data.description ).trigger( 'focus' );
+					$root.find( '.js-iss-ai-enhance-undo' ).removeAttr( 'hidden' );
+				} else {
+					$error.text( responseMessage( response ) ).removeAttr( 'hidden' );
+				}
+			} )
+			.fail( function ( xhr, textStatus ) {
+				$error.text( xhrDetail( xhr, textStatus ) || t.error_generic || '' ).removeAttr( 'hidden' );
+			} )
+			.always( function () {
+				$button.prop( 'disabled', false ).html( '&#10024; ' + esc( t.enhance || '' ) );
+			} );
+	} );
+
+	$root.on( 'click', '.js-iss-ai-enhance-undo', function () {
+		if ( null !== enhanceUndoValue ) {
+			$root.find( '.js-iss-ai-description' ).val( enhanceUndoValue ).trigger( 'focus' );
+			enhanceUndoValue = null;
+		}
+		$( this ).attr( 'hidden', 'hidden' );
 	} );
 
 	// Style / palette chips — single-select per group.

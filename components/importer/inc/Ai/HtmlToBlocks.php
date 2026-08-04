@@ -195,6 +195,13 @@ class HtmlToBlocks {
 			case 'section':
 			case 'article':
 			case 'main':
+				// A section whose first image is marked as background becomes
+				// a native cover block — the image crops to the section
+				// instead of rendering at its full (possibly huge) size.
+				$bg = $this->find_background_image( $el );
+				if ( $bg ) {
+					return $this->cover_block( $el, $bg );
+				}
 				return $this->group_block( $el, true );
 
 			case 'header':
@@ -207,6 +214,14 @@ class HtmlToBlocks {
 
 			case 'div':
 			case 'aside':
+				// ai-cols-N wrappers become native columns blocks.
+				if ( preg_match( '/\bai-cols-([2-4])\b/', $el->getAttribute( 'class' ), $m ) ) {
+					return $this->columns_block( $el );
+				}
+				$bg = $this->find_background_image( $el );
+				if ( $bg ) {
+					return $this->cover_block( $el, $bg );
+				}
 				return $this->group_block( $el, false );
 
 			case 'h1':
@@ -393,7 +408,19 @@ class HtmlToBlocks {
 			'id'       => (int) $image['id'],
 			'sizeSlug' => 'full',
 		);
-		$class = 'wp-block-image size-full';
+		$class     = 'wp-block-image size-full';
+		$img_style = '';
+
+		// data-aspect crops the image to a fitting ratio via the native
+		// image-block attributes — a raw portrait photo can never render
+		// as a giant full-height column again.
+		$aspect = $this->aspect_ratio( $el );
+		if ( $aspect ) {
+			$attrs['aspectRatio'] = $aspect;
+			$attrs['scale']       = 'cover';
+			$img_style            = ' style="aspect-ratio:' . esc_attr( $aspect ) . ';object-fit:cover"';
+		}
+
 		if ( $classes ) {
 			$attrs['className'] = $classes;
 			$class             .= ' ' . $classes;
@@ -402,13 +429,149 @@ class HtmlToBlocks {
 		$caption_html = '' !== $caption ? sprintf( '<figcaption class="wp-element-caption">%s</figcaption>', $caption ) : '';
 
 		return sprintf(
-			"<!-- wp:image %s -->\n<figure class=\"%s\"><img src=\"%s\" alt=\"%s\" class=\"wp-image-%d\"/>%s</figure>\n<!-- /wp:image -->",
+			"<!-- wp:image %s -->\n<figure class=\"%s\"><img src=\"%s\" alt=\"%s\" class=\"wp-image-%d\"%s/>%s</figure>\n<!-- /wp:image -->",
 			wp_json_encode( $attrs ),
 			esc_attr( $class ),
 			esc_url( $image['url'] ),
 			esc_attr( $alt ),
 			(int) $image['id'],
+			$img_style,
 			$caption_html
+		);
+	}
+
+	/**
+	 * Normalized aspect ratio from data-aspect ("16-9" or "16/9" → "16/9").
+	 *
+	 * @param \DOMElement $el
+	 * @return string '' when absent/invalid.
+	 */
+	private function aspect_ratio( $el ) {
+		$raw = trim( $el->getAttribute( 'data-aspect' ) );
+		if ( preg_match( '/^(\d{1,2})[\/-](\d{1,2})$/', $raw, $m ) ) {
+			return $m[1] . '/' . $m[2];
+		}
+		return '';
+	}
+
+	/**
+	 * First element-child image marked as a section background.
+	 *
+	 * @param \DOMElement $el
+	 * @return \DOMElement|null
+	 */
+	private function find_background_image( $el ) {
+		foreach ( $el->childNodes as $child ) {
+			if ( XML_ELEMENT_NODE !== $child->nodeType ) {
+				continue;
+			}
+			if ( 'img' === $child->nodeName && 'background' === trim( $child->getAttribute( 'data-role' ) ) ) {
+				return $child;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Native cover block: the marked image becomes a cropped background, the
+	 * section's remaining children the inner content. Always full-bleed
+	 * (a photo background is a painted background).
+	 *
+	 * @param \DOMElement $el Section element.
+	 * @param \DOMElement $bg Background <img data-role="background">.
+	 * @return string
+	 */
+	private function cover_block( $el, $bg ) {
+		$query = trim( $bg->getAttribute( 'data-query' ) );
+		$image = $query ? call_user_func( $this->image_resolver, $query, trim( $bg->getAttribute( 'data-orientation' ) ) ? trim( $bg->getAttribute( 'data-orientation' ) ) : 'landscape' ) : null;
+
+		// Remove the background image before converting the inner content.
+		$el->removeChild( $bg );
+
+		if ( ! $image ) {
+			return $this->group_block( $el, true );
+		}
+
+		$inner = $this->convert_children( $el );
+
+		$dim = (int) $bg->getAttribute( 'data-dim' );
+		$dim = ( $dim >= 0 && $dim <= 90 ) ? (int) ( round( $dim / 10 ) * 10 ) : 40;
+
+		$classes = $this->classes( $el );
+		$attrs   = array(
+			'url'                => $image['url'],
+			'id'                 => (int) $image['id'],
+			'dimRatio'           => $dim,
+			'customOverlayColor' => '#000000',
+			'isUserOverlayColor' => true,
+			'align'              => 'full',
+			'layout'             => array( 'type' => 'default' ),
+		);
+		$class = 'wp-block-cover alignfull';
+		if ( $classes ) {
+			$attrs['className'] = $classes;
+			$class             .= ' ' . $classes;
+		}
+
+		return sprintf(
+			"<!-- wp:cover %s -->\n<div class=\"%s\"><span aria-hidden=\"true\" class=\"wp-block-cover__background has-background-dim-%d has-background-dim\" style=\"background-color:#000000\"></span><img class=\"wp-block-cover__image-background wp-image-%d\" alt=\"%s\" src=\"%s\" data-object-fit=\"cover\"/><div class=\"wp-block-cover__inner-container\">%s</div></div>\n<!-- /wp:cover -->",
+			wp_json_encode( $attrs ),
+			esc_attr( $class ),
+			$dim,
+			(int) $image['id'],
+			esc_attr( trim( $bg->getAttribute( 'alt' ) ) ),
+			esc_url( $image['url'] ),
+			"\n" . $inner . "\n"
+		);
+	}
+
+	/**
+	 * Native columns block from an ai-cols-N wrapper: each element child
+	 * becomes a column. Grid classes are stripped (core's flex layout takes
+	 * over); other classes are preserved.
+	 *
+	 * @param \DOMElement $el
+	 * @return string
+	 */
+	private function columns_block( $el ) {
+		$columns = array();
+
+		foreach ( iterator_to_array( $el->childNodes ) as $child ) {
+			if ( XML_ELEMENT_NODE !== $child->nodeType ) {
+				continue;
+			}
+			$inner = ( 'div' === $child->nodeName || 'aside' === $child->nodeName )
+				? $this->group_block( $child, false )
+				: $this->convert_element( $child );
+
+			if ( '' !== $inner ) {
+				$columns[] = sprintf(
+					"<!-- wp:column -->\n<div class=\"wp-block-column\">%s</div>\n<!-- /wp:column -->",
+					"\n" . $inner . "\n"
+				);
+			}
+		}
+
+		if ( ! $columns ) {
+			return '';
+		}
+
+		// Strip the grid utility classes — core columns handle the layout.
+		$classes = trim( preg_replace( '/\bai-(grid|cols-\d)\b/', '', $this->classes( $el ) ) );
+		$classes = preg_replace( '/\s+/', ' ', $classes );
+
+		$attrs = array();
+		$class = 'wp-block-columns';
+		if ( $classes ) {
+			$attrs['className'] = $classes;
+			$class             .= ' ' . $classes;
+		}
+
+		return sprintf(
+			"<!-- wp:columns%s -->\n<div class=\"%s\">%s</div>\n<!-- /wp:columns -->",
+			$attrs ? ' ' . wp_json_encode( $attrs ) : '',
+			esc_attr( $class ),
+			"\n" . implode( "\n\n", $columns ) . "\n"
 		);
 	}
 

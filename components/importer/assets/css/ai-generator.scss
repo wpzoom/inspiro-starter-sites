@@ -267,6 +267,54 @@ body.iss-ai-open {
 	outline: none;
 }
 
+/* Enhance-with-AI row under the textarea */
+.iss-ai-enhance-row {
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+	gap: 10px;
+	margin-top: 6px;
+}
+
+.iss-ai-enhance {
+	border: 0;
+	background: none;
+	padding: 4px 6px;
+	font-size: 12px;
+	font-weight: 600;
+	color: #1d1d1f;
+	cursor: pointer;
+	border-radius: 6px;
+}
+
+.iss-ai-enhance:hover {
+	background: #f4f4f5;
+}
+
+.iss-ai-enhance:disabled {
+	color: #8a8f98;
+	cursor: default;
+	background: none;
+}
+
+.iss-ai-enhance-undo {
+	border: 0;
+	background: none;
+	padding: 4px 2px;
+	font-size: 12px;
+	color: #8a8f98;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.iss-ai-enhance-undo:hover {
+	color: #1d1d1f;
+}
+
+.iss-ai-enhance-undo[hidden] {
+	display: none;
+}
+
 /* Idea suggestions — icon cards in a two-column grid under the textarea */
 .iss-ai-ideas {
 	display: grid;

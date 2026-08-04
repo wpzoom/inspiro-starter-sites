@@ -866,6 +866,12 @@ jQuery( function ( $ ) {
 			'</div>';
 
 			$root.html( html );
+
+			// Portal to <body>: the demo page wraps content in a
+			// "plugins"-classed div, which leaks wp-admin list-table CSS
+			// (".plugins p" etc.) into anything rendered inside it.
+			$root.appendTo( document.body );
+
 			built = true;
 		}
 

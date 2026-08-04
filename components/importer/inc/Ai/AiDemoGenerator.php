@@ -64,6 +64,7 @@ class AiDemoGenerator {
 		add_action( 'enqueue_block_assets', array( $this, 'enqueue_editor_demo_css' ) );
 
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_quota', array( $this, 'ajax_quota' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_enhance_prompt', array( $this, 'ajax_enhance_prompt' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_suggest_pages', array( $this, 'ajax_suggest_pages' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_generate', array( $this, 'ajax_generate' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_build_page', array( $this, 'ajax_build_page' ) );
@@ -128,6 +129,12 @@ class AiDemoGenerator {
 					},
 					$this->style_options()
 				),
+				'typographies' => array_map(
+					static function ( $typography ) {
+						return $typography['label'];
+					},
+					$this->typography_options()
+				),
 				'palettes'   => array_map(
 					static function ( $palette ) {
 						return array(
@@ -183,6 +190,7 @@ class AiDemoGenerator {
 					'ideas_label'      => __( 'Need inspiration? Try one of these:', 'inspiro-starter-sites' ),
 					'style_label'      => __( 'Design style', 'inspiro-starter-sites' ),
 					'palette_label'    => __( 'Color palette', 'inspiro-starter-sites' ),
+					'typography_label' => __( 'Typography', 'inspiro-starter-sites' ),
 					'auto'             => __( 'Let AI decide', 'inspiro-starter-sites' ),
 					'describe_label'   => __( 'Describe your website', 'inspiro-starter-sites' ),
 					'step1'            => __( 'Describe & style', 'inspiro-starter-sites' ),
@@ -194,6 +202,9 @@ class AiDemoGenerator {
 					'plan_item'        => __( 'Site design, copy & structure', 'inspiro-starter-sites' ),
 					'finalize_item'    => __( 'Menu, footer & homepage setup', 'inspiro-starter-sites' ),
 					'continue'         => __( 'Continue', 'inspiro-starter-sites' ),
+					'enhance'          => __( 'Enhance with AI', 'inspiro-starter-sites' ),
+					'enhancing'        => __( 'Enhancing…', 'inspiro-starter-sites' ),
+					'undo'             => __( 'Undo', 'inspiro-starter-sites' ),
 					'suggesting'       => __( 'Suggesting pages…', 'inspiro-starter-sites' ),
 					'plan_title'       => __( 'Review your pages', 'inspiro-starter-sites' ),
 					'plan_hint'        => __( 'Suggested for your website. Rename, remove, or add your own (up to 5) — nothing is generated until you continue.', 'inspiro-starter-sites' ),
@@ -357,11 +368,15 @@ class AiDemoGenerator {
 		$style_options   = $this->style_options();
 		$palette_options = $this->palette_options();
 
-		$style   = isset( $_POST['style'] ) ? sanitize_key( wp_unslash( $_POST['style'] ) ) : '';
-		$palette = isset( $_POST['palette'] ) ? sanitize_key( wp_unslash( $_POST['palette'] ) ) : '';
+		$typography_options = $this->typography_options();
 
-		$style   = isset( $style_options[ $style ] ) ? $style : '';
-		$palette = isset( $palette_options[ $palette ] ) ? $palette : '';
+		$style      = isset( $_POST['style'] ) ? sanitize_key( wp_unslash( $_POST['style'] ) ) : '';
+		$palette    = isset( $_POST['palette'] ) ? sanitize_key( wp_unslash( $_POST['palette'] ) ) : '';
+		$typography = isset( $_POST['typography'] ) ? sanitize_key( wp_unslash( $_POST['typography'] ) ) : '';
+
+		$style      = isset( $style_options[ $style ] ) ? $style : '';
+		$palette    = isset( $palette_options[ $palette ] ) ? $palette : '';
+		$typography = isset( $typography_options[ $typography ] ) ? $typography : '';
 
 		// Pages the user approved in the review step (before this call).
 		$approved_raw   = isset( $_POST['pages'] ) ? json_decode( wp_unslash( $_POST['pages'] ), true ) : null; // phpcs:ignore WordPress.Security.ValidatedSanitized
@@ -374,7 +389,8 @@ class AiDemoGenerator {
 				$style ? $style_options[ $style ]['prompt'] : '',
 				$palette ? $palette_options[ $palette ]['colors'] : array(),
 				$palette && ! empty( $palette_options[ $palette ]['theme_var'] ),
-				$approved_pages
+				$approved_pages,
+				$typography ? $typography_options[ $typography ]['prompt'] : ''
 			),
 			12000,
 			array( $stream, 'tick' )
@@ -393,6 +409,27 @@ class AiDemoGenerator {
 					'detail'  => $plan->get_error_code(),
 				)
 			);
+		}
+
+		// Load the chosen Google Fonts locally (GDPR-safe) via the theme's
+		// WPTT webfont loader and bake the @font-face rules into the demo
+		// stylesheet. Skipped gracefully when the theme/loader is absent —
+		// the AI CSS always declares fallback stacks.
+		if ( function_exists( 'wptt_get_webfont_styles' ) && ! empty( $plan['fonts'] ) ) {
+			$whitelist = $this->font_whitelist();
+			$specs     = array();
+			foreach ( array_unique( array_values( $plan['fonts'] ) ) as $family ) {
+				if ( isset( $whitelist[ $family ] ) ) {
+					$specs[] = 'family=' . $whitelist[ $family ];
+				}
+			}
+			if ( $specs ) {
+				$font_css = wptt_get_webfont_styles( 'https://fonts.googleapis.com/css2?' . implode( '&', $specs ) . '&display=swap' );
+				$stream->tick();
+				if ( is_string( $font_css ) && '' !== trim( $font_css ) && false === strpos( $font_css, '<' ) ) {
+					$plan['css'] = $font_css . "\n" . $plan['css'];
+				}
+			}
 		}
 
 		$plan_id = 'ai' . strtolower( wp_generate_password( 12, false, false ) );
@@ -431,6 +468,61 @@ class AiDemoGenerator {
 				'remaining'  => isset( $quota['remaining'] ) ? (int) $quota['remaining'] : null,
 			)
 		);
+	}
+
+	/* ---------------------------------------------------------------------
+	 * AJAX: enhance a short description into a vivid brief
+	 * ------------------------------------------------------------------ */
+
+	/**
+	 * A small, fast Claude call that expands a thin description ("website
+	 * for video portfolio") into a rich demo brief with a fictional name,
+	 * location, style and specifics. Free (no quota) and optional — the
+	 * result just replaces the textarea content, still fully editable.
+	 */
+	public function ajax_enhance_prompt() {
+		Helpers::verify_ajax_call();
+
+		$description = isset( $_POST['description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['description'] ) ) : '';
+		$description = trim( mb_substr( $description, 0, 1200 ) );
+
+		if ( mb_strlen( $description ) < 5 ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'Type a few words about the website first.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$prompt = "Expand this short website request into a vivid brief for generating a demo website:\n\n"
+			. '"' . $description . '"' . "\n\n"
+			. "Rules:\n"
+			. "- 2-4 sentences, maximum ~90 words. It must still read as a request a person would type, not marketing copy.\n"
+			. "- Invent concrete, fitting details the request lacks: a business/person name, a city or region, the audience, 2-3 specific offerings, and the visual vibe (e.g. moody and cinematic, bright and playful).\n"
+			. "- Keep every detail the user already gave; never contradict them.\n"
+			. "- Write in the language the request is WRITTEN in.\n"
+			. "- Return ONLY the enhanced description text — no quotes, no preamble, no markdown.";
+
+		$text = $this->proxy->claude_text(
+			'You help people describe the website they want. Return only the improved description text.',
+			$prompt,
+			400
+		);
+
+		if ( is_wp_error( $text ) ) {
+			wp_send_json_error(
+				array(
+					'message' => esc_html__( 'Could not enhance the description right now.', 'inspiro-starter-sites' ),
+					'detail'  => $text->get_error_code(),
+				)
+			);
+		}
+
+		$text = trim( preg_replace( '/\s+/', ' ', wp_strip_all_tags( $text ) ) );
+		$text = trim( $text, "\"\u{201C}\u{201D} " );
+		$text = mb_substr( $text, 0, 1200 );
+
+		if ( mb_strlen( $text ) < 20 ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'Could not enhance the description right now.', 'inspiro-starter-sites' ) ) );
+		}
+
+		wp_send_json_success( array( 'description' => $text ) );
 	}
 
 	/* ---------------------------------------------------------------------
@@ -1129,7 +1221,7 @@ class AiDemoGenerator {
 	 * @return string
 	 */
 	private function design_directive() {
-		return 'NEVER use generic AI-generated aesthetics: overused font stacks, cliched color schemes (particularly purple gradients on white or dark backgrounds), predictable centered-hero-then-three-cards layouts, or cookie-cutter design without context-specific character. Commit to a distinctive art direction that fits the specific business: a real palette, expressive display typography, generous whitespace, and cohesive rhythm across sections.';
+		return 'NEVER use generic AI-generated aesthetics: cliched color schemes (particularly purple gradients, or cream backgrounds with serif type on every site), predictable centered-hero-then-three-cards layouts, or cookie-cutter design without context-specific character. The quality bar is premium WordPress demo sites: modern, image-led, sans-serif-forward typography with generous whitespace, deep neutral darks, one confident accent color, and cohesive rhythm across sections. Serif typefaces are a deliberate accent or an explicit typography choice — never the default. Sites are LIGHT by default: white/near-white page backgrounds with dark text, dark sections only as accents — a predominantly dark site ONLY when the user explicitly selects a Dark style or the request asks for it. Vary art direction between businesses: two different requests must not produce the same-feeling site.';
 	}
 
 	/**
@@ -1160,8 +1252,12 @@ class AiDemoGenerator {
 	 * @param string $description User's site description.
 	 * @return string
 	 */
-	private function plan_prompt( $description, $style_instruction = '', $palette_colors = array(), $use_theme_var = false, $approved_pages = array() ) {
+	private function plan_prompt( $description, $style_instruction = '', $palette_colors = array(), $use_theme_var = false, $approved_pages = array(), $typography_instruction = '' ) {
 		$direction = '';
+
+		if ( $typography_instruction ) {
+			$direction .= '- TYPOGRAPHY (selected by the user, mandatory): ' . $typography_instruction . ". Choose the \"fonts\" families accordingly.\n";
+		}
 
 		if ( $approved_pages ) {
 			$list = array();
@@ -1195,8 +1291,9 @@ class AiDemoGenerator {
 			. "  * EVERY selector is scoped under .iss-ai-demo (e.g. \".iss-ai-demo .ai-hero { ... }\"). Style element defaults too (.iss-ai-demo h2, .iss-ai-demo p...).\n"
 			. "  * EVERY custom class name starts with the prefix ai- (.ai-hero, .ai-card, .ai-grid...) so the active theme's own classes can never collide with the design.\n"
 			. "  * CSS custom properties on .iss-ai-demo for the palette and fonts.\n"
-			. "  * A distinctive art direction for THIS business: real palette, expressive display typography from widely-available system font stacks (e.g. Georgia, 'Iowan Old Style', 'Avenir Next', Futura, 'Gill Sans', Palatino, ui-serif, ui-rounded...), fluid type and section padding with clamp().\n"
-			. "  * Must define: .ai-kicker (eyebrow label), a responsive grid (.ai-grid.ai-cols-2, .ai-cols-3, .ai-cols-4 via CSS grid, collapsing on mobile with @media), .ai-card styles, section spacing/typography, and .ai-container { max-width: 1140px; margin-inline: auto; } used inside full-bleed sections so their content aligns with the site's content column.\n"
+			. "  * A distinctive art direction for THIS business: real palette, fluid type and section padding with clamp().\n"
+			. "  * Typography: define .iss-ai-demo { --font-display: '<fonts.display>', <fallback stack>; --font-body: '<fonts.body>', <fallback stack>; } using EXACTLY the families you chose in the \"fonts\" field, and use these variables for all type.\n"
+			. "  * Must define: .ai-kicker (eyebrow label), .ai-card styles, section spacing/typography (including heights for photo-backed hero/banner sections), and .ai-container { max-width: 1140px; margin-inline: auto; } used inside full-bleed sections so their content aligns with the site's content column. Layout grids are native WordPress columns — do NOT define CSS grid systems.\n"
 			. "  * Do NOT define button styles (.ai-btn) — buttons are rendered as native WordPress buttons from the \"brand\" tokens below. Do NOT underline links inside buttons (scope generic link styles to content, e.g. .iss-ai-demo p a).\n"
 			. "  * The stylesheet is the source of truth for the FULL design — every section class used in pages (including .ai-section, .ai-card, heroes) must be completely styled here: backgrounds, padding, spacing, colors. A page must look right from this CSS alone.\n"
 			. "  * Style images (border-radius etc.) and vary section backgrounds so the site has rhythm.\n"
@@ -1204,9 +1301,10 @@ class AiDemoGenerator {
 			. "  * Roughly 150-250 lines.\n"
 			. "- \"footer\": short content for the theme's footer widget areas (the theme renders the site footer — pages must NOT contain their own): about = 1-2 sentence blurb about the business, contact_heading = a short localized heading like Contact, plus fictional email, phone, address.\n"
 			. "- \"brand\": tokens used to render native WordPress buttons and accents: accent (hex background of primary buttons), accent_text (hex text color on the accent, must be readable), radius (button corner radius like 8px, 999px for pills, 0px for sharp).\n"
+			. "- \"fonts\": pick a display and a body family for this site, EXACTLY from this list (they are loaded as real webfonts): " . implode( ', ', array_keys( $this->font_whitelist() ) ) . ". Pick pairings that fit the business and differ between sites; display and body may be the same family.\n"
 			. "- Never include a literal double-quote character (\") inside any JSON string value; in CSS use single quotes, in copy use curly quotes.\n"
 			. "- Return ONLY compact JSON matching exactly this shape:\n"
-			. '{"site_title":"...","tagline":"...","css":".iss-ai-demo{...} .iss-ai-demo .ai-hero{...}","brand":{"accent":"#c4580a","accent_text":"#ffffff","radius":"8px"},"footer":{"about":"...","contact_heading":"...","email":"...","phone":"...","address":"..."},"pages":[{"slug":"home","title":"Home","brief":"..."}]}';
+			. '{"site_title":"...","tagline":"...","css":".iss-ai-demo{...} .iss-ai-demo .ai-hero{...}","fonts":{"display":"Syne","body":"DM Sans"},"brand":{"accent":"#c4580a","accent_text":"#ffffff","radius":"8px"},"footer":{"about":"...","contact_heading":"...","email":"...","phone":"...","address":"..."},"pages":[{"slug":"home","title":"Home","brief":"..."}]}';
 	}
 
 	/**
@@ -1234,7 +1332,10 @@ class AiDemoGenerator {
 			. "- Allowed elements: <section>, <div>, <h1>-<h6>, <p>, <span>, <img>, <a>, <ul>/<ol>/<li>, <blockquote>, <details>/<summary>, <figure>/<figcaption>, <hr>, inline <strong>/<em>/<br>, and small decorative inline <svg> icons (fill='currentColor', no scripts).\n"
 			. "- Structure: 4 to 7 top-level <section> elements with meaningful classes from the stylesheet (all custom classes carry the ai- prefix). Exactly ONE <h1> on the page, in the first section. Do NOT wrap the page in a .iss-ai-demo container — that wrapper is added automatically.\n"
 			. "- Section widths: sections WITHOUT a painted background are centered at the site's content width automatically — design them as normal content columns. Sections WITH a painted background span the full viewport: declare data-bg='#hex' for solid colors (plus data-text='#hex' when the text is light — these become native, user-editable block colors layered on top of the CSS) or data-full='1' for gradient/photo backgrounds. Inside full-bleed sections, wrap the content in a container div whose class the stylesheet constrains (max-width + margin-inline auto) so text lines up with the site's content column.\n"
-			. "- Images: NEVER use src. Write <img data-query='english photo search phrase' data-orientation='landscape' alt='...'> (or data-orientation='portrait' for people/tall crops). 2-6 images where the design calls for them; queries specific and photogenic, no brand names. The homepage hero should normally feature a photo (styled by your CSS) — a photo-less hero is only acceptable when the art direction truly demands it.\n"
+			. "- Images: NEVER use src. Write <img data-query='english photo search phrase' data-orientation='landscape' alt='...'> (or data-orientation='portrait' for people/tall crops). 2-6 images where the design calls for them; queries specific and photogenic, no brand names.\n"
+			. "- Photo-backed sections (heroes, banners, CTAs with imagery): put the image FIRST inside the section as <img data-query='...' data-role='background' data-dim='40' alt='...'> — it becomes a native cover block with the photo cropped to the section (height comes from the section's CSS class). The homepage hero should normally be such a section.\n"
+			. "- Content images (not backgrounds) MUST declare data-aspect — '16-9' (wide), '3-2', '4-3', '1-1' (square), '3-4' (portrait) — so they crop to a fitting ratio. NEVER place an image without data-aspect; an uncropped portrait photo must never span the content column.\n"
+			. "- Card/feature grids: wrap the items in <div class='ai-cols-3'> (or ai-cols-2 / ai-cols-4) — each child becomes a native WordPress column; do not build main layouts with custom CSS grid.\n"
 			. "- Buttons: <a class='ai-btn' href='#page:contact'>Label</a> (or class='ai-btn ai-btn-outline' for the secondary variant) — they are converted to native WordPress buttons automatically. ALL internal links use href='#page:slug' with a slug from the page list above.\n"
 			. "- Do NOT include a site header, logo, navigation menu/bar, or site footer — the WordPress theme already renders those around your content. Start with the page's first content section and end with its last content section. Never use <header>, <nav> or <footer> elements.\n"
 			. "- NO <style>, NO <script>, NO style= attributes, NO src attributes, NO external resources.\n"
@@ -1275,6 +1376,17 @@ class AiDemoGenerator {
 				}
 			}
 		}
+
+		// Fonts: whitelist-validated (loaded locally via the theme's WPTT
+		// webfont loader at generate time).
+		$whitelist      = $this->font_whitelist();
+		$raw_fonts      = ( ! empty( $plan['fonts'] ) && is_array( $plan['fonts'] ) ) ? $plan['fonts'] : array();
+		$display        = isset( $raw_fonts['display'] ) ? trim( (string) $raw_fonts['display'] ) : '';
+		$body           = isset( $raw_fonts['body'] ) ? trim( (string) $raw_fonts['body'] ) : '';
+		$clean['fonts'] = array(
+			'display' => isset( $whitelist[ $display ] ) ? $display : 'Inter Tight',
+			'body'    => isset( $whitelist[ $body ] ) ? $body : 'Inter',
+		);
 
 		// Brand tokens for native buttons/accents (validated, with fallbacks).
 		$raw_brand      = ( ! empty( $plan['brand'] ) && is_array( $plan['brand'] ) ) ? $plan['brand'] : array();
@@ -1371,7 +1483,7 @@ class AiDemoGenerator {
 		// - buttons must never inherit the AI's generic link underline;
 		// - a baseline vertical rhythm so missing AI rules can't leave
 		//   elements glued together (AI selectors are more specific and win).
-		$css .= "\n.iss-ai-demo figure{margin:0}.iss-ai-demo img{height:auto;max-width:100%}.iss-ai-demo .wp-block-image{margin:0}"
+		$css .= "\n.iss-ai-demo figure{margin:0}.iss-ai-demo img{height:auto;max-width:100%}.iss-ai-demo .wp-block-image{margin:0}.iss-ai-demo .wp-block-image img{width:100%}"
 			. ".iss-ai-demo .wp-block-button__link{text-decoration:none}"
 			. ".iss-ai-demo .wp-block-buttons{display:flex;flex-wrap:wrap;gap:.75rem}"
 			. ".iss-ai-demo h1,.iss-ai-demo h2,.iss-ai-demo h3,.iss-ai-demo h4{margin-top:0;margin-bottom:.5em}"
@@ -1445,6 +1557,67 @@ class AiDemoGenerator {
 	}
 
 	/**
+	 * Google Fonts the AI may use, with per-family safe css2 weight specs.
+	 * Curated from the WPZOOM premium starter sites' typography (Inter/DM
+	 * Sans/Onest/Syne territory) — loaded locally via the theme's WPTT
+	 * webfont loader, never from Google's servers.
+	 *
+	 * @return string[] family name => css2 family spec.
+	 */
+	private function font_whitelist() {
+		return array(
+			'Inter'            => 'Inter:wght@400;500;600;700',
+			'Inter Tight'      => 'Inter+Tight:wght@400;500;600;700',
+			'DM Sans'          => 'DM+Sans:wght@400;500;700',
+			'Onest'            => 'Onest:wght@400;500;600;700',
+			'Jost'             => 'Jost:wght@400;500;600;700',
+			'Epilogue'         => 'Epilogue:wght@400;500;600;700',
+			'Montserrat'       => 'Montserrat:wght@400;500;600;700',
+			'Poppins'          => 'Poppins:wght@400;500;600;700',
+			'Raleway'          => 'Raleway:wght@400;500;600;700',
+			'Manrope'          => 'Manrope:wght@400;500;600;700',
+			'Sora'             => 'Sora:wght@400;500;600;700',
+			'Space Grotesk'    => 'Space+Grotesk:wght@400;500;600;700',
+			'Syne'             => 'Syne:wght@500;600;700;800',
+			'Archivo'          => 'Archivo:wght@400;500;600;700',
+			'Instrument Serif' => 'Instrument+Serif:ital@0;1',
+			'Bitter'           => 'Bitter:wght@400;500;600;700',
+			'Fraunces'         => 'Fraunces:wght@400;500;600;700',
+			'Playfair Display' => 'Playfair+Display:wght@400;500;600;700',
+		);
+	}
+
+	/**
+	 * User-selectable typography directions: slug => [ label, prompt ].
+	 *
+	 * @return array[]
+	 */
+	private function typography_options() {
+		return array(
+			'modern'       => array(
+				'label'  => __( 'Modern Sans', 'inspiro-starter-sites' ),
+				'prompt' => 'modern sans-serif throughout — Inter Tight, Inter, or Manrope for display AND body, tight letter-spacing on headlines, confident weights',
+			),
+			'geometric'    => array(
+				'label'  => __( 'Geometric', 'inspiro-starter-sites' ),
+				'prompt' => 'geometric sans-serif — Poppins, Jost, Sora or Montserrat display with a clean sans body, rounded friendly feel',
+			),
+			'expressive'   => array(
+				'label'  => __( 'Expressive', 'inspiro-starter-sites' ),
+				'prompt' => 'expressive display — Syne or Space Grotesk for big personality headlines, DM Sans or Onest body; bold scale contrast between display and body',
+			),
+			'serif-accent' => array(
+				'label'  => __( 'Serif Accent', 'inspiro-starter-sites' ),
+				'prompt' => 'sans-serif body (Inter Tight, Onest or DM Sans) with Instrument Serif or Fraunces used ONLY as an accent — italic highlighted words inside headlines, not whole paragraphs',
+			),
+			'classic'      => array(
+				'label'  => __( 'Classic Serif', 'inspiro-starter-sites' ),
+				'prompt' => 'classic serif display — Fraunces or Playfair Display headlines with a humanist sans body (Manrope, Raleway); refined and literary',
+			),
+		);
+	}
+
+	/**
 	 * User-selectable design styles: slug => [ label, prompt instruction ].
 	 *
 	 * @return array[]
@@ -1461,7 +1634,7 @@ class AiDemoGenerator {
 			),
 			'bold'      => array(
 				'label'  => __( 'Big Type', 'inspiro-starter-sites' ),
-				'prompt' => 'big-type — oversized confident display headlines, high contrast, graphic blocks of color',
+				'prompt' => 'big-type — oversized confident display headlines on a LIGHT background, high contrast dark-on-light, graphic blocks of color as accents',
 			),
 			'luxury'    => array(
 				'label'  => __( 'Luxury', 'inspiro-starter-sites' ),
