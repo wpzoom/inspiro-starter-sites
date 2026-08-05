@@ -679,6 +679,9 @@ class AiDemoGenerator {
 				'typography'     => $typography,
 				'palette_colors' => $palette ? $palette_options[ $palette ]['colors'] : array(),
 				'use_theme_var'  => $palette && ! empty( $palette_options[ $palette ]['theme_var'] ),
+				// The theme's LIVE accent variable differs per theme: Lite
+				// exposes --inspiro-primary-color, Premium --color-accent.
+				'theme_css_var'  => class_exists( 'WPZOOM' ) ? '--color-accent' : '--inspiro-primary-color',
 				'pages'          => $approved_pages,
 				'font_families'  => array_keys( $this->font_whitelist() ),
 			),
@@ -1510,25 +1513,34 @@ class AiDemoGenerator {
 			update_option(
 				'inspiro_starter_sites_ai_prev_colors',
 				array(
+					// Lite mods.
 					'colorscheme'     => get_theme_mod( 'colorscheme', false ),
 					'color_palette'   => get_theme_mod( 'color_palette', false ),
 					'colorscheme_hex' => get_theme_mod( 'colorscheme_hex', false ),
+					// Premium (WPZOOM framework) mods.
+					'color-palettes'  => get_theme_mod( 'color-palettes', false ),
+					'color-accent'    => get_theme_mod( 'color-accent', false ),
 				),
 				false
 			);
 		}
 
-		$picked = isset( $state['palette'] ) ? (string) $state['palette'] : '';
-		$accent = isset( $state['plan']['brand']['accent'] ) ? sanitize_hex_color( $state['plan']['brand']['accent'] ) : '';
+		$picked     = isset( $state['palette'] ) ? (string) $state['palette'] : '';
+		$accent     = isset( $state['plan']['brand']['accent'] ) ? sanitize_hex_color( $state['plan']['brand']['accent'] ) : '';
+		$is_premium = class_exists( 'WPZOOM' );
 
 		if ( 0 === strpos( $picked, 'theme-' ) ) {
 			// A theme palette was picked: make it the site's active palette.
-			set_theme_mod( 'color_palette', substr( $picked, 6 ) );
+			set_theme_mod( $is_premium ? 'color-palettes' : 'color_palette', substr( $picked, 6 ) );
 		} elseif ( $accent ) {
 			// Custom palette or AI-chosen colors: the demo's accent becomes
-			// the theme's Custom Accent Color.
-			set_theme_mod( 'colorscheme', 'custom' );
-			set_theme_mod( 'colorscheme_hex', $accent );
+			// the theme's accent color.
+			if ( $is_premium ) {
+				set_theme_mod( 'color-accent', $accent );
+			} else {
+				set_theme_mod( 'colorscheme', 'custom' );
+				set_theme_mod( 'colorscheme_hex', $accent );
+			}
 		}
 
 		// Footer content goes into the theme's real footer widget areas —
@@ -1914,7 +1926,7 @@ class AiDemoGenerator {
 			// Restore the customizer colors from before the first AI demo.
 			$prev_colors = get_option( 'inspiro_starter_sites_ai_prev_colors' );
 			if ( is_array( $prev_colors ) ) {
-				foreach ( array( 'colorscheme', 'color_palette', 'colorscheme_hex' ) as $mod ) {
+				foreach ( array( 'colorscheme', 'color_palette', 'colorscheme_hex', 'color-palettes', 'color-accent' ) as $mod ) {
 					if ( array_key_exists( $mod, $prev_colors ) && false !== $prev_colors[ $mod ] ) {
 						set_theme_mod( $mod, $prev_colors[ $mod ] );
 					} else {
@@ -2287,7 +2299,7 @@ class AiDemoGenerator {
 
 		$demos = get_option( self::DEMOS_OPTION, array() );
 		if ( is_array( $demos ) && ! empty( $demos[ $plan_id ]['css'] ) ) {
-			return $demos[ $plan_id ]['css'];
+			return $this->scale_css_for_theme( $demos[ $plan_id ]['css'] );
 		}
 
 		$state = $this->get_plan_state( $plan_id );
@@ -2295,7 +2307,31 @@ class AiDemoGenerator {
 			return '';
 		}
 		$font_css = ! empty( $state['plan']['font_css'] ) ? $state['plan']['font_css'] . "\n" : '';
-		return $font_css . $state['plan']['css'];
+		return $this->scale_css_for_theme( $font_css . $state['plan']['css'] );
+	}
+
+	/**
+	 * The premium theme sets html { font-size: 10px }, so every rem in the
+	 * AI stylesheet (authored against Lite's 16px root) renders at 62.5% of
+	 * its intended size. Scale rem values at RENDER time — theme-aware, and
+	 * still correct if the user later switches themes.
+	 *
+	 * @param string $css Demo stylesheet.
+	 * @return string
+	 */
+	private function scale_css_for_theme( $css ) {
+		if ( ! class_exists( 'WPZOOM' ) ) {
+			return $css;
+		}
+
+		return preg_replace_callback(
+			'/(\d*\.?\d+)rem\b/',
+			static function ( $m ) {
+				$scaled = (float) $m[1] * 1.6;
+				return rtrim( rtrim( number_format( $scaled, 3, '.', '' ), '0' ), '.' ) . 'rem';
+			},
+			(string) $css
+		);
 	}
 
 	/**
@@ -2442,11 +2478,21 @@ class AiDemoGenerator {
 	private function palette_options() {
 		$palettes = array();
 
+		$theme_palettes = array();
+		$active         = '';
+
 		if ( function_exists( 'inspiro_get_color_palettes' ) ) {
+			// Inspiro Lite customizer palettes; the selection lives in
+			// `color_palette` (`colorscheme` is the light/dark/custom radio).
 			$theme_palettes = inspiro_get_color_palettes();
-			// The predefined-palette selection lives in `color_palette`
-			// (`colorscheme` is the light/dark/custom radio).
-			$active = get_theme_mod( 'color_palette', 'default' );
+			$active         = get_theme_mod( 'color_palette', 'default' );
+		} elseif ( function_exists( 'wpzoom_get_color_palettes' ) ) {
+			// Inspiro Premium (WPZOOM framework) Global Color Palettes.
+			$theme_palettes = wpzoom_get_color_palettes();
+			$active         = get_theme_mod( 'color-palettes', 'default' );
+		}
+
+		if ( $theme_palettes ) {
 
 			foreach ( (array) $theme_palettes as $palette_id => $palette ) {
 				if ( empty( $palette['colors'] ) || ! is_array( $palette['colors'] ) ) {
