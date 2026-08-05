@@ -416,6 +416,22 @@ class AiProxyClient {
 	}
 
 	/**
+	 * The site's Inspiro Premium license key, when one is activated (the
+	 * premium theme's EDD updater stores it — the options survive a switch
+	 * back to Lite). A VERIFIED license unlocks the higher licensed
+	 * generation limit on the server.
+	 *
+	 * @return string '' when no active license.
+	 */
+	public static function premium_license() {
+		if ( 'valid' !== get_option( 'inspiro_license_key_status' ) ) {
+			return '';
+		}
+
+		return trim( (string) get_option( 'inspiro_license_key', '' ) );
+	}
+
+	/**
 	 * Whether this site holds a registration key from /ai-connect.
 	 *
 	 * @return bool
@@ -548,9 +564,13 @@ class AiProxyClient {
 				'headers' => array( 'Content-Type' => 'application/json' ),
 				'body'    => wp_json_encode(
 					array(
-						'action'   => $action,
-						'feature'  => self::FEATURE,
-						'site_key' => (string) get_option( self::SITE_KEY_OPTION, '' ),
+						'action'      => $action,
+						'feature'     => self::FEATURE,
+						'site_key'    => (string) get_option( self::SITE_KEY_OPTION, '' ),
+						// A verified premium license raises the limit
+						// server-side; invalid ones silently fall back to
+						// the free registration identity.
+						'license_key' => self::premium_license(),
 					)
 				),
 				'timeout' => 15,

@@ -146,6 +146,10 @@ jQuery( function ( $ ) {
 					'<p class="iss-ai-intro">' + esc( t.intro || '' ) + '</p>' +
 					steps +
 					'<div class="iss-ai-sidebar-footer">' +
+						'<div class="iss-ai-upsell js-iss-ai-upsell" hidden>' +
+							'<p>' + esc( t.upsell_text || '' ) + '</p>' +
+							'<a href="' + esc( config.upgrade_url || '#' ) + '" target="_blank" rel="noopener" class="iss-ai-upsell-btn">' + esc( t.upsell_button || '' ) + '</a>' +
+						'</div>' +
 						'<span class="iss-ai-connected-email js-iss-ai-connected-email" hidden></span>' +
 						'<span class="iss-ai-quota js-iss-ai-quota">' + esc( t.quota_loading || '' ) + '</span>' +
 						'<button type="button" class="iss-ai-link-btn iss-ai-disconnect js-iss-ai-disconnect" hidden>' + esc( t.disconnect || '' ) + '</button>' +
@@ -494,12 +498,22 @@ jQuery( function ( $ ) {
 			$disconnect.attr( 'hidden', 'hidden' );
 		}
 
+		var $upsell = $root.find( '.js-iss-ai-upsell' );
+
 		if ( quota.remaining <= 0 ) {
 			$quota.text( t.quota_none || '' ).addClass( 'is-exhausted' );
 			$root.find( '.js-iss-ai-generate' ).prop( 'disabled', true );
+			// Free users get the premium upsell; verified license holders
+			// just see the plain limit message.
+			if ( quota.licensed ) {
+				$upsell.attr( 'hidden', 'hidden' );
+			} else {
+				$upsell.removeAttr( 'hidden' );
+			}
 		} else {
 			$quota.text( sprintf( t.quota_left || '%1$s / %2$s', quota.used, quota.limit ) ).removeClass( 'is-exhausted' );
 			$root.find( '.js-iss-ai-generate' ).prop( 'disabled', false );
+			$upsell.attr( 'hidden', 'hidden' );
 		}
 	}
 

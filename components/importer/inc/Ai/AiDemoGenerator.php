@@ -132,10 +132,11 @@ class AiDemoGenerator {
 			'inspiro-starter-sites-ai-generator-js',
 			'inspiro_starter_sites_ai',
 			array(
-				'ajax_url'   => admin_url( 'admin-ajax.php' ),
-				'ajax_nonce' => wp_create_nonce( 'inspiro-starter-sites-ajax-verification' ),
-				'pages_url'  => admin_url( 'edit.php?post_type=page' ),
-				'site_url'   => home_url( '/' ),
+				'ajax_url'    => admin_url( 'admin-ajax.php' ),
+				'ajax_nonce'  => wp_create_nonce( 'inspiro-starter-sites-ajax-verification' ),
+				'pages_url'   => admin_url( 'edit.php?post_type=page' ),
+				'site_url'    => home_url( '/' ),
+				'upgrade_url' => 'https://www.wpzoom.com/themes/inspiro-lite/upgrade/?utm_source=wpadmin&utm_medium=ai-demo&utm_campaign=ai-quota-upsell',
 				'styles'     => array_map(
 					static function ( $style ) {
 						return $style['label'];
@@ -306,6 +307,8 @@ class AiDemoGenerator {
 					'disconnect'       => __( 'Disconnect', 'inspiro-starter-sites' ),
 					'disconnect_confirm' => __( 'Disconnect this site from the WPZOOM AI service? Your free generations stay linked to your email, so you can reconnect anytime.', 'inspiro-starter-sites' ),
 					'demo_active'      => __( 'active', 'inspiro-starter-sites' ),
+					'upsell_text'      => __( 'Want to generate more? Inspiro Premium includes extra AI generations — plus all premium features, starter sites and priority support.', 'inspiro-starter-sites' ),
+					'upsell_button'    => __( 'Upgrade to Inspiro Premium', 'inspiro-starter-sites' ),
 				),
 			)
 		);
@@ -353,6 +356,7 @@ class AiDemoGenerator {
 			'used'      => isset( $quota['used'] ) ? (int) $quota['used'] : 0,
 			'limit'     => isset( $quota['limit'] ) ? (int) $quota['limit'] : 0,
 			'remaining' => isset( $quota['remaining'] ) ? (int) $quota['remaining'] : 0,
+			'licensed'  => ! empty( $quota['licensed'] ),
 		);
 	}
 
