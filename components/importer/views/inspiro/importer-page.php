@@ -202,7 +202,13 @@ $platform_labels = array(
 <div class="iss-ai-root js-iss-ai-root" hidden></div>
 
 <?php if ( class_exists( '\Inspiro\Starter_Sites\Ai\AiDemoGenerator' ) && \Inspiro\Starter_Sites\Ai\AiDemoGenerator::is_enabled() ) : ?>
+	<?php $iss_ai_previous = \Inspiro\Starter_Sites\Ai\AiDemoGenerator::get_instance()->previous_demo_info(); ?>
 	<div class="inspiro-starter-sites-ai-hero">
+		<button type="button" class="inspiro-starter-sites-ai-hero__existing js-iss-ai-hero-existing js-inspiro-starter-sites-ai-generate"<?php echo $iss_ai_previous ? '' : ' hidden'; ?> title="<?php esc_attr_e( 'Manage or delete your generated demo', 'inspiro-starter-sites' ); ?>">
+			<span class="inspiro-starter-sites-ai-hero__existing-dot" aria-hidden="true"></span>
+			<?php esc_html_e( 'AI demo:', 'inspiro-starter-sites' ); ?>
+			<strong class="js-iss-ai-hero-existing-title"><?php echo esc_html( $iss_ai_previous && '' !== $iss_ai_previous['site_title'] ? $iss_ai_previous['site_title'] : __( 'active', 'inspiro-starter-sites' ) ); ?></strong>
+		</button>
 		<p class="inspiro-starter-sites-ai-hero__kicker">
 			<span aria-hidden="true">&#10024;</span>
 			<?php esc_html_e( 'AI Demo Generator', 'inspiro-starter-sites' ); ?>

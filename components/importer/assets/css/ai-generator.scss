@@ -559,12 +559,60 @@ body.iss-ai-open {
 /* Prompt-first hero on the importer page — the AI generator's entry point.
    Type the idea right here; it pre-fills the modal's description. */
 .inspiro-starter-sites-ai-hero {
+	position: relative;
 	margin: 4px 0 30px;
 	padding: 42px 40px 30px;
 	background: radial-gradient(ellipse 60% 90% at 50% -20%, #2c2c31 0%, #151517 55%, #101012 100%);
 	border-radius: 16px;
 	color: #ffffff;
 	text-align: center;
+}
+
+/* "AI demo active" status chip — opens the modal to manage/delete. */
+.inspiro-starter-sites-ai-hero__existing {
+	position: absolute;
+	top: 16px;
+	inset-inline-end: 16px;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	max-width: 260px;
+	padding: 7px 13px;
+	border: 1px solid rgba(255, 255, 255, 0.14);
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.06);
+	color: #c0c4cc;
+	font-size: 12px;
+	cursor: pointer;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	transition: background 0.12s ease, color 0.12s ease;
+}
+
+.inspiro-starter-sites-ai-hero__existing:hover {
+	background: rgba(255, 255, 255, 0.12);
+	color: #ffffff;
+}
+
+.inspiro-starter-sites-ai-hero__existing[hidden] {
+	display: none;
+}
+
+.inspiro-starter-sites-ai-hero__existing strong {
+	font-weight: 600;
+	color: #ffffff;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.inspiro-starter-sites-ai-hero__existing-dot {
+	flex: 0 0 auto;
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: #59d9a6;
+	box-shadow: 0 0 0 3px rgba(89, 217, 166, 0.18);
 }
 
 .inspiro-starter-sites-ai-hero__kicker {

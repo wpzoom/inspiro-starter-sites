@@ -305,6 +305,7 @@ class AiDemoGenerator {
 					'change_email'     => __( 'Use a different email', 'inspiro-starter-sites' ),
 					'disconnect'       => __( 'Disconnect', 'inspiro-starter-sites' ),
 					'disconnect_confirm' => __( 'Disconnect this site from the WPZOOM AI service? Your free generations stay linked to your email, so you can reconnect anytime.', 'inspiro-starter-sites' ),
+					'demo_active'      => __( 'active', 'inspiro-starter-sites' ),
 				),
 			)
 		);
@@ -357,11 +358,12 @@ class AiDemoGenerator {
 
 	/**
 	 * Info about a previously generated demo so the UI can warn the user
-	 * that generating a new one replaces it.
+	 * that generating a new one replaces it. Public: the importer page's
+	 * hero renders an "AI demo active" chip from it.
 	 *
 	 * @return array|null
 	 */
-	private function previous_demo_info() {
+	public function previous_demo_info() {
 		$previous_pages = get_posts(
 			array(
 				'post_type'   => 'page',

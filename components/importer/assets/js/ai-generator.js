@@ -439,10 +439,27 @@ jQuery( function ( $ ) {
 		}
 	}
 
+	// Status chip in the importer-page hero: shows the existing AI demo and
+	// opens the modal (where manage/delete lives) when clicked.
+	function renderHeroExisting( previous ) {
+		var $chip = $( '.js-iss-ai-hero-existing' );
+		if ( ! $chip.length ) {
+			return;
+		}
+		if ( previous && previous.page_count ) {
+			$chip.find( '.js-iss-ai-hero-existing-title' ).text( previous.site_title || t.demo_active || '' );
+			$chip.removeAttr( 'hidden' );
+		} else {
+			$chip.attr( 'hidden', 'hidden' );
+		}
+	}
+
 	// Prominent warning when a previously generated AI demo exists: it will
 	// be deleted (edits included) unless the user unchecks the box.
 	function renderReplaceNotice( previous ) {
 		var $notice = $root.find( '.js-iss-ai-replace-notice' );
+
+		renderHeroExisting( previous );
 
 		if ( ! previous || ! previous.page_count ) {
 			$notice.attr( 'hidden', 'hidden' );
@@ -739,6 +756,7 @@ jQuery( function ( $ ) {
 
 				setProgress( '', 1 );
 				showStep( 'success' );
+				renderHeroExisting( { site_title: planState.site_title || '', page_count: ( planState.pages || [] ).length } );
 			} )
 			.fail( function ( xhr, textStatus ) {
 				var response = xhr && xhr.responseJSON ? xhr.responseJSON : null;
@@ -834,6 +852,7 @@ jQuery( function ( $ ) {
 				if ( response && response.success && response.data ) {
 					$result.text( response.data.message || '' ).removeAttr( 'hidden' );
 					$root.find( '.js-iss-ai-replace-notice' ).attr( 'hidden', 'hidden' );
+					renderHeroExisting( null );
 				} else {
 					$result.text( responseMessage( response ) ).removeAttr( 'hidden' );
 				}
