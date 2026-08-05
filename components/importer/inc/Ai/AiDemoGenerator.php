@@ -848,12 +848,21 @@ class AiDemoGenerator {
 			);
 		}
 
-		// Seed photo de-duplication from every page already built (or being
-		// built) so parallel pages rarely pick the same Pexels photo.
+		// Seed photo de-duplication and the reuse pool from every page already
+		// built (or being built) so parallel pages rarely pick the same
+		// Pexels photo — and can REUSE each other's photos once the
+		// per-generation download budget is spent.
+		$image_pool = array();
 		foreach ( array_keys( $state['plan']['pages'] ) as $i ) {
 			$result = get_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id . '_p' . $i );
-			if ( is_array( $result ) && ! empty( $result['photo_ids'] ) ) {
+			if ( ! is_array( $result ) ) {
+				continue;
+			}
+			if ( ! empty( $result['photo_ids'] ) ) {
 				$state['used_photo_ids'] = array_merge( $state['used_photo_ids'], $result['photo_ids'] );
+			}
+			if ( ! empty( $result['images'] ) && is_array( $result['images'] ) ) {
+				$image_pool = array_merge( $image_pool, $result['images'] );
 			}
 		}
 		$state['used_photo_ids'] = array_values( array_unique( $state['used_photo_ids'] ) );
@@ -921,15 +930,36 @@ class AiDemoGenerator {
 
 		// Convert the AI HTML into native blocks; <img data-query> tags are
 		// resolved to sideloaded Pexels photos as they're encountered.
-		$generator       = $this; // For PHP 7.4 closure clarity.
-		$build_photo_ids = array();
-		$resolver        = function ( $query, $orientation ) use ( $generator, &$state, &$build_photo_ids, $plan_id, $stream ) {
+		// A per-generation UNIQUE-download budget bounds Pexels usage (same
+		// approach as the premium framework's wpzoom_ai_max_images): once the
+		// budget is spent, images REUSE already-sideloaded photos instead of
+		// downloading new ones — pages stay image-led at zero extra cost.
+		$max_images   = max( 3, (int) apply_filters( 'inspiro_starter_sites/ai_max_images', 5 ) );
+		$count_key    = self::PLAN_TRANSIENT_PREFIX . $plan_id . '_imgs';
+		$generator    = $this; // For PHP 7.4 closure clarity.
+		$build_images = array();
+		$reuse_cursor = 0;
+		$resolver     = function ( $query, $orientation ) use ( $generator, &$state, &$build_images, &$image_pool, &$reuse_cursor, $max_images, $count_key, $plan_id, $stream ) {
+			// Shared (cross-request) download counter — approximate under
+			// parallel builds, which is fine for a cost ceiling.
+			$downloaded = (int) get_transient( $count_key );
+			if ( $downloaded >= $max_images ) {
+				if ( ! $image_pool ) {
+					return null;
+				}
+				$image = $image_pool[ $reuse_cursor % count( $image_pool ) ];
+				$reuse_cursor++;
+				return $image;
+			}
+			set_transient( $count_key, $downloaded + 1, HOUR_IN_SECONDS );
+
 			$images = $generator->resolve_images( $query, 1, $state['used_photo_ids'], $state['plan']['site_title'], $plan_id, array( $stream, 'tick' ), $orientation );
 			if ( ! $images ) {
 				return null;
 			}
 			$state['used_photo_ids'][] = $images[0]['photo_id'];
-			$build_photo_ids[]         = $images[0]['photo_id'];
+			$build_images[]            = $images[0];
+			$image_pool[]              = $images[0];
 			$stream->tick();
 			return $images[0];
 		};
@@ -968,7 +998,8 @@ class AiDemoGenerator {
 			self::PLAN_TRANSIENT_PREFIX . $plan_id . '_p' . $index,
 			array(
 				'page_id'   => (int) $post_id,
-				'photo_ids' => $build_photo_ids,
+				'photo_ids' => wp_list_pluck( $build_images, 'photo_id' ),
+				'images'    => $build_images,
 			),
 			HOUR_IN_SECONDS
 		);
@@ -1417,6 +1448,7 @@ class AiDemoGenerator {
 		update_option( self::DEMOS_OPTION, $demos, false );
 
 		delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id );
+		delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id . '_imgs' );
 		foreach ( array_keys( $pages ) as $i ) {
 			delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id . '_p' . $i );
 		}
@@ -1730,6 +1762,7 @@ class AiDemoGenerator {
 		// Leftover mid-generation state (including per-page build results).
 		foreach ( $remove_plan_ids as $plan ) {
 			delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan );
+			delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan . '_imgs' );
 			for ( $i = 0; $i < 8; $i++ ) {
 				delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan . '_p' . $i );
 			}
