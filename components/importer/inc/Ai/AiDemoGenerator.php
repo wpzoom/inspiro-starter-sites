@@ -2150,10 +2150,15 @@ class AiDemoGenerator {
 		// - neutralize theme styles that interfere inside the demo scope;
 		// - buttons must never inherit the AI's generic link underline;
 		// - a baseline vertical rhythm so missing AI rules can't leave
-		//   elements glued together (AI selectors are more specific and win).
+		//   elements glued together (AI selectors are more specific and win);
+		// - restore native paddings that an AI-written universal reset
+		//   (".iss-ai-demo * { padding:0 }") would strip from core blocks —
+		//   these class selectors outrank the wildcard.
 		$css .= "\n.iss-ai-demo figure{margin:0}.iss-ai-demo img{height:auto;max-width:100%}.iss-ai-demo .wp-block-image{margin:0}.iss-ai-demo .wp-block-image img{width:100%}"
-			. ".iss-ai-demo .wp-block-button__link{text-decoration:none}"
+			. ".iss-ai-demo .wp-block-button__link{text-decoration:none;padding:calc(0.667em + 2px) calc(1.333em + 2px)}"
 			. ".iss-ai-demo .wp-block-buttons{display:flex;flex-wrap:wrap;gap:.75rem}"
+			. ".iss-ai-demo ul.wp-block-list,.iss-ai-demo ol.wp-block-list{padding-left:1.4em;margin-bottom:1em}"
+			. ".iss-ai-demo .wp-block-quote{padding-left:1.2em}"
 			. ".iss-ai-demo h1,.iss-ai-demo h2,.iss-ai-demo h3,.iss-ai-demo h4{margin-top:0;margin-bottom:.5em}"
 			. ".iss-ai-demo p{margin-top:0;margin-bottom:1em}"
 			. ".iss-ai-demo p:last-child,.iss-ai-demo h2:last-child,.iss-ai-demo h3:last-child{margin-bottom:0}";
