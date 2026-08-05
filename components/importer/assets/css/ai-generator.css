@@ -556,6 +556,193 @@ body.iss-ai-open {
 	font-family: 'Playfair Display', Georgia, serif;
 }
 
+/* Prompt-first hero on the importer page — the AI generator's entry point.
+   Type the idea right here; it pre-fills the modal's description. */
+.inspiro-starter-sites-ai-hero {
+	margin: 4px 0 30px;
+	padding: 42px 40px 30px;
+	background: radial-gradient(ellipse 60% 90% at 50% -20%, #2c2c31 0%, #151517 55%, #101012 100%);
+	border-radius: 16px;
+	color: #ffffff;
+	text-align: center;
+}
+
+.inspiro-starter-sites-ai-hero__kicker {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	margin: 0 0 14px;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.22em;
+	text-transform: uppercase;
+	color: #b9bdc6;
+}
+
+.inspiro-starter-sites-ai-hero__beta {
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.12);
+	letter-spacing: 0.08em;
+}
+
+.inspiro-starter-sites-ai-hero__title {
+	margin: 0 0 10px;
+	font-size: 34px;
+	line-height: 1.15;
+	font-weight: 700;
+	color: #ffffff;
+	letter-spacing: -0.02em;
+}
+
+.inspiro-starter-sites-ai-hero__sub {
+	max-width: 560px;
+	margin: 0 auto 26px;
+	font-size: 14px;
+	line-height: 1.55;
+	color: #c0c4cc;
+}
+
+.inspiro-starter-sites-ai-hero__prompt {
+	max-width: 720px;
+	margin: 0 auto;
+	padding: 16px 16px 12px;
+	background: #202023;
+	border: 1px solid #34343a;
+	border-radius: 14px;
+	text-align: left;
+	transition: border-color 0.15s ease;
+}
+
+.inspiro-starter-sites-ai-hero__prompt:focus-within {
+	border-color: #6b7280;
+}
+
+.inspiro-starter-sites-ai-hero__input {
+	display: block;
+	width: 100%;
+	min-height: 68px;
+	border: 0;
+	background: transparent;
+	color: #f2f3f5;
+	font-size: 14px;
+	line-height: 1.55;
+	resize: vertical;
+}
+
+.inspiro-starter-sites-ai-hero__input:focus {
+	outline: none;
+	box-shadow: none;
+}
+
+.inspiro-starter-sites-ai-hero__input::placeholder {
+	color: #7d818b;
+}
+
+.inspiro-starter-sites-ai-hero__actions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-top: 8px;
+}
+
+.inspiro-starter-sites-ai-hero__ideas {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	padding: 6px 10px;
+	border: 0;
+	border-radius: 8px;
+	background: none;
+	color: #9ea3ad;
+	font-size: 12.5px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: color 0.12s ease, background 0.12s ease;
+}
+
+.inspiro-starter-sites-ai-hero__ideas:hover {
+	color: #ffffff;
+	background: rgba(255, 255, 255, 0.06);
+}
+
+.inspiro-starter-sites-ai-hero__button {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 20px;
+	border: 0;
+	border-radius: 999px;
+	background: #3858e9;
+	color: #ffffff;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background 0.12s ease, transform 0.12s ease;
+}
+
+.inspiro-starter-sites-ai-hero__button:hover {
+	background: #2a46d4;
+	transform: translateY(-1px);
+}
+
+.inspiro-starter-sites-ai-hero__badges {
+	display: flex;
+	justify-content: center;
+	flex-wrap: wrap;
+	gap: 6px 28px;
+	margin: 22px auto 0;
+	padding: 0;
+	list-style: none;
+	font-size: 12.5px;
+	color: #9ea3ad;
+}
+
+.inspiro-starter-sites-ai-hero__badges li {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
+}
+
+.inspiro-starter-sites-ai-hero__badges li::before {
+	content: '';
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: #59d9a6;
+}
+
+/* The theme's onboarding stylesheet paints every paragraph and textarea in
+   .wpz-onboard_wrapper for its own light UI (admin.css:
+   ".wpz-onboard_wrapper p { color/font-size }" and
+   ".wp-core-ui .wpz-onboard_wrapper textarea { border }") — outrank those
+   here, because the hero is a dark panel living inside that wrapper. */
+.wpz-onboard_wrapper p.inspiro-starter-sites-ai-hero__kicker {
+	color: #b9bdc6;
+	font-size: 11px;
+	margin: 0 0 14px;
+}
+
+.wpz-onboard_wrapper p.inspiro-starter-sites-ai-hero__sub {
+	color: #c0c4cc;
+	font-size: 14px;
+	margin: 0 auto 26px;
+}
+
+.wp-core-ui .wpz-onboard_wrapper textarea.inspiro-starter-sites-ai-hero__input,
+.wp-core-ui .wpz-onboard_wrapper textarea.inspiro-starter-sites-ai-hero__input:hover,
+.wp-core-ui .wpz-onboard_wrapper textarea.inspiro-starter-sites-ai-hero__input:focus {
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	color: #f2f3f5;
+}
+
 .iss-ai-error {
 	color: #d63638;
 	font-size: 13px;

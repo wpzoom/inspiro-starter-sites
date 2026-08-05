@@ -753,6 +753,33 @@ jQuery( function ( $ ) {
 	$( document ).on( 'click', '.js-inspiro-starter-sites-ai-generate', function ( e ) {
 		e.preventDefault();
 		openModal();
+
+		// The hero's prompt box hands its text to the modal's description, so
+		// typing there flows straight into step 1.
+		var heroText = $.trim( $( '.js-iss-ai-hero-input' ).val() || '' );
+		if ( heroText ) {
+			$root.find( '.js-iss-ai-description' ).val( heroText );
+		}
+	} );
+
+	// Enter (without Shift) in the hero prompt = open the generator.
+	$( document ).on( 'keydown', '.js-iss-ai-hero-input', function ( e ) {
+		if ( 'Enter' === e.key && ! e.shiftKey ) {
+			e.preventDefault();
+			$( '.js-inspiro-starter-sites-ai-generate' ).first().trigger( 'click' );
+		}
+	} );
+
+	// Hero "View ideas": open the modal (with any typed text carried over)
+	// and expand its ideas panel right away.
+	$( document ).on( 'click', '.js-iss-ai-hero-ideas', function ( e ) {
+		e.preventDefault();
+		$( '.js-inspiro-starter-sites-ai-generate' ).first().trigger( 'click' );
+
+		var $ideas = $root.find( '.js-iss-ai-ideas' );
+		if ( $ideas.attr( 'hidden' ) ) {
+			$root.find( '.js-iss-ai-ideas-toggle' ).trigger( 'click' );
+		}
 	} );
 
 	$root.on( 'click', '.js-iss-ai-close, .js-iss-ai-overlay', function ( e ) {
