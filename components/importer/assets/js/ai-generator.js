@@ -147,8 +147,13 @@ jQuery( function ( $ ) {
 					steps +
 					'<div class="iss-ai-sidebar-footer">' +
 						'<div class="iss-ai-upsell js-iss-ai-upsell" hidden>' +
-							'<p>' + esc( t.upsell_text || '' ) + '</p>' +
-							'<a href="' + esc( config.upgrade_url || '#' ) + '" target="_blank" rel="noopener" class="iss-ai-upsell-btn">' + esc( t.upsell_button || '' ) + '</a>' +
+							( config.is_premium_theme ?
+								'<p>' + esc( t.activate_text || '' ) + '</p>' +
+								'<a href="' + esc( config.license_url || '#' ) + '" class="iss-ai-upsell-btn">' + esc( t.activate_button || '' ) + '</a>'
+							:
+								'<p>' + esc( t.upsell_text || '' ) + '</p>' +
+								'<a href="' + esc( config.upgrade_url || '#' ) + '" target="_blank" rel="noopener" class="iss-ai-upsell-btn">' + esc( t.upsell_button || '' ) + '</a>'
+							) +
 						'</div>' +
 						'<span class="iss-ai-connected-email js-iss-ai-connected-email" hidden></span>' +
 						'<span class="iss-ai-quota js-iss-ai-quota">' + esc( t.quota_loading || '' ) + '</span>' +

@@ -202,39 +202,7 @@ $platform_labels = array(
 <div class="iss-ai-root js-iss-ai-root" hidden></div>
 
 <?php if ( class_exists( '\Inspiro\Starter_Sites\Ai\AiDemoGenerator' ) && \Inspiro\Starter_Sites\Ai\AiDemoGenerator::is_enabled() ) : ?>
-	<?php $iss_ai_previous = \Inspiro\Starter_Sites\Ai\AiDemoGenerator::get_instance()->previous_demo_info(); ?>
-	<div class="inspiro-starter-sites-ai-hero">
-		<button type="button" class="inspiro-starter-sites-ai-hero__existing js-iss-ai-hero-existing js-inspiro-starter-sites-ai-generate"<?php echo $iss_ai_previous ? '' : ' hidden'; ?> title="<?php esc_attr_e( 'Manage or delete your generated demo', 'inspiro-starter-sites' ); ?>">
-			<span class="inspiro-starter-sites-ai-hero__existing-dot" aria-hidden="true"></span>
-			<?php esc_html_e( 'AI demo:', 'inspiro-starter-sites' ); ?>
-			<strong class="js-iss-ai-hero-existing-title"><?php echo esc_html( $iss_ai_previous && '' !== $iss_ai_previous['site_title'] ? $iss_ai_previous['site_title'] : __( 'active', 'inspiro-starter-sites' ) ); ?></strong>
-		</button>
-		<p class="inspiro-starter-sites-ai-hero__kicker">
-			<span aria-hidden="true">&#10024;</span>
-			<?php esc_html_e( 'AI Demo Generator', 'inspiro-starter-sites' ); ?>
-			<span class="inspiro-starter-sites-ai-hero__beta"><?php esc_html_e( 'Beta', 'inspiro-starter-sites' ); ?></span>
-		</p>
-		<h2 class="inspiro-starter-sites-ai-hero__title"><?php esc_html_e( 'What website do you need?', 'inspiro-starter-sites' ); ?></h2>
-		<p class="inspiro-starter-sites-ai-hero__sub"><?php esc_html_e( 'Describe it — AI designs and builds a complete demo with pages, photos, menu and colors in about two minutes.', 'inspiro-starter-sites' ); ?></p>
-
-		<div class="inspiro-starter-sites-ai-hero__prompt">
-			<textarea class="inspiro-starter-sites-ai-hero__input js-iss-ai-hero-input" rows="3" maxlength="1200" placeholder="<?php esc_attr_e( 'e.g. A website for a small coffee roastery in Portland that sells beans online and hosts tasting events…', 'inspiro-starter-sites' ); ?>"></textarea>
-			<div class="inspiro-starter-sites-ai-hero__actions">
-				<button type="button" class="inspiro-starter-sites-ai-hero__ideas js-iss-ai-hero-ideas">
-					<span aria-hidden="true">&#128161;</span> <?php esc_html_e( 'Need inspiration? View ideas', 'inspiro-starter-sites' ); ?>
-				</button>
-				<button type="button" class="inspiro-starter-sites-ai-hero__button js-inspiro-starter-sites-ai-generate">
-					<?php esc_html_e( 'Generate demo', 'inspiro-starter-sites' ); ?> <span aria-hidden="true">&rarr;</span>
-				</button>
-			</div>
-		</div>
-
-		<ul class="inspiro-starter-sites-ai-hero__badges">
-			<li><?php esc_html_e( 'Free generations included', 'inspiro-starter-sites' ); ?></li>
-			<li><?php esc_html_e( 'Ready in about 2 minutes', 'inspiro-starter-sites' ); ?></li>
-			<li><?php esc_html_e( '100% editable blocks', 'inspiro-starter-sites' ); ?></li>
-		</ul>
-	</div>
+	<?php \Inspiro\Starter_Sites\Ai\AiDemoGenerator::get_instance()->render_hero(); ?>
 <?php endif; ?>
 
 <ol class="wpz-onboard_content-main-steps">

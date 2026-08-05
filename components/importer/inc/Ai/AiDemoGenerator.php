@@ -60,6 +60,7 @@ class AiDemoGenerator {
 		}
 
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 20 );
+		add_action( 'admin_footer', array( $this, 'premium_dashboard_hero' ) );
 		add_action( 'wp_head', array( $this, 'print_demo_css' ), 100 );
 		add_action( 'enqueue_block_assets', array( $this, 'enqueue_editor_demo_css' ) );
 
@@ -85,6 +86,96 @@ class AiDemoGenerator {
 	}
 
 	/**
+	 * Whether $hook is the premium theme's WPZOOM dashboard page — where the
+	 * premium framework renders its own demo importer. The AI hero injects
+	 * itself there so premium users keep the generator without any theme
+	 * changes.
+	 *
+	 * @param string $hook Admin page hook suffix.
+	 * @return bool
+	 */
+	private function is_premium_dashboard( $hook ) {
+		return class_exists( 'WPZOOM' ) && false !== strpos( (string) $hook, 'wpzoom_license' );
+	}
+
+	/**
+	 * The prompt-first AI hero (kicker, headline, prompt box, badges, status
+	 * chip). Rendered inline on the plugin's importer page and injected into
+	 * the premium theme's demo-importer tab.
+	 */
+	public function render_hero() {
+		$previous = $this->previous_demo_info();
+		?>
+		<div class="inspiro-starter-sites-ai-hero">
+			<button type="button" class="inspiro-starter-sites-ai-hero__existing js-iss-ai-hero-existing js-inspiro-starter-sites-ai-generate"<?php echo $previous ? '' : ' hidden'; ?> title="<?php esc_attr_e( 'Manage or delete your generated demo', 'inspiro-starter-sites' ); ?>">
+				<span class="inspiro-starter-sites-ai-hero__existing-dot" aria-hidden="true"></span>
+				<?php esc_html_e( 'AI demo:', 'inspiro-starter-sites' ); ?>
+				<strong class="js-iss-ai-hero-existing-title"><?php echo esc_html( $previous && '' !== $previous['site_title'] ? $previous['site_title'] : __( 'active', 'inspiro-starter-sites' ) ); ?></strong>
+			</button>
+			<p class="inspiro-starter-sites-ai-hero__kicker">
+				<span aria-hidden="true">&#10024;</span>
+				<?php esc_html_e( 'AI Demo Generator', 'inspiro-starter-sites' ); ?>
+				<span class="inspiro-starter-sites-ai-hero__beta"><?php esc_html_e( 'Beta', 'inspiro-starter-sites' ); ?></span>
+			</p>
+			<h2 class="inspiro-starter-sites-ai-hero__title"><?php esc_html_e( 'What website do you need?', 'inspiro-starter-sites' ); ?></h2>
+			<p class="inspiro-starter-sites-ai-hero__sub"><?php esc_html_e( 'Describe it — AI designs and builds a complete demo with pages, photos, menu and colors in about two minutes.', 'inspiro-starter-sites' ); ?></p>
+
+			<div class="inspiro-starter-sites-ai-hero__prompt">
+				<textarea class="inspiro-starter-sites-ai-hero__input js-iss-ai-hero-input" rows="3" maxlength="1200" placeholder="<?php esc_attr_e( 'e.g. A website for a small coffee roastery in Portland that sells beans online and hosts tasting events…', 'inspiro-starter-sites' ); ?>"></textarea>
+				<div class="inspiro-starter-sites-ai-hero__actions">
+					<button type="button" class="inspiro-starter-sites-ai-hero__ideas js-iss-ai-hero-ideas">
+						<span aria-hidden="true">&#128161;</span> <?php esc_html_e( 'Need inspiration? View ideas', 'inspiro-starter-sites' ); ?>
+					</button>
+					<button type="button" class="inspiro-starter-sites-ai-hero__button js-inspiro-starter-sites-ai-generate">
+						<?php esc_html_e( 'Generate demo', 'inspiro-starter-sites' ); ?> <span aria-hidden="true">&rarr;</span>
+					</button>
+				</div>
+			</div>
+
+			<ul class="inspiro-starter-sites-ai-hero__badges">
+				<li><?php esc_html_e( 'Free generations included', 'inspiro-starter-sites' ); ?></li>
+				<li><?php esc_html_e( 'Ready in about 2 minutes', 'inspiro-starter-sites' ); ?></li>
+				<li><?php esc_html_e( '100% editable blocks', 'inspiro-starter-sites' ); ?></li>
+			</ul>
+		</div>
+		<?php
+	}
+
+	/**
+	 * On the premium theme's dashboard: print the hero (hidden) + the modal
+	 * root, then move the hero into the top of the framework's demo-importer
+	 * tab. Pure plugin-side — no premium theme changes required.
+	 */
+	public function premium_dashboard_hero() {
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! $screen || ! $this->is_premium_dashboard( $screen->id ) || ! self::is_enabled() ) {
+			return;
+		}
+		?>
+		<div class="iss-ai-root js-iss-ai-root" hidden></div>
+		<div class="js-iss-ai-premium-hero" hidden>
+			<?php $this->render_hero(); ?>
+		</div>
+		<script>
+		jQuery( function ( $ ) {
+			var $tab  = $( '.wpz-onboard_content-main-demo-importer' );
+			var $hero = $( '.js-iss-ai-premium-hero' );
+			if ( ! $tab.length || ! $hero.length ) {
+				return;
+			}
+			var $header = $tab.find( '.wpz-onboard_header' ).first();
+			if ( $header.length ) {
+				$hero.insertAfter( $header );
+			} else {
+				$tab.prepend( $hero );
+			}
+			$hero.removeAttr( 'hidden' );
+		} );
+		</script>
+		<?php
+	}
+
+	/**
 	 * Enqueue the AI generator assets on the demo-importer admin page.
 	 *
 	 * Runs after the importer's own enqueue (priority 20) and piggybacks on
@@ -94,7 +185,10 @@ class AiDemoGenerator {
 	 * @param string $hook Current admin page hook.
 	 */
 	public function admin_enqueue_scripts( $hook ) {
-		if ( ! wp_style_is( 'inspiro-starter-sites-importer-css', 'enqueued' ) ) {
+		$on_plugin_page  = wp_style_is( 'inspiro-starter-sites-importer-css', 'enqueued' );
+		$on_premium_page = $this->is_premium_dashboard( $hook );
+
+		if ( ! $on_plugin_page && ! $on_premium_page ) {
 			return;
 		}
 
@@ -114,7 +208,9 @@ class AiDemoGenerator {
 		wp_enqueue_style(
 			'inspiro-starter-sites-ai-generator-css',
 			INSPIRO_STARTER_SITES_URL . 'components/importer/assets/css/ai-generator.css',
-			array( 'inspiro-starter-sites-importer-css' ),
+			// On the premium theme's dashboard the plugin importer stylesheet
+			// isn't registered — the AI stylesheet is self-contained anyway.
+			$on_plugin_page ? array( 'inspiro-starter-sites-importer-css' ) : array(),
 			$css_ver
 		);
 
@@ -137,6 +233,10 @@ class AiDemoGenerator {
 				'pages_url'   => admin_url( 'edit.php?post_type=page' ),
 				'site_url'    => home_url( '/' ),
 				'upgrade_url' => 'https://www.wpzoom.com/themes/inspiro-lite/upgrade/?utm_source=wpadmin&utm_medium=ai-demo&utm_campaign=ai-quota-upsell',
+				// Premium theme without an activated license: the exhausted-
+				// quota card asks to activate instead of upselling.
+				'is_premium_theme' => class_exists( 'WPZOOM' ),
+				'license_url'      => admin_url( 'admin.php?page=wpzoom_license#license' ),
 				'styles'     => array_map(
 					static function ( $style ) {
 						return $style['label'];
@@ -309,6 +409,8 @@ class AiDemoGenerator {
 					'demo_active'      => __( 'active', 'inspiro-starter-sites' ),
 					'upsell_text'      => __( 'Want to generate more? Inspiro Premium includes extra AI generations — plus all premium features, starter sites and priority support.', 'inspiro-starter-sites' ),
 					'upsell_button'    => __( 'Upgrade to Inspiro Premium', 'inspiro-starter-sites' ),
+					'activate_text'    => __( 'Activate your Inspiro Premium license to unlock extra AI generations.', 'inspiro-starter-sites' ),
+					'activate_button'  => __( 'Activate your license', 'inspiro-starter-sites' ),
 				),
 			)
 		);
