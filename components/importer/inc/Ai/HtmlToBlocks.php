@@ -277,7 +277,14 @@ class HtmlToBlocks {
 				return $this->details_block( $el );
 
 			case 'hr':
-				return "<!-- wp:separator -->\n<hr class=\"wp-block-separator has-alpha-channel-opacity\"/>\n<!-- /wp:separator -->";
+				// Classes preserved: .ai-rule hairline dividers are a core
+				// editorial device in the design system.
+				$hr_classes = $this->classes( $el );
+				return sprintf(
+					"<!-- wp:separator%s -->\n<hr class=\"wp-block-separator has-alpha-channel-opacity%s\"/>\n<!-- /wp:separator -->",
+					$hr_classes ? ' ' . wp_json_encode( array( 'className' => $hr_classes ) ) : '',
+					$hr_classes ? ' ' . esc_attr( $hr_classes ) : ''
+				);
 
 			case 'a':
 				// Non-button block-level link — paragraph wrapping it.

@@ -114,7 +114,7 @@ class AiProxyClient {
 		$text = preg_replace( '/^```(?:json)?\s*|\s*```$/s', '', trim( $text ) );
 		$text = $this->extract_json_object( $text );
 
-		$decoded = json_decode( $text, true );
+		$decoded = $this->decode_json_lenient( $text );
 
 		if ( ! is_array( $decoded ) ) {
 			return new WP_Error( 'ai_parse_error', __( 'The AI returned a malformed response. Please try again.', 'inspiro-starter-sites' ) );
@@ -194,13 +194,47 @@ class AiProxyClient {
 
 		$text    = preg_replace( '/^```(?:json)?\s*|\s*```$/s', '', trim( $text ) );
 		$text    = $this->extract_json_object( $text );
-		$decoded = json_decode( $text, true );
+		$decoded = $this->decode_json_lenient( $text );
 
 		if ( ! is_array( $decoded ) ) {
 			return new WP_Error( 'ai_parse_error', __( 'The AI returned a malformed response. Please try again.', 'inspiro-starter-sites' ) );
 		}
 
 		return $decoded;
+	}
+
+	/**
+	 * json_decode with a repair pass: models occasionally emit CSS escape
+	 * sequences (e.g. content:'\00B7') inside JSON string values — invalid
+	 * JSON escapes that fail a strict parse. Doubling any backslash that
+	 * doesn't start a valid JSON escape makes the document parseable again
+	 * (the stray backslash is then stripped by the CSS sanitizer anyway).
+	 *
+	 * @param string $text Candidate JSON.
+	 * @return array|null
+	 */
+	private function decode_json_lenient( $text ) {
+		$decoded = json_decode( $text, true );
+		if ( is_array( $decoded ) ) {
+			return $decoded;
+		}
+
+		$repaired = preg_replace_callback(
+			'/\\\\(?!["\\\\\/bfnrtu])/',
+			static function () {
+				return '\\\\';
+			},
+			$text
+		);
+
+		$decoded = json_decode( $repaired, true );
+		if ( is_array( $decoded ) ) {
+			error_log( '[inspiro-starter-sites AI] JSON repaired: invalid escape sequences doubled.' ); // phpcs:ignore
+			return $decoded;
+		}
+
+		error_log( '[inspiro-starter-sites AI] JSON parse failed. First 300 chars: ' . substr( $text, 0, 300 ) ); // phpcs:ignore
+		return null;
 	}
 
 	/**
