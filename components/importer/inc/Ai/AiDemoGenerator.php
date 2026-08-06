@@ -2327,7 +2327,16 @@ class AiDemoGenerator {
 			. ".iss-ai-demo .wp-block-quote{padding-left:1.2em}"
 			. ".iss-ai-demo h1,.iss-ai-demo h2,.iss-ai-demo h3,.iss-ai-demo h4{margin-top:0;margin-bottom:.5em}"
 			. ".iss-ai-demo p{margin-top:0;margin-bottom:1em}"
-			. ".iss-ai-demo p:last-child,.iss-ai-demo h2:last-child,.iss-ai-demo h3:last-child{margin-bottom:0}";
+			. ".iss-ai-demo p:last-child,.iss-ai-demo h2:last-child,.iss-ai-demo h3:last-child{margin-bottom:0}"
+			// Contrast safety net: inside a group that declares a text color,
+			// bare headings/paragraphs inherit it. At (0,1,1) this out-orders
+			// the AI's base element rules (same specificity, later source) but
+			// loses to any section-scoped AI override like ".ai-section-dark
+			// h2" — so it only kicks in where the AI forgot one and the base
+			// ink color would vanish against a dark section background.
+			. ".iss-ai-demo :where(.has-text-color) h1,.iss-ai-demo :where(.has-text-color) h2,.iss-ai-demo :where(.has-text-color) h3,"
+			. ".iss-ai-demo :where(.has-text-color) h4,.iss-ai-demo :where(.has-text-color) h5,.iss-ai-demo :where(.has-text-color) h6,"
+			. ".iss-ai-demo :where(.has-text-color) p{color:inherit}";
 
 		return $css;
 	}

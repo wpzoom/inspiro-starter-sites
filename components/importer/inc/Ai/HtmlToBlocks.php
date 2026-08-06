@@ -397,6 +397,19 @@ class HtmlToBlocks {
 			$class             .= ' ' . $classes;
 		}
 
+		// A painted section must always declare a text color: the demo CSS's
+		// contrast safety net keys off .has-text-color, so when the AI omits
+		// data-text we derive black/white from the background's luminance.
+		if ( $bg && ! $text ) {
+			$hex = ltrim( $bg, '#' );
+			if ( 3 === strlen( $hex ) ) {
+				$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+			}
+			$rgb  = sscanf( $hex, '%02x%02x%02x' );
+			$luma = ( 299 * $rgb[0] + 587 * $rgb[1] + 114 * $rgb[2] ) / 1000;
+			$text = $luma < 128 ? '#ffffff' : '#111111';
+		}
+
 		if ( $bg || $text ) {
 			$attrs['style'] = array( 'color' => array() );
 			if ( $bg ) {
