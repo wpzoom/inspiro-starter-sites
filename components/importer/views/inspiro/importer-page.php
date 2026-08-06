@@ -148,6 +148,13 @@ $platform_labels = array(
 
 ?>
 <div class="inspiro-starter-sites">
+
+<div class="iss-ai-root js-iss-ai-root" hidden></div>
+
+<?php if ( class_exists( '\Inspiro\Starter_Sites\Ai\AiDemoGenerator' ) && \Inspiro\Starter_Sites\Ai\AiDemoGenerator::is_enabled() ) : ?>
+	<?php \Inspiro\Starter_Sites\Ai\AiDemoGenerator::get_instance()->render_hero(); ?>
+<?php endif; ?>
+
 <div class="inspiro-starter-sites-demo-section">
 	<h3 class="inspiro-starter-sites-demo-section-title"><?php esc_html_e( 'Free Starter Sites', 'inspiro-starter-sites' ); ?></h3>
 	<p class="inspiro-starter-sites-demo-section-description"><?php esc_html_e( 'Import any of these starter sites directly into Inspiro Lite.', 'inspiro-starter-sites' ); ?></p>
@@ -198,12 +205,6 @@ $platform_labels = array(
 </div>
 
 <div class="inspiro-starter-sites-feedback-root js-inspiro-starter-sites-feedback-root" hidden></div>
-
-<div class="iss-ai-root js-iss-ai-root" hidden></div>
-
-<?php if ( class_exists( '\Inspiro\Starter_Sites\Ai\AiDemoGenerator' ) && \Inspiro\Starter_Sites\Ai\AiDemoGenerator::is_enabled() ) : ?>
-	<?php \Inspiro\Starter_Sites\Ai\AiDemoGenerator::get_instance()->render_hero(); ?>
-<?php endif; ?>
 
 <ol class="wpz-onboard_content-main-steps">
 	<li id="step-choose-design" class="wpz-onboard_content-main-step step-1 step-choose-design">
