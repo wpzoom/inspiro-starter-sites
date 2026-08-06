@@ -807,23 +807,6 @@
     margin: 0 0 12px;
 }
 
-.inspiro-starter-sites-demo-section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px 24px;
-    margin-bottom: 4px;
-}
-
-.inspiro-starter-sites-demo-section-header__text .inspiro-starter-sites-demo-section-description {
-    margin-bottom: 0;
-}
-
-.inspiro-starter-sites-demo-section-header__actions {
-    flex: 0 0 auto;
-}
-
 .inspiro-starter-sites-demo-section-description {
     font-size: 15px;
     color: #5c6670;

@@ -176,15 +176,10 @@ $platform_labels = array(
 
 <div class="inspiro-starter-sites-demo-section">
 	<div class="inspiro-starter-sites-demo-section-header">
-		<div class="inspiro-starter-sites-demo-section-header__text">
-			<h3 class="inspiro-starter-sites-demo-section-title"><?php esc_html_e( 'Free Starter Sites', 'inspiro-starter-sites' ); ?></h3>
-			<p class="inspiro-starter-sites-demo-section-description"><?php esc_html_e( 'Import any of these starter sites directly into Inspiro Lite.', 'inspiro-starter-sites' ); ?></p>
-		</div>
-		<div class="inspiro-starter-sites-demo-section-header__actions">
-			<a href="<?php echo esc_url( 'https://www.wpzoom.com/themes/inspiro/starter-sites/?utm_source=wpadmin&utm_medium=demos-starter-sites&utm_campaign=starter-sites-inspiro' ); ?>" target="_blank" rel="noopener" class="button button-primary">
-				<?php esc_html_e( 'View Premium Starter Sites &rarr;', 'inspiro-starter-sites' ); ?>
-			</a>
-		</div>
+		<h3 class="inspiro-starter-sites-demo-section-title"><?php esc_html_e( 'Free Starter Sites', 'inspiro-starter-sites' ); ?></h3>
+		<a href="<?php echo esc_url( 'https://www.wpzoom.com/themes/inspiro/starter-sites/?utm_source=wpadmin&utm_medium=demos-starter-sites&utm_campaign=starter-sites-inspiro' ); ?>" target="_blank" rel="noopener" class="inspiro-starter-sites-premium-link">
+			<?php esc_html_e( 'View Premium Starter Sites &rarr;', 'inspiro-starter-sites' ); ?>
+		</a>
 	</div>
 
 	<div class="inspiro-starter-sites-demo-filter" role="tablist" aria-label="<?php esc_attr_e( 'Filter starter sites by editor', 'inspiro-starter-sites' ); ?>">
