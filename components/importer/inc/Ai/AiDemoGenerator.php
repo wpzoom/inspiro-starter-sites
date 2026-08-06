@@ -1043,24 +1043,29 @@ class AiDemoGenerator {
 		// approach as the premium framework's wpzoom_ai_max_images): once the
 		// budget is spent, images REUSE already-sideloaded photos instead of
 		// downloading new ones — pages stay image-led at zero extra cost.
-		$max_images   = max( 3, (int) apply_filters( 'inspiro_starter_sites/ai_max_images', 5 ) );
-		$count_key    = self::PLAN_TRANSIENT_PREFIX . $plan_id . '_imgs';
+		$max_images   = max( 3, (int) apply_filters( 'inspiro_starter_sites/ai_max_images', 20 ) );
 		$generator    = $this; // For PHP 7.4 closure clarity.
 		$build_images = array();
 		$reuse_cursor = 0;
-		$resolver     = function ( $query, $orientation ) use ( $generator, &$state, &$build_images, &$image_pool, &$reuse_cursor, $max_images, $count_key, $plan_id, $stream ) {
-			// Shared (cross-request) download counter — approximate under
-			// parallel builds, which is fine for a cost ceiling.
-			$downloaded = (int) get_transient( $count_key );
-			if ( $downloaded >= $max_images ) {
+		$last_reused  = 0;
+		$resolver     = function ( $query, $orientation ) use ( $generator, &$state, &$build_images, &$image_pool, &$reuse_cursor, &$last_reused, $max_images, $plan_id, $stream ) {
+			// Atomic shared download counter (a plain transient read-then-
+			// write under-counts badly when three builds race it).
+			if ( $generator->reserve_image_download( $plan_id ) > $max_images ) {
 				if ( ! $image_pool ) {
 					return null;
 				}
+				// Reuse an already-sideloaded photo — and never the same one
+				// twice in a row, so adjacent cards can't show duplicates.
 				$image = $image_pool[ $reuse_cursor % count( $image_pool ) ];
 				$reuse_cursor++;
+				if ( count( $image_pool ) > 1 && (int) $image['id'] === $last_reused ) {
+					$image = $image_pool[ $reuse_cursor % count( $image_pool ) ];
+					$reuse_cursor++;
+				}
+				$last_reused = (int) $image['id'];
 				return $image;
 			}
-			set_transient( $count_key, $downloaded + 1, HOUR_IN_SECONDS );
 
 			$images = $generator->resolve_images( $query, 1, $state['used_photo_ids'], $state['plan']['site_title'], $plan_id, array( $stream, 'tick' ), $orientation );
 			if ( ! $images ) {
@@ -1069,6 +1074,7 @@ class AiDemoGenerator {
 			$state['used_photo_ids'][] = $images[0]['photo_id'];
 			$build_images[]            = $images[0];
 			$image_pool[]              = $images[0];
+			$last_reused               = (int) $images[0]['id'];
 			$stream->tick();
 			return $images[0];
 		};
@@ -1262,6 +1268,33 @@ class AiDemoGenerator {
 		$state['created_posts'] = $created;
 
 		return $created;
+	}
+
+	/**
+	 * Atomically reserve one image-download slot for a generation and return
+	 * the reservation number (1-based). A raw option row with a relative
+	 * UPDATE — a read-then-write transient under-counts badly when parallel
+	 * page builds race it (measured: 11 downloads against a cap of 5).
+	 *
+	 * @param string $plan_id Plan ID.
+	 * @return int
+	 */
+	private function reserve_image_download( $plan_id ) {
+		global $wpdb;
+
+		$option  = self::PLAN_TRANSIENT_PREFIX . $plan_id . '_imgs';
+		$updated = $wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->options} SET option_value = option_value + 1 WHERE option_name = %s", $option ) );
+
+		if ( ! $updated ) {
+			$inserted = $wpdb->query( $wpdb->prepare( "INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, '1', 'no')", $option ) );
+			if ( $inserted ) {
+				return 1;
+			}
+			// Lost the creation race — count ourselves in now.
+			$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->options} SET option_value = option_value + 1 WHERE option_name = %s", $option ) );
+		}
+
+		return (int) $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $option ) );
 	}
 
 	/**
@@ -1566,7 +1599,7 @@ class AiDemoGenerator {
 		update_option( self::DEMOS_OPTION, $demos, false );
 
 		delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id );
-		delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id . '_imgs' );
+		delete_option( self::PLAN_TRANSIENT_PREFIX . $plan_id . '_imgs' );
 		foreach ( array_keys( $pages ) as $i ) {
 			delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id . '_p' . $i );
 		}
@@ -1880,7 +1913,7 @@ class AiDemoGenerator {
 		// Leftover mid-generation state (including per-page build results).
 		foreach ( $remove_plan_ids as $plan ) {
 			delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan );
-			delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan . '_imgs' );
+			delete_option( self::PLAN_TRANSIENT_PREFIX . $plan . '_imgs' );
 			for ( $i = 0; $i < 8; $i++ ) {
 				delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan . '_p' . $i );
 			}
@@ -2272,7 +2305,10 @@ class AiDemoGenerator {
 		// - restore native paddings that an AI-written universal reset
 		//   (".iss-ai-demo * { padding:0 }") would strip from core blocks —
 		//   these class selectors outrank the wildcard.
-		$css .= "\n.iss-ai-demo figure{margin:0}.iss-ai-demo img{height:auto;max-width:100%}.iss-ai-demo .wp-block-image{margin:0}.iss-ai-demo .wp-block-image img{width:100%}"
+		$css .= "\n.iss-ai-demo.iss-ai-demo{padding-top:0;padding-bottom:0}"
+			. ".iss-ai-demo.iss-ai-demo .ai-container{max-width:1200px;padding-left:0;padding-right:0}"
+			. ".iss-ai-demo.iss-ai-demo .wp-block-separator{width:100%;max-width:none;margin-left:0;margin-right:0}"
+			. ".iss-ai-demo figure{margin:0}.iss-ai-demo img{height:auto;max-width:100%}.iss-ai-demo .wp-block-image{margin:0}.iss-ai-demo .wp-block-image img{width:100%}"
 			. ".iss-ai-demo .wp-block-button__link{text-decoration:none;padding:calc(0.667em + 2px) calc(1.333em + 2px)}"
 			. ".iss-ai-demo .wp-block-buttons{display:flex;flex-wrap:wrap;gap:.75rem}"
 			. ".iss-ai-demo ul.wp-block-list,.iss-ai-demo ol.wp-block-list{padding-left:1.4em;margin-bottom:1em}"
