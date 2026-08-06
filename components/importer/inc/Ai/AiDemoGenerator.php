@@ -1036,6 +1036,7 @@ class AiDemoGenerator {
 				'description'      => $state['description'],
 				'site_title'       => $state['plan']['site_title'],
 				'tagline'          => $state['plan']['tagline'],
+				'language'         => isset( $state['plan']['language'] ) ? $state['plan']['language'] : '',
 				'css'              => $state['plan']['css'],
 				'page'             => $page,
 				'pages'            => array_map(
@@ -2147,6 +2148,7 @@ class AiDemoGenerator {
 		$clean = array(
 			'site_title' => $clean_text( isset( $plan['site_title'] ) ? $plan['site_title'] : '', 120 ),
 			'tagline'    => $clean_text( isset( $plan['tagline'] ) ? $plan['tagline'] : '', 200 ),
+			'language'   => $clean_text( isset( $plan['language'] ) ? $plan['language'] : '', 40 ),
 			'css'        => $this->sanitize_css( isset( $plan['css'] ) ? $plan['css'] : '' ),
 			'footer'     => array(),
 			'pages'      => array(),
