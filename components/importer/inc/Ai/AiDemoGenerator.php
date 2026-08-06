@@ -2304,7 +2304,9 @@ class AiDemoGenerator {
 		// theme rule by source order (our style block prints later in
 		// wp_head), while the AI CSS below still wins over it the same way,
 		// so AI-authored centering (e.g. .ai-container) is preserved.
-		$css = '.iss-ai-demo :where(.wp-block-group) > :where(:not(.alignleft):not(.alignright):not(.alignfull)){margin-left:0;margin-right:0}'
+		$css = '.iss-ai-demo :where(.wp-block-group) > :where(:not(.alignleft):not(.alignright):not(.alignfull)),'
+			. ':where(.wp-block-group).iss-ai-demo > :where(:not(.alignleft):not(.alignright):not(.alignfull))'
+			. '{margin-left:0;margin-right:0}'
 			. "\n" . $css;
 
 		// Bridge rules appended after the AI CSS:

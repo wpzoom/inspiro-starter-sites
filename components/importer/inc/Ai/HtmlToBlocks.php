@@ -107,19 +107,53 @@ class HtmlToBlocks {
 			return '';
 		}
 
-		$blocks = $this->convert_children( $body, true );
-		if ( '' === trim( $blocks ) ) {
+		// If the AI wrapped the whole page in a single demo div, unwrap it —
+		// its children are the top-level sections.
+		$root             = $body;
+		$only             = null;
+		$element_children = 0;
+		foreach ( $body->childNodes as $n ) {
+			if ( XML_ELEMENT_NODE === $n->nodeType ) {
+				$element_children++;
+				$only = $n;
+			}
+		}
+		if ( 1 === $element_children && $only ) {
+			$cls = ' ' . $this->classes( $only ) . ' ';
+			if ( false !== strpos( $cls, ' iss-ai-demo ' ) || false !== strpos( $cls, ' ai-demo ' ) ) {
+				$root = $only;
+			}
+		}
+
+		$sections = $this->convert_children_blocks( $root, true );
+		if ( ! $sections ) {
 			return '';
 		}
 
 		$classes = trim( 'iss-ai-demo' . ( $page_slug ? ' iss-ai-demo--' . sanitize_html_class( $page_slug ) : '' ) );
 
-		return sprintf(
-			"<!-- wp:group {\"align\":\"full\",\"className\":\"%s\",\"layout\":{\"type\":\"default\"}} -->\n<div class=\"wp-block-group alignfull %s\">%s</div>\n<!-- /wp:group -->",
-			esc_attr( $classes ),
-			esc_attr( $classes ),
-			"\n" . $blocks . "\n"
-		);
+		// Each top-level section gets its own scope-class wrapper (all the
+		// demo CSS is ".iss-ai-demo <x>" descendant rules) that mirrors the
+		// section's earned alignment: full-bleed sections escape the content
+		// column, plain ones stay inside it and keep the theme's responsive
+		// side padding on small screens. One big alignfull wrapper would
+		// force every section full-width and lose those gutters.
+		$out = array();
+		foreach ( $sections as $block ) {
+			$first   = strtok( $block, "\n" );
+			$is_full = false !== strpos( $first, '"align":"full"' );
+
+			$out[] = sprintf(
+				"<!-- wp:group {%s\"className\":\"%s\",\"layout\":{\"type\":\"default\"}} -->\n<div class=\"wp-block-group %s%s\">\n%s\n</div>\n<!-- /wp:group -->",
+				$is_full ? '"align":"full",' : '',
+				esc_attr( $classes ),
+				$is_full ? 'alignfull ' : '',
+				esc_attr( $classes ),
+				$block
+			);
+		}
+
+		return implode( "\n\n", $out );
 	}
 
 	/* ---------------------------------------------------------------------
@@ -137,6 +171,18 @@ class HtmlToBlocks {
 	 * @return string
 	 */
 	private function convert_children( \DOMNode $parent, $top_level = false ) {
+		return implode( "\n\n", $this->convert_children_blocks( $parent, $top_level ) );
+	}
+
+	/**
+	 * Same conversion, but returning the top-level blocks as an array so
+	 * convert() can wrap each section individually.
+	 *
+	 * @param \DOMNode $parent
+	 * @param bool     $top_level
+	 * @return string[]
+	 */
+	private function convert_children_blocks( \DOMNode $parent, $top_level = false ) {
 		$blocks         = array();
 		$pending_buttons = array();
 
@@ -181,7 +227,7 @@ class HtmlToBlocks {
 
 		$flush_buttons();
 
-		return implode( "\n\n", $blocks );
+		return $blocks;
 	}
 
 	/**

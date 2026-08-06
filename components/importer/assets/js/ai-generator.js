@@ -615,6 +615,9 @@ jQuery( function ( $ ) {
 
 		running = true;
 		showStep( 'progress' );
+		// Clear the previous run's checklist — it would otherwise linger
+		// through the whole plan-design phase on a repeat generation.
+		$root.find( '.js-iss-ai-progress-pages' ).empty();
 		setProgress( t.step_plan || '', 0.08 );
 
 		ajax( 'inspiro_starter_sites_ai_generate', {
