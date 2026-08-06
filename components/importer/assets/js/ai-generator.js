@@ -766,7 +766,13 @@ jQuery( function ( $ ) {
 
 				var $list = $root.find( '.js-iss-ai-page-list' ).empty();
 				$.each( planState.pages || [], function ( i, page ) {
-					$list.append( $( '<li>' ).text( page.title ) );
+					$list.append(
+						$( '<li>' ).append(
+							$( '<span>' ).addClass( 'iss-ai-page-pill' )
+								.append( $( '<span>' ).addClass( 'iss-ai-page-pill__check' ).attr( 'aria-hidden', 'true' ).html( '&#10003;' ) )
+								.append( $( '<span>' ).text( page.title ) )
+						)
+					);
 				} );
 
 				if ( planState.site_title ) {
