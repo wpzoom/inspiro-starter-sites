@@ -654,6 +654,32 @@ class AiDemoGenerator {
 		$stream = new StreamingResponse();
 		$stream->begin();
 
+		try {
+			$this->generate_pipeline( $stream, $quota, $description );
+		} catch ( \Throwable $e ) {
+			// An unexpected fatal after the reserve would silently burn one
+			// of the user's free generations — give the unit back first.
+			$this->proxy->quota( 'refund' );
+			error_log( '[inspiro-starter-sites AI] generation failed with exception: ' . $e->getMessage() ); // phpcs:ignore
+			$stream->finish_error(
+				array(
+					'message' => esc_html__( 'Something went wrong during generation. Your free generation was not used — please try again.', 'inspiro-starter-sites' ),
+					'detail'  => 'exception',
+				)
+			);
+		}
+	}
+
+	/**
+	 * The generation flow after the quota reserve: design plan → sample
+	 * cleanup → plan transient → response. Runs inside ajax_generate()'s
+	 * try/catch so any uncaught error refunds the reserved unit.
+	 *
+	 * @param StreamingResponse $stream      Committed streaming response.
+	 * @param array             $quota       Quota reservation (for 'remaining').
+	 * @param string            $description The user's demo description.
+	 */
+	private function generate_pipeline( StreamingResponse $stream, array $quota, $description ) {
 		$style_options   = $this->style_options();
 		$palette_options = $this->palette_options();
 
@@ -731,6 +757,19 @@ class AiDemoGenerator {
 		// Whether to delete the previous AI demo before building the new one
 		// (the UI shows an explicit, checked-by-default warning checkbox).
 		$replace = ! isset( $_POST['replace'] ) || '0' !== $_POST['replace'];
+
+		// Sweep image-budget counters orphaned by generations that died before
+		// finalize. They are raw options (needed for the atomic increment),
+		// not transients, so they never expire on their own. Safe here: the
+		// new plan_id doesn't exist yet and finished demos already deleted
+		// theirs in finalize.
+		global $wpdb;
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+				$wpdb->esc_like( self::PLAN_TRANSIENT_PREFIX ) . '%' . $wpdb->esc_like( '_imgs' )
+			)
+		);
 
 		// Sample-content and previous-demo cleanup happen NOW — after the plan
 		// succeeded (a failed generation never deletes anything) and before
