@@ -424,6 +424,13 @@ class AiProxyClient {
 	 * @return string '' when no active license.
 	 */
 	public static function premium_license() {
+		// The licensed limit is tied to USING the premium theme, not merely
+		// owning a key: switching back to Lite leaves the license options in
+		// the database, but they only count while premium is active.
+		if ( ! class_exists( 'WPZOOM' ) ) {
+			return '';
+		}
+
 		if ( 'valid' !== get_option( 'inspiro_license_key_status' ) ) {
 			return '';
 		}
