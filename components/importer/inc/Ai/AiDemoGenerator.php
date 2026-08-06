@@ -2297,6 +2297,16 @@ class AiDemoGenerator {
 			return '';
 		}
 
+		// Prepended BEFORE the AI CSS at matched (0,1,0) specificity: the
+		// premium theme blanket-centers group children (".wp-block-group >
+		// :where(:not(.alignleft)...)  { margin: auto }"), which centers any
+		// max-width element the AI meant to left-align. This tie-breaks the
+		// theme rule by source order (our style block prints later in
+		// wp_head), while the AI CSS below still wins over it the same way,
+		// so AI-authored centering (e.g. .ai-container) is preserved.
+		$css = '.iss-ai-demo :where(.wp-block-group) > :where(:not(.alignleft):not(.alignright):not(.alignfull)){margin-left:0;margin-right:0}'
+			. "\n" . $css;
+
 		// Bridge rules appended after the AI CSS:
 		// - neutralize theme styles that interfere inside the demo scope;
 		// - buttons must never inherit the AI's generic link underline;
