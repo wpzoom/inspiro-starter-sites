@@ -5,7 +5,7 @@ Author URI:			https://www.wpzoom.com/
 Requires at least: 	6.5
 Tested up to: 		7.0
 Requires PHP: 		7.4  
-Stable tag: 		1.1.4
+Stable tag: 		1.2.0
 License: 			GPLv2 or later  
 License URI: 		https://www.gnu.org/licenses/gpl-2.0.html
 Tags: 				starter sites, templates, demo importer, elementor, gutenberg
@@ -15,6 +15,8 @@ Import free starter sites & demo templates for Gutenberg, Elementor and WooComme
 == Description ==
 
 **Inspiro Starter Sites** is a free library of **starter sites and demo templates** for WordPress. Import a complete, professionally designed website — built for the **Gutenberg block editor**, **Elementor**, and **WooCommerce** — in just a few clicks, then customize it to match your brand.
+
+**✨ NEW: AI Demo Generator (Beta)** — don't see a demo that fits? Describe your website and let AI design and build a custom demo just for you: real pages, photos, menu and colors, ready in about two minutes and 100% editable with native blocks.
 
 No page-building from scratch and no coding required: pick a demo, run the one-click importer, and get a ready-made site with pages, images, menus, widgets and customizer settings already set up.
 
@@ -125,6 +127,15 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 4. Demo Imported message
 
 == Changelog ==
+
+= 1.2.0 =
+* New: ✨ AI Demo Generator (Beta) — describe your website and AI designs and builds a complete, custom demo with pages, photos, menu and colors in about two minutes
+* New: AI demos are built with 100% native blocks — cover, columns, gallery, query loop, social icons — plus WPZOOM Portfolio and WPZOOM Forms integration where the site calls for them
+* New: Pick a design style, color palette and typography for AI demos, or let the AI decide; the chosen palette is also applied to the theme's accent color
+* New: Free AI generations included after connecting your email; Inspiro Premium users with an active license get more
+* New: The AI generator also appears at the top of the Inspiro Premium demo importer
+* Improved: Demo Importer page layout — the AI generator sits at the top and the starter sites header is more compact
+* Improved: Generated demo pages align with the theme's content width on all screen sizes
 
 = 1.1.4 =
 * New demo: Creative Agency
