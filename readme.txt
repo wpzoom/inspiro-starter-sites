@@ -3,9 +3,9 @@ Contributors: 		WPZOOM
 Donate link:		http://paypal.me/wpzm/10usd
 Author URI:			https://www.wpzoom.com/  
 Requires at least: 	6.5
-Tested up to: 		7.0
+Tested up to: 		7.1
 Requires PHP: 		7.4  
-Stable tag: 		1.2.0
+Stable tag: 		1.2.1
 License: 			GPLv2 or later  
 License URI: 		https://www.gnu.org/licenses/gpl-2.0.html
 Tags: 				starter sites, templates, demo importer, elementor, gutenberg
@@ -85,6 +85,18 @@ This plugin incorporates code from the [One Click Demo Import](https://wordpress
 * 📘 [Facebook Group](https://www.facebook.com/groups/wpzoom)
 * 🌄 [Instagram](https://instagram.com/wpzoom)
 
+== External services ==
+
+This plugin connects to the following external services. No data is sent to any of them without an explicit action by the site administrator (importing a starter site, or using the AI Demo Generator).
+
+**WPZOOM demo servers (wpzoom.com, ai.wpzoom.com)**
+When you import a starter site, the demo package (content, images, widgets and customizer settings) is downloaded from WPZOOM's servers to your site. If you submit the optional "Suggest a demo" feedback form, the text you enter is sent to wpzoom.com.
+Terms of service: https://www.wpzoom.com/terms-and-conditions/ — Privacy policy: https://www.wpzoom.com/privacy-policy/
+
+**Google Fonts (fonts.googleapis.com)**
+Font stylesheets for AI-generated demos are fetched once by your server and the font files are stored locally on your site. Your visitors' browsers never connect to Google's servers.
+Terms: https://developers.google.com/fonts/terms — Privacy policy: https://policies.google.com/privacy
+
 == Installation ==
 
 = Installation from within WordPress =
@@ -127,6 +139,9 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 4. Demo Imported message
 
 == Changelog ==
+
+= 1.2.1 =
+* Multiple fixes and improvements for the AI Demo Generator
 
 = 1.2.0 =
 * New: ✨ AI Demo Generator (Beta) — describe your website and AI designs and builds a complete, custom demo with pages, photos, menu and colors in about two minutes

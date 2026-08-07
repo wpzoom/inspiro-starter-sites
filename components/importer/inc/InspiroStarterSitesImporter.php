@@ -924,9 +924,26 @@ class InspiroStarterSitesImporter {
 
 
 	public function delete_imported_demo_ajax_callback() {
-		
+
 		// Verify if the AJAX call is valid (checks nonce and current_user_can).
 		Helpers::verify_ajax_call();
+
+		$this->delete_imported_demo();
+
+		// Send a JSON response with success message.
+		wp_send_json_success(
+			esc_html__( 'Demo data has been deleted successfully.', 'inspiro-starter-sites' )
+		);
+	}
+
+	/**
+	 * Delete everything a previous demo import created: tracked posts, forms
+	 * and terms, imported widgets, customizer leftovers and the demo marker.
+	 * Reusable outside AJAX (e.g. the AI generator replacing a classic demo).
+	 *
+	 * @return void
+	 */
+	public function delete_imported_demo() {
 
 		// Get the demo ID to delete.
 		$reset_data = $this->get_reset_data();
@@ -967,12 +984,6 @@ class InspiroStarterSitesImporter {
 
 		// Delete the demo ID option.
 		delete_option( 'inspiro_starter_sites_imported_demo_id' );
-
-		// Send a JSON response with success message.
-		wp_send_json_success(
-			esc_html__( 'Demo data has been deleted successfully.', 'inspiro-starter-sites' )
-		);
-
 	}
 
 	/**

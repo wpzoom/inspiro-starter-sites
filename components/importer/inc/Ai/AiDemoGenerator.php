@@ -74,6 +74,12 @@ class AiDemoGenerator {
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_build_page', array( $this, 'ajax_build_page' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_finalize', array( $this, 'ajax_finalize' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_delete', array( $this, 'ajax_delete' ) );
+
+		// Mirror of the pre-import starter-content warning: when an AI demo
+		// exists, warn before a CLASSIC demo import that it won't remove the
+		// AI content (priority 6 = right after the starter-content notice).
+		add_action( 'inspiro_starter_sites_admin_page', array( $this, 'render_import_over_ai_notice' ), 6 );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_dismiss_import_notice', array( $this, 'ajax_dismiss_import_notice' ) );
 	}
 
 	/**
@@ -155,6 +161,7 @@ class AiDemoGenerator {
 		<div class="iss-ai-root js-iss-ai-root" hidden></div>
 		<div class="js-iss-ai-premium-hero" hidden>
 			<?php $this->render_hero(); ?>
+			<?php $this->render_import_over_ai_notice(); ?>
 		</div>
 		<script>
 		jQuery( function ( $ ) {
@@ -363,8 +370,12 @@ class AiDemoGenerator {
 					'replace_notice'   => __( 'Generating a new demo will permanently delete the %2$s page(s) from “%1$s” — including any changes you made to them.', 'inspiro-starter-sites' ),
 					/* translators: %s: number of pages */
 					'replace_notice_unnamed' => __( 'Generating a new demo will permanently delete the %s previously generated AI page(s) — including any changes you made to them.', 'inspiro-starter-sites' ),
-					'replace_checkbox' => __( 'Delete the previous AI demo when generating the new one', 'inspiro-starter-sites' ),
-					'replace_keep_hint'=> __( 'Uncheck to keep the old pages — they will remain published alongside the new demo.', 'inspiro-starter-sites' ),
+					'replace_checkbox' => __( 'Delete the previous demo when generating the new one', 'inspiro-starter-sites' ),
+					'replace_keep_hint'=> __( 'Uncheck to keep the old content — it will remain published alongside the new demo.', 'inspiro-starter-sites' ),
+					'replace_title_classic' => __( 'You already have an imported demo', 'inspiro-starter-sites' ),
+					/* translators: %s: imported demo name */
+					'replace_notice_classic' => __( 'The previously imported “%s” demo was detected. Generating an AI demo will permanently delete its content (pages, posts, images, menus) — including any changes you made.', 'inspiro-starter-sites' ),
+					'replace_notice_classic_unnamed' => __( 'A previously imported starter site was detected. Generating an AI demo will permanently delete its content (pages, posts, images, menus) — including any changes you made.', 'inspiro-starter-sites' ),
 					'delete_now'       => __( 'Delete the AI demo now (without generating a new one)', 'inspiro-starter-sites' ),
 					'delete_confirm'   => __( 'Permanently delete all AI-generated pages, their images, the demo menu and footer widgets? Content that existed before the AI demo is not affected. This cannot be undone.', 'inspiro-starter-sites' ),
 					'deleting'         => __( 'Deleting…', 'inspiro-starter-sites' ),
@@ -427,7 +438,7 @@ class AiDemoGenerator {
 		// server first — without one, tell the UI to show the connect step
 		// instead of quota numbers.
 		if ( ! $this->proxy->is_connected() ) {
-			wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info() ) ) );
+			wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info() ) ) );
 		}
 
 		$quota = $this->proxy->quota( 'check' );
@@ -437,12 +448,12 @@ class AiDemoGenerator {
 				// The server no longer recognizes our key (e.g. wiped data) —
 				// forget it so the user can re-connect.
 				$this->proxy->disconnect();
-				wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info() ) ) );
+				wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info() ) ) );
 			}
 			wp_send_json_error( array( 'message' => $quota->get_error_message() ) );
 		}
 
-		wp_send_json_success( array_merge( $this->quota_payload( $quota ), array( 'previous' => $this->previous_demo_info() ) ) );
+		wp_send_json_success( array_merge( $this->quota_payload( $quota ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info() ) ) );
 	}
 
 	/**
@@ -469,6 +480,216 @@ class AiDemoGenerator {
 	 *
 	 * @return array|null
 	 */
+	/**
+	 * Warning shown above the classic demo grid when an AI-generated demo
+	 * exists: importing a starter site will NOT remove the AI content, so
+	 * offer one-click deletion first. Dismissal is remembered per AI demo —
+	 * generating a new one brings the notice back.
+	 */
+	public function render_import_over_ai_notice() {
+		$previous = $this->previous_demo_info();
+		if ( ! $previous || empty( $previous['page_count'] ) ) {
+			return;
+		}
+
+		$demos          = get_option( self::DEMOS_OPTION, array() );
+		$latest_plan_id = is_array( $demos ) && $demos ? (string) array_key_last( $demos ) : 'unknown';
+
+		if ( get_user_meta( get_current_user_id(), 'inspiro_ai_import_notice_dismissed', true ) === $latest_plan_id ) {
+			return;
+		}
+
+		$title = '' !== $previous['site_title']
+			/* translators: %s: AI demo site title */
+			? sprintf( __( 'You have an AI-generated demo: “%s”', 'inspiro-starter-sites' ), $previous['site_title'] )
+			: __( 'You have an AI-generated demo', 'inspiro-starter-sites' );
+		?>
+		<div class="notice notice-warning inspiro-ai-import-notice" style="margin: 20px 0; padding: 15px; border-left: 4px solid #ffba00;">
+			<h3 style="margin-top: 0;"><?php echo esc_html( $title ); ?></h3>
+			<p>
+				<?php
+				printf(
+					/* translators: %d: number of AI-generated pages */
+					esc_html__( 'Importing a starter site below will NOT remove your AI-generated demo — its %d page(s), menu and homepage setting would remain and collide with the imported demo. We recommend deleting the AI demo first.', 'inspiro-starter-sites' ),
+					(int) $previous['page_count']
+				);
+				?>
+			</p>
+			<p>
+				<button type="button" class="button button-primary js-inspiro-ai-import-notice-delete">
+					<?php esc_html_e( 'Delete AI Demo', 'inspiro-starter-sites' ); ?>
+				</button>
+				<button type="button" class="button js-inspiro-ai-import-notice-keep" style="margin-left: 8px;">
+					<?php esc_html_e( 'Keep It & Continue', 'inspiro-starter-sites' ); ?>
+				</button>
+				<span class="spinner" style="float: none; margin: 0 10px;"></span>
+				<span class="js-inspiro-ai-import-notice-result"></span>
+			</p>
+		</div>
+		<script>
+		jQuery( function ( $ ) {
+			var $notice = $( '.inspiro-ai-import-notice' );
+			var nonce   = <?php echo wp_json_encode( wp_create_nonce( 'inspiro-starter-sites-ajax-verification' ) ); ?>;
+
+			$notice.on( 'click', '.js-inspiro-ai-import-notice-delete', function () {
+				var $btn = $( this );
+				if ( $btn.prop( 'disabled' ) ) {
+					return;
+				}
+				$btn.prop( 'disabled', true );
+				$notice.find( '.spinner' ).addClass( 'is-active' );
+
+				$.post( ajaxurl, { action: 'inspiro_starter_sites_ai_delete', security: nonce } )
+					.done( function ( res ) {
+						if ( res && res.success ) {
+							window.location.reload();
+						} else {
+							$btn.prop( 'disabled', false );
+							$notice.find( '.spinner' ).removeClass( 'is-active' );
+							$notice.find( '.js-inspiro-ai-import-notice-result' ).text( ( res && res.data && res.data.message ) || <?php echo wp_json_encode( __( 'Something went wrong. Please try again.', 'inspiro-starter-sites' ) ); ?> );
+						}
+					} )
+					.fail( function () {
+						$btn.prop( 'disabled', false );
+						$notice.find( '.spinner' ).removeClass( 'is-active' );
+						$notice.find( '.js-inspiro-ai-import-notice-result' ).text( <?php echo wp_json_encode( __( 'Something went wrong. Please try again.', 'inspiro-starter-sites' ) ); ?> );
+					} );
+			} );
+
+			$notice.on( 'click', '.js-inspiro-ai-import-notice-keep', function () {
+				$notice.slideUp( 150 );
+				$.post( ajaxurl, { action: 'inspiro_starter_sites_ai_dismiss_import_notice', security: nonce } );
+			} );
+		} );
+		</script>
+		<?php
+	}
+
+	/**
+	 * Remember the "Keep It & Continue" dismissal for the current AI demo.
+	 */
+	public function ajax_dismiss_import_notice() {
+		Helpers::verify_ajax_call();
+
+		$demos          = get_option( self::DEMOS_OPTION, array() );
+		$latest_plan_id = is_array( $demos ) && $demos ? (string) array_key_last( $demos ) : 'unknown';
+
+		update_user_meta( get_current_user_id(), 'inspiro_ai_import_notice_dismissed', $latest_plan_id );
+		wp_send_json_success();
+	}
+
+	/**
+	 * A previously imported CLASSIC demo (starter site), from either this
+	 * plugin's importer or the premium theme framework's demo importer.
+	 * Premium detection goes by its tracking meta, not theme mods — theme
+	 * mods are per-theme and vanish from view after a theme switch while
+	 * the imported content remains.
+	 *
+	 * @return array|null [ 'title' => string, 'source' => string ] or null.
+	 */
+	public function classic_demo_info() {
+		$plugin_demo = (string) get_option( 'inspiro_starter_sites_imported_demo_id', '' );
+		if ( '' !== $plugin_demo ) {
+			return array(
+				'title'  => ucwords( str_replace( array( '-', '_' ), ' ', $plugin_demo ) ),
+				'source' => 'starter-sites',
+			);
+		}
+
+		$premium_posts = get_posts(
+			array(
+				'post_type'      => 'any',
+				'post_status'    => 'any',
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'meta_key'       => '_wpzoom_demo_importer_imported_post', // phpcs:ignore WordPress.DB.SlowDBQuery
+			)
+		);
+		if ( $premium_posts ) {
+			$design = (string) get_theme_mod( 'wpz_demo_imported', '' );
+
+			return array(
+				'title'  => $design ? ucwords( str_replace( array( '-', '_' ), ' ', $design ) ) : '',
+				'source' => 'premium',
+			);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Delete a previously imported classic demo — the counterpart of
+	 * delete_previous_ai_demos() for starter-site imports. Runs only in the
+	 * replace flow, after the user saw the explicit warning checkbox.
+	 */
+	private function delete_classic_demo() {
+		// This plugin's importer: reuse its own full cleanup (posts, forms,
+		// terms, widgets, customizer leftovers, demo marker).
+		if ( get_option( 'inspiro_starter_sites_imported_demo_id' )
+			&& class_exists( '\Inspiro\Starter_Sites\InspiroStarterSitesImporter' ) ) {
+			$importer = \Inspiro\Starter_Sites\InspiroStarterSitesImporter::get_instance();
+			if ( method_exists( $importer, 'delete_imported_demo' ) ) {
+				$importer->delete_imported_demo();
+			}
+		}
+
+		// Premium framework importer: delete its tracked content directly.
+		$premium_posts = get_posts(
+			array(
+				'post_type'      => 'any',
+				'post_status'    => 'any',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'meta_key'       => '_wpzoom_demo_importer_imported_post', // phpcs:ignore WordPress.DB.SlowDBQuery
+			)
+		);
+		foreach ( $premium_posts as $post_id ) {
+			if ( 'elementor_library' === get_post_type( $post_id ) ) {
+				continue;
+			}
+			wp_delete_post( $post_id, true );
+		}
+
+		$premium_forms = get_posts(
+			array(
+				'post_type'      => 'any',
+				'post_status'    => 'any',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'meta_key'       => '_wpzoom_demo_importer_imported_wp_forms', // phpcs:ignore WordPress.DB.SlowDBQuery
+			)
+		);
+		foreach ( $premium_forms as $form_id ) {
+			wp_delete_post( $form_id, true );
+		}
+
+		$premium_terms = get_terms(
+			array(
+				'hide_empty' => false,
+				'fields'     => 'ids',
+				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery
+					array(
+						'key'     => '_wpzoom_demo_importer_imported_term',
+						'compare' => 'EXISTS',
+					),
+				),
+			)
+		);
+		if ( ! is_wp_error( $premium_terms ) ) {
+			foreach ( $premium_terms as $term_id ) {
+				$term = get_term( $term_id );
+				if ( $term && ! is_wp_error( $term ) ) {
+					wp_delete_term( $term_id, $term->taxonomy );
+				}
+			}
+		}
+
+		if ( $premium_posts ) {
+			remove_theme_mod( 'wpz_demo_imported' );
+			remove_theme_mod( 'wpz_demo_imported_timestamp' );
+		}
+	}
+
 	public function previous_demo_info() {
 		$previous_pages = get_posts(
 			array(
@@ -531,7 +752,7 @@ class AiDemoGenerator {
 
 		wp_send_json_success( array_merge(
 			$this->quota_payload( is_wp_error( $quota ) ? array() : $quota ),
-			array( 'previous' => $this->previous_demo_info() )
+			array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info() )
 		) );
 	}
 
@@ -572,7 +793,7 @@ class AiDemoGenerator {
 
 		wp_send_json_success( array_merge(
 			$this->quota_payload( is_wp_error( $quota ) ? array() : $quota ),
-			array( 'previous' => $this->previous_demo_info() )
+			array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info() )
 		) );
 	}
 
@@ -643,7 +864,9 @@ class AiDemoGenerator {
 			wp_send_json_error(
 				array(
 					'code'    => 'quota_exhausted',
-					'message' => esc_html__( 'You have used all your free AI generations for this site.', 'inspiro-starter-sites' ),
+					'message' => ! empty( $quota['licensed'] )
+						? esc_html__( 'You have used all the AI generations included with your license.', 'inspiro-starter-sites' )
+						: esc_html__( 'You have used all your free AI generations for this site.', 'inspiro-starter-sites' ),
 				)
 			);
 		}
@@ -777,6 +1000,7 @@ class AiDemoGenerator {
 		Helpers::delete_default_posts();
 		if ( $replace ) {
 			$this->delete_previous_ai_demos( $plan_id );
+			$this->delete_classic_demo();
 		}
 		$stream->tick();
 

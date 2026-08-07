@@ -261,9 +261,12 @@ $platform_labels = array(
 							? implode( ' ', array_map( 'sanitize_html_class', $import_file['categories'] ) )
 							: '';
 					?>
-				<li data-name="<?php echo esc_attr( strtolower( $import_file['import_file_name'] ) ); ?>" data-import-id="<?php echo esc_attr( $import_file['import_id'] ); ?>" data-type="<?php echo esc_attr( $demo_type ); ?>" data-categories="<?php echo esc_attr( $demo_categories ); ?>">
+				<li class="<?php echo $imported_demo ? 'is-imported' : ''; ?>" data-name="<?php echo esc_attr( strtolower( $import_file['import_file_name'] ) ); ?>" data-import-id="<?php echo esc_attr( $import_file['import_id'] ); ?>" data-type="<?php echo esc_attr( $demo_type ); ?>" data-categories="<?php echo esc_attr( $demo_categories ); ?>">
 					<figure title="<?php echo esc_attr( $import_file['import_file_name'] ); ?>">
 						<div class="preview-thumbnail inspiro-starter-sites-import" style="background-image:url('<?php echo esc_url( $img_src ) ?>')">
+							<?php if ( $imported_demo ) : ?>
+								<span class="inspiro-starter-sites-imported-flag"><span aria-hidden="true">&#10003;</span> <?php esc_html_e( 'Imported', 'inspiro-starter-sites' ); ?></span>
+							<?php endif; ?>
 							<a href="<?php echo esc_url( $import_file['preview_url'] ); ?>" target="_blank" class="button-select-template"><?php esc_html_e( 'View Demo', 'inspiro-starter-sites' ); ?></a></div>
 						<figcaption>
 							<div class="inspiro-starter-sites-demo-name">
@@ -360,10 +363,25 @@ $platform_labels = array(
 
 						$demo_types_attr = implode( ' ', array_map( 'sanitize_html_class', $unit_types( $unit ) ) );
 						$demo_categories = implode( ' ', array_map( 'sanitize_html_class', $unit_categories( $unit ) ) );
+
+						// The whole group counts as imported when any of its
+						// variants matches the imported demo.
+						$group_imported = false;
+						if ( $imported_demo_id ) {
+							foreach ( $variants as $vfile ) {
+								if ( isset( $vfile['import_id'] ) && $imported_demo_id == $vfile['import_id'] ) {
+									$group_imported = true;
+									break;
+								}
+							}
+						}
 					?>
-					<li class="inspiro-starter-sites-demo-card-grouped" data-name="<?php echo esc_attr( strtolower( $group_name ) ); ?>" data-import-id="<?php echo esc_attr( $active_file['import_id'] ); ?>" data-type="<?php echo esc_attr( $demo_types_attr ); ?>" data-categories="<?php echo esc_attr( $demo_categories ); ?>" data-active-variant="<?php echo esc_attr( $active_type ); ?>">
+					<li class="inspiro-starter-sites-demo-card-grouped <?php echo $group_imported ? 'is-imported' : ''; ?>" data-name="<?php echo esc_attr( strtolower( $group_name ) ); ?>" data-import-id="<?php echo esc_attr( $active_file['import_id'] ); ?>" data-type="<?php echo esc_attr( $demo_types_attr ); ?>" data-categories="<?php echo esc_attr( $demo_categories ); ?>" data-active-variant="<?php echo esc_attr( $active_type ); ?>">
 						<figure title="<?php echo esc_attr( $group_name ); ?>">
 							<div class="preview-thumbnail inspiro-starter-sites-import js-inspiro-starter-sites-variant-thumb" style="background-image:url('<?php echo esc_url( $active_img ); ?>')">
+								<?php if ( $group_imported ) : ?>
+									<span class="inspiro-starter-sites-imported-flag"><span aria-hidden="true">&#10003;</span> <?php esc_html_e( 'Imported', 'inspiro-starter-sites' ); ?></span>
+								<?php endif; ?>
 								<a href="<?php echo esc_url( $active_file['preview_url'] ); ?>" target="_blank" class="button-select-template js-inspiro-starter-sites-variant-preview"><?php esc_html_e( 'View Demo', 'inspiro-starter-sites' ); ?></a></div>
 							<figcaption>
 								<div class="inspiro-starter-sites-demo-name">

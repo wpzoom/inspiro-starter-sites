@@ -456,6 +456,31 @@ body:not(.inspiro_page_inspiro-demo) #wpcontent {
   padding-top: 118.5% !important;
 }
 
+/* The currently imported demo: green ring + flag so it stands out in the grid. */
+.inspiro-starter-sites .step-choose-design form ul li.is-imported figure .preview-thumbnail {
+  position: relative;
+  outline: 3px solid #00a32a;
+  outline-offset: -1px;
+}
+
+.inspiro-starter-sites-imported-flag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #00a32a;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
 .inspiro-starter-sites .wpz-onboard_content-main-step.step-choose-design .inspiro-starter-sites-demo-name {
   display: flex;
   align-items: center;

@@ -441,7 +441,7 @@ jQuery( function ( $ ) {
 		connected = !! data.connected;
 
 		renderQuota();
-		renderReplaceNotice( data.previous );
+		renderReplaceNotice( data.previous, data.classic );
 
 		if ( ! connected ) {
 			showStep( 'connect' );
@@ -463,23 +463,39 @@ jQuery( function ( $ ) {
 		}
 	}
 
-	// Prominent warning when a previously generated AI demo exists: it will
-	// be deleted (edits included) unless the user unchecks the box.
-	function renderReplaceNotice( previous ) {
+	// Prominent warning when a previous demo exists — an AI-generated one OR
+	// a classic starter site imported via this plugin or the premium theme's
+	// importer. Either will be deleted (edits included) unless unchecked.
+	function renderReplaceNotice( previous, classic ) {
 		var $notice = $root.find( '.js-iss-ai-replace-notice' );
 
 		renderHeroExisting( previous );
 
-		if ( ! previous || ! previous.page_count ) {
+		var title = '';
+		var text  = '';
+
+		if ( previous && previous.page_count ) {
+			title = t.replace_title || '';
+			text  = previous.site_title
+				? sprintf( t.replace_notice || '', previous.site_title, previous.page_count )
+				: sprintf( t.replace_notice_unnamed || '', previous.page_count );
+		} else if ( classic ) {
+			title = t.replace_title_classic || '';
+			text  = classic.title
+				? sprintf( t.replace_notice_classic || '', classic.title )
+				: ( t.replace_notice_classic_unnamed || '' );
+		}
+
+		if ( ! text ) {
 			$notice.attr( 'hidden', 'hidden' );
 			return;
 		}
 
-		var text = previous.site_title
-			? sprintf( t.replace_notice || '', previous.site_title, previous.page_count )
-			: sprintf( t.replace_notice_unnamed || '', previous.page_count );
-
+		$notice.find( 'strong' ).first().text( title );
 		$notice.find( '.js-iss-ai-replace-text' ).text( text );
+		// The "delete now" link deletes AI demos only — hide it when the
+		// warning is about a classic starter-site import.
+		$notice.find( '.js-iss-ai-delete' ).toggle( !! ( previous && previous.page_count ) );
 		$notice.removeAttr( 'hidden' );
 	}
 
