@@ -895,14 +895,43 @@ body.iss-ai-open {
   color: #8a2424;
 }
 
-/* The second link in the replace notice edits CSS — not destructive. */
-.js-iss-ai-edit-css {
-  margin-left: 14px;
+/* Actions inside the replace notice, as small buttons. */
+.iss-ai-replace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.iss-ai-mini-btn {
+  padding: 6px 13px;
+  border: 1px solid #c3c4c7;
+  border-radius: 4px;
+  background: #fff;
+  color: #2c3338;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.iss-ai-mini-btn:hover,
+.iss-ai-mini-btn:focus {
+  border-color: #3858e9;
   color: #3858e9;
 }
 
-.js-iss-ai-edit-css:hover {
-  color: #2a46c9;
+.iss-ai-mini-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.iss-ai-mini-btn--danger:hover,
+.iss-ai-mini-btn--danger:focus {
+  border-color: #b32d2e;
+  background: #fcf0f1;
+  color: #b32d2e;
 }
 
 /* Demo stylesheet editor */
@@ -933,6 +962,26 @@ body.iss-ai-open {
   border-color: #3858e9;
   outline: 2px solid transparent;
   box-shadow: 0 0 0 1px #3858e9;
+}
+
+/* CodeMirror (wp_enqueue_code_editor) replaces the textarea with its own
+   element — give it the same frame and height as the plain fallback. */
+.iss-ai-step-css .CodeMirror {
+  height: 340px;
+  border: 1px solid #dcdcde;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.iss-ai-step-css .CodeMirror-focused {
+  border-color: #3858e9;
+  box-shadow: 0 0 0 1px #3858e9;
+}
+
+/* WP prints lint errors in a panel below the editor. */
+.iss-ai-step-css .CodeMirror-lint-tooltip {
+  z-index: 100010;
 }
 
 .iss-ai-css-result {

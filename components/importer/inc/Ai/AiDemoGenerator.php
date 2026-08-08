@@ -233,12 +233,19 @@ class AiDemoGenerator {
 			wp_enqueue_style( 'inspiro-starter-sites-ai-preview-fonts', $preview_fonts, array(), null ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
 		}
 
+		// WordPress' own CSS editor (CodeMirror) for the demo stylesheet —
+		// same syntax highlighting and linting as Customizer → Additional CSS.
+		// Returns false when the user disabled syntax highlighting in their
+		// profile, in which case the plain textarea is used as-is.
+		$code_editor = wp_enqueue_code_editor( array( 'type' => 'text/css' ) );
+
 		wp_localize_script(
 			'inspiro-starter-sites-ai-generator-js',
 			'inspiro_starter_sites_ai',
 			array(
 				'ajax_url'    => admin_url( 'admin-ajax.php' ),
 				'ajax_nonce'  => wp_create_nonce( 'inspiro-starter-sites-ajax-verification' ),
+				'code_editor' => $code_editor ? $code_editor : null,
 				'pages_url'   => admin_url( 'edit.php?post_type=page' ),
 				'site_url'    => home_url( '/' ),
 				'upgrade_url' => 'https://www.wpzoom.com/themes/inspiro-lite/upgrade/?utm_source=wpadmin&utm_medium=ai-demo&utm_campaign=ai-quota-upsell',
@@ -378,10 +385,11 @@ class AiDemoGenerator {
 					/* translators: %s: imported demo name */
 					'replace_notice_classic' => __( 'The previously imported “%s” demo was detected. Generating an AI demo will permanently delete its content (pages, posts, images, menus) — including any changes you made.', 'inspiro-starter-sites' ),
 					'replace_notice_classic_unnamed' => __( 'A previously imported starter site was detected. Generating an AI demo will permanently delete its content (pages, posts, images, menus) — including any changes you made.', 'inspiro-starter-sites' ),
-					'delete_now'       => __( 'Delete the AI demo now (without generating a new one)', 'inspiro-starter-sites' ),
+					'delete_now'       => __( 'Delete demo now', 'inspiro-starter-sites' ),
 					'delete_confirm'   => __( 'Permanently delete all AI-generated pages, their images, the demo menu and footer widgets? Content that existed before the AI demo is not affected. This cannot be undone.', 'inspiro-starter-sites' ),
 					'deleting'         => __( 'Deleting…', 'inspiro-starter-sites' ),
-					'edit_css_link'    => __( 'View &amp; edit this demo\'s CSS', 'inspiro-starter-sites' ),
+					// Plain "&" — the modal's JS escapes strings before insertion.
+					'edit_css_link'    => __( 'View & edit CSS', 'inspiro-starter-sites' ),
 					'edit_css_title'   => __( 'Demo stylesheet', 'inspiro-starter-sites' ),
 					/* translators: %s: demo site title */
 					'edit_css_intro'   => __( 'This stylesheet gives “%s” its design. It only applies to the AI-generated pages, so changes here never affect the rest of your site. Every rule must stay scoped to .iss-ai-demo.', 'inspiro-starter-sites' ),
@@ -906,9 +914,116 @@ class AiDemoGenerator {
 			array(
 				'plan_id'    => $demo['plan_id'],
 				'site_title' => $record['site_title'],
-				'css'        => $record['css'],
+				// Readable in the editor; stored and served minified.
+				'css'        => $this->beautify_css( $record['css'] ),
 			)
 		);
+	}
+
+	/**
+	 * Expand the stored (minified) stylesheet into a readable, indented form
+	 * for the editor. Quoted strings are protected so separators inside them
+	 * are never treated as syntax.
+	 *
+	 * @param string $css Minified CSS.
+	 * @return string Pretty-printed CSS.
+	 */
+	private function beautify_css( $css ) {
+		$css = (string) $css;
+		if ( '' === trim( $css ) ) {
+			return '';
+		}
+
+		list( $css, $strings ) = $this->mask_css_strings( $css );
+
+		// One declaration/selector per line.
+		$css = preg_replace( '/\s*\{\s*/', " {\n", $css );
+		$css = preg_replace( '/\s*;\s*/', ";\n", $css );
+		$css = preg_replace( '/\s*\}\s*/', "\n}\n", $css );
+		$css = preg_replace( '/,\s*(?=[^{}]*\{)/', ",\n", $css ); // selector lists
+
+		$out   = array();
+		$depth = 0;
+		foreach ( preg_split( '/\n/', $css ) as $line ) {
+			$line = trim( $line );
+			if ( '' === $line ) {
+				continue;
+			}
+			if ( 0 === strpos( $line, '}' ) ) {
+				$depth = max( 0, $depth - 1 );
+			}
+
+			// Space after the property colon — declarations only, so pseudo
+			// selectors (":where(", "a:hover") keep their exact syntax.
+			if ( '{' !== substr( $line, -1 ) && '}' !== $line ) {
+				$line = preg_replace( '/^([^:\s]+):(?!\s)/', '$1: ', $line );
+			}
+
+			$out[] = str_repeat( '    ', $depth ) . $line;
+			if ( '' !== $line && '{' === substr( $line, -1 ) ) {
+				$depth++;
+			}
+			// Blank line after each closing brace at the top level.
+			if ( '}' === $line && 0 === $depth ) {
+				$out[] = '';
+			}
+		}
+
+		return $this->unmask_css_strings( trim( implode( "\n", $out ) ), $strings );
+	}
+
+	/**
+	 * Shrink the stylesheet back down for storage and front-end output.
+	 * Deliberately conservative: whitespace around +, - and * is preserved so
+	 * calc()/clamp() expressions keep working.
+	 *
+	 * @param string $css Pretty CSS.
+	 * @return string Minified CSS.
+	 */
+	private function minify_css( $css ) {
+		list( $css, $strings ) = $this->mask_css_strings( (string) $css );
+
+		$css = preg_replace( '!/\*.*?\*/!s', '', $css );          // comments
+		$css = preg_replace( '/\s+/', ' ', $css );                 // whitespace runs
+		$css = preg_replace( '/\s*([{};:,>])\s*/', '$1', $css );   // around separators
+		$css = str_replace( ';}', '}', $css );                     // trailing semicolons
+
+		return $this->unmask_css_strings( trim( $css ), $strings );
+	}
+
+	/**
+	 * Replace quoted strings with placeholders so whitespace/​separator
+	 * rewriting can't corrupt their contents.
+	 *
+	 * @param string $css CSS.
+	 * @return array [ masked CSS, extracted strings ]
+	 */
+	private function mask_css_strings( $css ) {
+		$strings = array();
+
+		$css = preg_replace_callback(
+			'/"[^"]*"|\'[^\']*\'/',
+			static function ( $m ) use ( &$strings ) {
+				$strings[] = $m[0];
+				return '@@ISSSTR' . ( count( $strings ) - 1 ) . '@@';
+			},
+			$css
+		);
+
+		return array( (string) $css, $strings );
+	}
+
+	/**
+	 * @param string   $css     Masked CSS.
+	 * @param string[] $strings Extracted strings.
+	 * @return string
+	 */
+	private function unmask_css_strings( $css, array $strings ) {
+		foreach ( $strings as $i => $string ) {
+			$css = str_replace( '@@ISSSTR' . $i . '@@', $string, $css );
+		}
+
+		return $css;
 	}
 
 	/**
@@ -971,7 +1086,8 @@ class AiDemoGenerator {
 		$css = isset( $_POST['css'] ) ? wp_unslash( $_POST['css'] ) : '';
 
 		// No bridge rules re-appended: the stored stylesheet already has them.
-		$clean = $this->sanitize_css( $css, false );
+		// Stored minified — the editor re-expands it on the next open.
+		$clean = $this->minify_css( $this->sanitize_css( $css, false ) );
 
 		if ( '' === $clean ) {
 			wp_send_json_error(

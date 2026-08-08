@@ -203,8 +203,10 @@ jQuery( function ( $ ) {
 								'<p class="js-iss-ai-replace-text"></p>' +
 								'<label class="iss-ai-replace-check"><input type="checkbox" class="js-iss-ai-replace" checked> <span>' + esc( t.replace_checkbox || '' ) + '</span></label>' +
 								'<p class="iss-ai-replace-hint">' + esc( t.replace_keep_hint || '' ) + '</p>' +
-								'<button type="button" class="iss-ai-delete-link js-iss-ai-delete">' + esc( t.delete_now || '' ) + '</button>' +
-								'<button type="button" class="iss-ai-delete-link js-iss-ai-edit-css">' + esc( t.edit_css_link || '' ) + '</button>' +
+								'<div class="iss-ai-replace-actions">' +
+									'<button type="button" class="iss-ai-mini-btn iss-ai-mini-btn--danger js-iss-ai-delete">' + esc( t.delete_now || '' ) + '</button>' +
+									'<button type="button" class="iss-ai-mini-btn js-iss-ai-edit-css">' + esc( t.edit_css_link || '' ) + '</button>' +
+								'</div>' +
 							'</div>' +
 							'<p class="iss-ai-delete-result js-iss-ai-delete-result" hidden></p>' +
 
@@ -506,9 +508,9 @@ jQuery( function ( $ ) {
 
 		$notice.find( 'strong' ).first().text( title );
 		$notice.find( '.js-iss-ai-replace-text' ).text( text );
-		// The "delete now" link deletes AI demos only — hide it when the
-		// warning is about a classic starter-site import.
-		$notice.find( '.js-iss-ai-delete' ).toggle( !! ( previous && previous.page_count ) );
+		// Both actions operate on an AI demo — hide them when the warning is
+		// about a classic starter-site import instead.
+		$notice.find( '.iss-ai-replace-actions' ).toggle( !! ( previous && previous.page_count ) );
 		$notice.removeAttr( 'hidden' );
 	}
 
@@ -922,6 +924,28 @@ jQuery( function ( $ ) {
 			} );
 	} );
 
+	// WordPress' CodeMirror instance for the stylesheet, created on first use.
+	var cssEditor = null;
+
+	// Read the stylesheet from CodeMirror when it is active, the raw textarea
+	// otherwise (syntax highlighting can be switched off per user profile).
+	function cssEditorValue() {
+		return cssEditor ? cssEditor.codemirror.getValue() : ( $root.find( '.js-iss-ai-css-editor' ).val() || '' );
+	}
+
+	function cssEditorSetValue( css ) {
+		$root.find( '.js-iss-ai-css-editor' ).val( css );
+
+		if ( cssEditor ) {
+			cssEditor.codemirror.setValue( css );
+			return;
+		}
+
+		if ( config.code_editor && window.wp && wp.codeEditor ) {
+			cssEditor = wp.codeEditor.initialize( $root.find( '.js-iss-ai-css-editor' )[ 0 ], config.code_editor );
+		}
+	}
+
 	// View / edit the active demo's stylesheet. Handy for tweaking a color or
 	// a spacing value without opening every page in the editor.
 	$root.on( 'click', '.js-iss-ai-edit-css', function () {
@@ -933,12 +957,18 @@ jQuery( function ( $ ) {
 					window.alert( responseMessage( response ) );
 					return;
 				}
-				$root.find( '.js-iss-ai-css-editor' ).val( response.data.css || '' );
 				$root.find( '.js-iss-ai-css-intro' ).text(
 					sprintf( t.edit_css_intro || '', response.data.site_title || '' )
 				);
 				$root.find( '.js-iss-ai-css-result' ).attr( 'hidden', 'hidden' );
 				showStep( 'css' );
+
+				// Initialize/populate after the step is visible: CodeMirror
+				// measures the textarea, and gets it wrong while hidden.
+				cssEditorSetValue( response.data.css || '' );
+				if ( cssEditor ) {
+					cssEditor.codemirror.refresh();
+				}
 			} )
 			.fail( function () {
 				window.alert( t.error_generic || '' );
@@ -953,7 +983,7 @@ jQuery( function ( $ ) {
 		var $result = $root.find( '.js-iss-ai-css-result' );
 
 		ajax( 'inspiro_starter_sites_ai_save_css', {
-			css: $root.find( '.js-iss-ai-css-editor' ).val() || ''
+			css: cssEditorValue()
 		}, 30000 )
 			.done( function ( response ) {
 				var ok = !! ( response && response.success && response.data );
