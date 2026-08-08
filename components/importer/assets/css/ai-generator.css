@@ -895,6 +895,60 @@ body.iss-ai-open {
   color: #8a2424;
 }
 
+/* The second link in the replace notice edits CSS — not destructive. */
+.js-iss-ai-edit-css {
+  margin-left: 14px;
+  color: #3858e9;
+}
+
+.js-iss-ai-edit-css:hover {
+  color: #2a46c9;
+}
+
+/* Demo stylesheet editor */
+.iss-ai-css-intro {
+  margin: 0 0 12px;
+  color: #50575e;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.iss-ai-css-editor {
+  width: 100%;
+  min-height: 340px;
+  padding: 12px 14px;
+  border: 1px solid #dcdcde;
+  border-radius: 8px;
+  background: #1d2327;
+  color: #e6e8eb;
+  font-family: Menlo, Consolas, monaco, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  resize: vertical;
+  white-space: pre;
+  tab-size: 2;
+}
+
+.iss-ai-css-editor:focus {
+  border-color: #3858e9;
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 1px #3858e9;
+}
+
+.iss-ai-css-result {
+  margin: 12px 0 0;
+  padding: 9px 12px;
+  border-radius: 6px;
+  background: #edfaef;
+  color: #0a5c36;
+  font-size: 13px;
+}
+
+.iss-ai-css-result.is-error {
+  background: #fcf0f1;
+  color: #8a2424;
+}
+
 /* Connect step (email registration) */
 .iss-ai-step-connect {
   display: none;

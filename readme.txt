@@ -150,6 +150,8 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 * New: Free AI generations included after connecting your email; Inspiro Premium users with an active license get more
 * New: The AI generator also appears at the top of the Inspiro Premium demo importer
 * Improved: Demo Importer page layout — the AI generator sits at the top and the starter sites header is more compact
+* New: The fonts chosen for an AI demo are applied to the theme's own Typography options, so they load site-wide and can be changed in the Customizer
+* New: View and edit the stylesheet of your AI demo directly from the generator
 * Improved: Generated demo pages align with the theme's content width on all screen sizes
 * Fixed: The "Default Starter Content Detected" notice no longer appears after a demo has been imported (it could mistake the imported demo's own pages for starter content)
 

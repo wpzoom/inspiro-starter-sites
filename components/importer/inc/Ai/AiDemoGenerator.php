@@ -74,6 +74,8 @@ class AiDemoGenerator {
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_build_page', array( $this, 'ajax_build_page' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_finalize', array( $this, 'ajax_finalize' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_delete', array( $this, 'ajax_delete' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_get_css', array( $this, 'ajax_get_css' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_save_css', array( $this, 'ajax_save_css' ) );
 
 		// Mirror of the pre-import starter-content warning: when an AI demo
 		// exists, warn before a CLASSIC demo import that it won't remove the
@@ -379,6 +381,13 @@ class AiDemoGenerator {
 					'delete_now'       => __( 'Delete the AI demo now (without generating a new one)', 'inspiro-starter-sites' ),
 					'delete_confirm'   => __( 'Permanently delete all AI-generated pages, their images, the demo menu and footer widgets? Content that existed before the AI demo is not affected. This cannot be undone.', 'inspiro-starter-sites' ),
 					'deleting'         => __( 'Deleting…', 'inspiro-starter-sites' ),
+					'edit_css_link'    => __( 'View &amp; edit this demo\'s CSS', 'inspiro-starter-sites' ),
+					'edit_css_title'   => __( 'Demo stylesheet', 'inspiro-starter-sites' ),
+					/* translators: %s: demo site title */
+					'edit_css_intro'   => __( 'This stylesheet gives “%s” its design. It only applies to the AI-generated pages, so changes here never affect the rest of your site. Every rule must stay scoped to .iss-ai-demo.', 'inspiro-starter-sites' ),
+					'edit_css_save'    => __( 'Save stylesheet', 'inspiro-starter-sites' ),
+					'saving'           => __( 'Saving…', 'inspiro-starter-sites' ),
+					'back'             => __( 'Back', 'inspiro-starter-sites' ),
 					'step_plan'        => __( 'Designing your site structure and writing the copy…', 'inspiro-starter-sites' ),
 					/* translators: %1$s: current page number, %2$s: total pages, %3$s: page title */
 					'step_page'        => __( 'Creating page %1$s of %2$s: %3$s', 'inspiro-starter-sites' ),
@@ -576,6 +585,59 @@ class AiDemoGenerator {
 
 		update_user_meta( get_current_user_id(), 'inspiro_ai_import_notice_dismissed', $latest_plan_id );
 		wp_send_json_success();
+	}
+
+	/**
+	 * Map the plan's display/body families onto the theme's typography
+	 * options. Both Inspiro Lite and Premium use the same mod names, and both
+	 * ship the same Google-font catalogue the AI picks from — so a family the
+	 * AI chose is almost always selectable in the Customizer too.
+	 *
+	 * Families the theme doesn't know are skipped; those keep working through
+	 * the @font-face rules baked into the demo stylesheet.
+	 *
+	 * @param array $plan Sanitized plan.
+	 * @return string[] Families handed over to the theme.
+	 */
+	private function apply_demo_fonts( array $plan ) {
+		$fonts = isset( $plan['fonts'] ) && is_array( $plan['fonts'] ) ? $plan['fonts'] : array();
+		if ( ! $fonts ) {
+			return array();
+		}
+
+		$display = isset( $fonts['display'] ) ? (string) $fonts['display'] : '';
+		$body    = isset( $fonts['body'] ) ? (string) $fonts['body'] : '';
+
+		$applied = array();
+
+		if ( '' !== $display && $this->theme_knows_font( $display ) ) {
+			set_theme_mod( 'headings-font-family', $display );
+			$applied[] = $display;
+		}
+
+		if ( '' !== $body && $this->theme_knows_font( $body ) ) {
+			set_theme_mod( 'body-font-family', $body );
+			$applied[] = $body;
+		}
+
+		return array_unique( $applied );
+	}
+
+	/**
+	 * Whether the active theme offers this family in its own font catalogue
+	 * (and can therefore load it itself).
+	 *
+	 * @param string $family Font family name, e.g. "DM Sans".
+	 * @return bool
+	 */
+	private function theme_knows_font( $family ) {
+		if ( ! class_exists( 'Inspiro_Font_Family_Manager' ) ) {
+			return false;
+		}
+
+		$fonts = \Inspiro_Font_Family_Manager::get_google_fonts();
+
+		return is_array( $fonts ) && isset( $fonts[ $family ] );
 	}
 
 	/**
@@ -823,6 +885,136 @@ class AiDemoGenerator {
 	}
 
 	/* ---------------------------------------------------------------------
+	 * AJAX: read / write the current demo's stylesheet
+	 * ------------------------------------------------------------------ */
+
+	/**
+	 * The active demo's CSS, for the "Edit CSS" modal.
+	 */
+	public function ajax_get_css() {
+		Helpers::verify_ajax_call();
+
+		$demo = $this->latest_demo();
+
+		if ( ! $demo ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'No AI demo found on this site.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$record = $this->split_font_css( $demo['plan_id'], $demo['record'] );
+
+		wp_send_json_success(
+			array(
+				'plan_id'    => $demo['plan_id'],
+				'site_title' => $record['site_title'],
+				'css'        => $record['css'],
+			)
+		);
+	}
+
+	/**
+	 * Demos generated before the split kept the @font-face rules inside
+	 * 'css'. Move them into 'font_css' once, so the editor only ever shows —
+	 * and re-saves — the design rules. Font URLs must never pass through
+	 * sanitize_css(), which rewrites url() as an SSRF guard.
+	 *
+	 * @param string $plan_id Demo ID.
+	 * @param array  $record  Stored record.
+	 * @return array Record with 'css' free of @font-face rules.
+	 */
+	private function split_font_css( $plan_id, array $record ) {
+		$css = isset( $record['css'] ) ? (string) $record['css'] : '';
+
+		if ( isset( $record['font_css'] ) || false === stripos( $css, '@font-face' ) ) {
+			return $record;
+		}
+
+		$fonts = array();
+		$design = preg_replace_callback(
+			'/@font-face\s*\{[^}]*\}/i',
+			static function ( $m ) use ( &$fonts ) {
+				$fonts[] = $m[0];
+				return '';
+			},
+			$css
+		);
+
+		// Comment markers left behind by the extracted blocks.
+		$design = preg_replace( '/\/\*[^*]*\*\/\s*(?=\n)/', '', (string) $design );
+		$design = trim( preg_replace( '/\n{3,}/', "\n\n", (string) $design ) );
+
+		$record['font_css'] = implode( "\n", $fonts );
+		$record['css']      = $design;
+
+		$demos = get_option( self::DEMOS_OPTION, array() );
+		if ( isset( $demos[ $plan_id ] ) ) {
+			$demos[ $plan_id ]['font_css'] = $record['font_css'];
+			$demos[ $plan_id ]['css']      = $record['css'];
+			update_option( self::DEMOS_OPTION, $demos, false );
+		}
+
+		return $record;
+	}
+
+	/**
+	 * Save an edited stylesheet back onto the active demo.
+	 */
+	public function ajax_save_css() {
+		Helpers::verify_ajax_call();
+
+		$demo = $this->latest_demo();
+
+		if ( ! $demo ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'No AI demo found on this site.', 'inspiro-starter-sites' ) ) );
+		}
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitize_css() handles it.
+		$css = isset( $_POST['css'] ) ? wp_unslash( $_POST['css'] ) : '';
+
+		// No bridge rules re-appended: the stored stylesheet already has them.
+		$clean = $this->sanitize_css( $css, false );
+
+		if ( '' === $clean ) {
+			wp_send_json_error(
+				array(
+					'message' => esc_html__( 'The stylesheet must contain at least one .iss-ai-demo rule, so it only affects your generated pages.', 'inspiro-starter-sites' ),
+				)
+			);
+		}
+
+		$demos = get_option( self::DEMOS_OPTION, array() );
+
+		$demos[ $demo['plan_id'] ]['css'] = $clean;
+		update_option( self::DEMOS_OPTION, $demos, false );
+
+		wp_send_json_success(
+			array(
+				'css'     => $clean,
+				'message' => esc_html__( 'Stylesheet saved.', 'inspiro-starter-sites' ),
+			)
+		);
+	}
+
+	/**
+	 * The most recently generated demo record.
+	 *
+	 * @return array|null [ 'plan_id' => string, 'record' => array ] or null.
+	 */
+	private function latest_demo() {
+		$demos = get_option( self::DEMOS_OPTION, array() );
+
+		if ( ! is_array( $demos ) || ! $demos ) {
+			return null;
+		}
+
+		$plan_id = (string) array_key_last( $demos );
+
+		return array(
+			'plan_id' => $plan_id,
+			'record'  => $demos[ $plan_id ],
+		);
+	}
+
+	/* ---------------------------------------------------------------------
 	 * AJAX: generate the site plan
 	 * ------------------------------------------------------------------ */
 
@@ -960,6 +1152,12 @@ class AiDemoGenerator {
 			$whitelist = $this->font_whitelist();
 			$specs     = array();
 			foreach ( array_unique( array_values( $plan['fonts'] ) ) as $family ) {
+				// Families the theme can load itself are handed to its
+				// typography options in finalize() — no need to duplicate
+				// ~25KB of @font-face rules inside the demo stylesheet.
+				if ( $this->theme_knows_font( $family ) ) {
+					continue;
+				}
 				if ( isset( $whitelist[ $family ] ) ) {
 					$specs[] = 'family=' . $whitelist[ $family ];
 				}
@@ -1811,16 +2009,26 @@ class AiDemoGenerator {
 				'inspiro_starter_sites_ai_prev_colors',
 				array(
 					// Lite mods.
-					'colorscheme'     => get_theme_mod( 'colorscheme', false ),
-					'color_palette'   => get_theme_mod( 'color_palette', false ),
-					'colorscheme_hex' => get_theme_mod( 'colorscheme_hex', false ),
+					'colorscheme'          => get_theme_mod( 'colorscheme', false ),
+					'color_palette'        => get_theme_mod( 'color_palette', false ),
+					'colorscheme_hex'      => get_theme_mod( 'colorscheme_hex', false ),
 					// Premium (WPZOOM framework) mods.
-					'color-palettes'  => get_theme_mod( 'color-palettes', false ),
-					'color-accent'    => get_theme_mod( 'color-accent', false ),
+					'color-palettes'       => get_theme_mod( 'color-palettes', false ),
+					'color-accent'         => get_theme_mod( 'color-accent', false ),
+					// Typography (same mod names in both themes).
+					'body-font-family'     => get_theme_mod( 'body-font-family', false ),
+					'headings-font-family' => get_theme_mod( 'headings-font-family', false ),
 				),
 				false
 			);
 		}
+
+		// Hand the demo's fonts to the THEME's typography options instead of
+		// only shipping @font-face rules inside the demo stylesheet: the theme
+		// then loads them locally (GDPR-safe, cached as a real stylesheet),
+		// applies them site-wide — header, footer, blog — and the user can
+		// change them under Appearance → Customize → Typography.
+		$this->apply_demo_fonts( $state['plan'] );
 
 		$picked     = isset( $state['palette'] ) ? (string) $state['palette'] : '';
 		$accent     = isset( $state['plan']['brand']['accent'] ) ? sanitize_hex_color( $state['plan']['brand']['accent'] ) : '';
@@ -1852,7 +2060,10 @@ class AiDemoGenerator {
 		$demos[ $plan_id ] = array(
 			'site_title'  => $state['plan']['site_title'],
 			'description' => $state['description'],
-			'css'         => trim( ( ! empty( $state['plan']['font_css'] ) ? $state['plan']['font_css'] . "\n" : '' ) . ( isset( $state['plan']['css'] ) ? $state['plan']['css'] : '' ) ),
+			// Kept apart so the CSS editor can round-trip the design rules
+			// without re-sanitizing (and mangling) the font-file URLs.
+			'css'         => isset( $state['plan']['css'] ) ? trim( $state['plan']['css'] ) : '',
+			'font_css'    => ! empty( $state['plan']['font_css'] ) ? trim( $state['plan']['font_css'] ) : '',
 			'pages'       => array_values( $created_pages ),
 			'posts'       => isset( $state['created_posts'] ) ? array_values( $state['created_posts'] ) : array(),
 			'menu_id'     => $menu_id && ! is_wp_error( $menu_id ) ? (int) $menu_id : 0,
@@ -2220,10 +2431,10 @@ class AiDemoGenerator {
 				update_option( 'page_on_front', 0 );
 			}
 
-			// Restore the customizer colors from before the first AI demo.
+			// Restore the customizer colors and fonts from before the first AI demo.
 			$prev_colors = get_option( 'inspiro_starter_sites_ai_prev_colors' );
 			if ( is_array( $prev_colors ) ) {
-				foreach ( array( 'colorscheme', 'color_palette', 'colorscheme_hex', 'color-palettes', 'color-accent' ) as $mod ) {
+				foreach ( array( 'colorscheme', 'color_palette', 'colorscheme_hex', 'color-palettes', 'color-accent', 'body-font-family', 'headings-font-family' ) as $mod ) {
 					if ( array_key_exists( $mod, $prev_colors ) && false !== $prev_colors[ $mod ] ) {
 						set_theme_mod( $mod, $prev_colors[ $mod ] );
 					} else {
@@ -2550,7 +2761,7 @@ class AiDemoGenerator {
 	 * @param string $css
 	 * @return string
 	 */
-	private function sanitize_css( $css ) {
+	private function sanitize_css( $css, $with_bridge = true ) {
 		$css = (string) $css;
 		$css = str_replace( array( '<', '\\' ), '', $css );
 		$css = preg_replace( '/@import[^;]*;?/i', '', $css );
@@ -2560,6 +2771,12 @@ class AiDemoGenerator {
 		// Must actually be scoped to the demo wrapper.
 		if ( false === strpos( $css, '.iss-ai-demo' ) ) {
 			return '';
+		}
+
+		// Editing an existing stylesheet: it already carries the bridge rules
+		// below, so adding them again would duplicate them on every save.
+		if ( ! $with_bridge ) {
+			return $css;
 		}
 
 		// Prepended BEFORE the AI CSS at matched (0,1,0) specificity: the
@@ -2621,7 +2838,12 @@ class AiDemoGenerator {
 
 		$demos = get_option( self::DEMOS_OPTION, array() );
 		if ( is_array( $demos ) && ! empty( $demos[ $plan_id ]['css'] ) ) {
-			return $this->scale_css_for_theme( $demos[ $plan_id ]['css'] );
+			// @font-face rules are stored apart from the editable design CSS
+			// (older records keep both in 'css' — harmless, they just render
+			// as one block).
+			$fonts = ! empty( $demos[ $plan_id ]['font_css'] ) ? $demos[ $plan_id ]['font_css'] . "\n" : '';
+
+			return $this->scale_css_for_theme( $fonts . $demos[ $plan_id ]['css'] );
 		}
 
 		$state = $this->get_plan_state( $plan_id );
