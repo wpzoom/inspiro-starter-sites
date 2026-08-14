@@ -644,13 +644,14 @@ body.iss-ai-open {
   text-overflow: ellipsis;
 }
 
-.inspiro-starter-sites-ai-hero__existing-dot {
+.inspiro-starter-sites-ai-hero__existing-gear {
   flex: 0 0 auto;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #59d9a6;
-  box-shadow: 0 0 0 3px rgba(89, 217, 166, 0.18);
+  color: #59d9a6;
+  transition: transform 0.25s ease;
+}
+
+.inspiro-starter-sites-ai-hero__existing:hover .inspiro-starter-sites-ai-hero__existing-gear {
+  transform: rotate(45deg);
 }
 
 .inspiro-starter-sites-ai-hero__kicker {

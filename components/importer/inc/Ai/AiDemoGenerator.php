@@ -118,7 +118,7 @@ class AiDemoGenerator {
 		?>
 		<div class="inspiro-starter-sites-ai-hero">
 			<button type="button" class="inspiro-starter-sites-ai-hero__existing js-iss-ai-hero-existing js-inspiro-starter-sites-ai-generate"<?php echo $previous ? '' : ' hidden'; ?> title="<?php esc_attr_e( 'Manage or delete your generated demo', 'inspiro-starter-sites' ); ?>">
-				<span class="inspiro-starter-sites-ai-hero__existing-dot" aria-hidden="true"></span>
+				<svg class="inspiro-starter-sites-ai-hero__existing-gear" aria-hidden="true" width="13" height="13" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M18 12h-2.18c-.17.7-.44 1.35-.81 1.93l1.54 1.54-2.1 2.1-1.54-1.54c-.58.36-1.23.63-1.93.81V19H8v-2.18c-.7-.18-1.35-.45-1.93-.81l-1.54 1.54-2.12-2.12 1.54-1.54c-.36-.58-.63-1.23-.81-1.93H1V9.03h2.17c.16-.7.44-1.35.8-1.94L2.43 5.55l2.1-2.1 1.54 1.54c.58-.37 1.24-.64 1.93-.81V2h3v2.18c.68.17 1.32.44 1.9.8l1.56-1.53 2.12 2.12-1.54 1.54c.36.59.64 1.24.82 1.94H18V12zm-8.5 1.5c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3z" fill="currentColor"/></svg>
 				<?php esc_html_e( 'AI demo:', 'inspiro-starter-sites' ); ?>
 				<strong class="js-iss-ai-hero-existing-title"><?php echo esc_html( $previous && '' !== $previous['site_title'] ? $previous['site_title'] : __( 'active', 'inspiro-starter-sites' ) ); ?></strong>
 			</button>
