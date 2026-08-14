@@ -20,6 +20,10 @@ jQuery( function ( $ ) {
 		return;
 	}
 
+	// Premium page tools (add / regenerate a page) need the premium theme
+	// AND an active license — mirrored server-side.
+	var pageToolsAvailable = !! ( config.is_premium_theme && config.has_license );
+
 	var built     = false;
 	var running   = false;
 	var quota     = null; // { connected, email, used, limit, remaining }
@@ -206,7 +210,13 @@ jQuery( function ( $ ) {
 								'<div class="iss-ai-replace-actions">' +
 									'<button type="button" class="iss-ai-mini-btn iss-ai-mini-btn--danger js-iss-ai-delete">' + esc( t.delete_now || '' ) + '</button>' +
 									'<button type="button" class="iss-ai-mini-btn js-iss-ai-edit-css">' + esc( t.edit_css_link || '' ) + '</button>' +
+									'<button type="button" class="iss-ai-mini-btn js-iss-ai-add-page' + ( pageToolsAvailable ? '' : ' is-locked' ) + '">' + ( pageToolsAvailable ? '' : '&#128274; ' ) + esc( t.add_page_link || '' ) + '</button>' +
+									'<button type="button" class="iss-ai-mini-btn js-iss-ai-regen-page' + ( pageToolsAvailable ? '' : ' is-locked' ) + '">' + ( pageToolsAvailable ? '' : '&#128274; ' ) + esc( t.regen_page_link || '' ) + '</button>' +
 								'</div>' +
+								'<p class="iss-ai-premium-upsell js-iss-ai-page-upsell" hidden>' +
+									'<span class="js-iss-ai-page-upsell-text"></span> ' +
+									'<a class="js-iss-ai-page-upsell-link" href="#" target="_blank" rel="noopener"></a>' +
+								'</p>' +
 							'</div>' +
 							'<p class="iss-ai-delete-result js-iss-ai-delete-result" hidden></p>' +
 
@@ -278,6 +288,36 @@ jQuery( function ( $ ) {
 							'<div class="iss-ai-actions">' +
 								'<button type="button" class="button button-primary js-iss-ai-css-save">' + esc( t.edit_css_save || '' ) + '</button>' +
 								'<button type="button" class="button js-iss-ai-css-back">' + esc( t.back || '' ) + '</button>' +
+							'</div>' +
+						'</div>' +
+
+						// Step: add / regenerate a single page (Premium).
+						'<div class="iss-ai-step iss-ai-step-pagetools" data-step="pagetools">' +
+							'<h3 class="js-iss-ai-pt-title"></h3>' +
+							'<p class="iss-ai-css-intro js-iss-ai-pt-intro"></p>' +
+							'<div class="js-iss-ai-pt-form">' +
+								'<div class="js-iss-ai-pt-add">' +
+									'<p class="iss-ai-field-label">' + esc( t.add_page_label || '' ) + '</p>' +
+									'<input type="text" class="iss-ai-input js-iss-ai-pt-page-title" maxlength="80" placeholder="' + esc( t.add_page_ph || '' ) + '" />' +
+									'<p class="iss-ai-field-label">' + esc( t.add_page_details || '' ) + '</p>' +
+									'<textarea class="iss-ai-textarea js-iss-ai-pt-details" rows="3" maxlength="500"></textarea>' +
+								'</div>' +
+								'<div class="js-iss-ai-pt-regen">' +
+									'<p class="iss-ai-field-label">' + esc( t.regen_label || '' ) + '</p>' +
+									'<select class="iss-ai-input js-iss-ai-pt-page-select"></select>' +
+									'<p class="iss-ai-field-label">' + esc( t.regen_feedback || '' ) + '</p>' +
+									'<textarea class="iss-ai-textarea js-iss-ai-pt-feedback" rows="3" maxlength="400"></textarea>' +
+								'</div>' +
+							'</div>' +
+							'<div class="iss-ai-pt-working js-iss-ai-pt-working" hidden>' +
+								'<span class="spinner is-active"></span> ' + esc( t.page_working || '' ) +
+							'</div>' +
+							'<p class="iss-ai-css-result js-iss-ai-pt-result" hidden></p>' +
+							'<div class="iss-ai-actions">' +
+								'<button type="button" class="button button-primary js-iss-ai-pt-go"></button>' +
+								'<a class="button js-iss-ai-pt-view" target="_blank" rel="noopener" hidden>' + esc( t.view_page || '' ) + '</a>' +
+								'<a class="button js-iss-ai-pt-edit" hidden>' + esc( t.edit_page || '' ) + '</a>' +
+								'<button type="button" class="button js-iss-ai-pt-back">' + esc( t.back || '' ) + '</button>' +
 							'</div>' +
 						'</div>' +
 
@@ -1004,6 +1044,123 @@ jQuery( function ( $ ) {
 
 	$root.on( 'click', '.js-iss-ai-css-back', function () {
 		showStep( 'input' );
+	} );
+
+	/* -----------------------------------------------------------------
+	 * Add / regenerate a single page (Premium; locked upsell on Lite)
+	 * -------------------------------------------------------------- */
+
+	var pageToolsMode = 'add';
+
+	function openPageTools( mode ) {
+		// Locked: Lite gets the upgrade pitch, premium-without-license the
+		// activation nudge — the tools never open either way (the server
+		// enforces the same two gates).
+		if ( ! pageToolsAvailable ) {
+			var $upsell = $root.find( '.js-iss-ai-page-upsell' );
+
+			if ( ! config.is_premium_theme ) {
+				$upsell.find( '.js-iss-ai-page-upsell-text' ).text( t.premium_upsell || '' );
+				$upsell.find( '.js-iss-ai-page-upsell-link' ).attr( 'href', config.upgrade_url || '#' ).text( t.premium_cta || '' );
+			} else {
+				$upsell.find( '.js-iss-ai-page-upsell-text' ).text( t.license_upsell || '' );
+				$upsell.find( '.js-iss-ai-page-upsell-link' ).attr( 'href', config.license_url || '#' ).text( t.license_cta || '' );
+			}
+
+			$upsell.removeAttr( 'hidden' );
+			return;
+		}
+
+		pageToolsMode = mode;
+
+		if ( 'regen' === mode ) {
+			var $select = $root.find( '.js-iss-ai-pt-page-select' ).empty();
+			$.each( config.demo_pages || [], function ( i, p ) {
+				$select.append( $( '<option>' ).val( p.id ).text( p.title ) );
+			} );
+		}
+
+		$root.find( '.js-iss-ai-pt-title' ).text( 'add' === mode ? ( t.add_page_title || '' ) : ( t.regen_title || '' ) );
+		$root.find( '.js-iss-ai-pt-intro' ).text( 'add' === mode ? ( t.add_page_intro || '' ) : ( t.regen_intro || '' ) );
+		$root.find( '.js-iss-ai-pt-add' ).toggle( 'add' === mode );
+		$root.find( '.js-iss-ai-pt-regen' ).toggle( 'regen' === mode );
+		$root.find( '.js-iss-ai-pt-form' ).show();
+		$root.find( '.js-iss-ai-pt-working' ).attr( 'hidden', 'hidden' );
+		$root.find( '.js-iss-ai-pt-result' ).attr( 'hidden', 'hidden' ).removeClass( 'is-error' );
+		$root.find( '.js-iss-ai-pt-view, .js-iss-ai-pt-edit' ).attr( 'hidden', 'hidden' );
+		$root.find( '.js-iss-ai-pt-go' )
+			.prop( 'disabled', false )
+			.text( 'add' === mode ? ( t.add_page_go || '' ) : ( t.regen_go || '' ) )
+			.show();
+
+		showStep( 'pagetools' );
+	}
+
+	$root.on( 'click', '.js-iss-ai-add-page', function () {
+		openPageTools( 'add' );
+	} );
+
+	$root.on( 'click', '.js-iss-ai-regen-page', function () {
+		openPageTools( 'regen' );
+	} );
+
+	$root.on( 'click', '.js-iss-ai-pt-back', function () {
+		showStep( 'input' );
+	} );
+
+	$root.on( 'click', '.js-iss-ai-pt-go', function () {
+		var $go     = $( this );
+		var $result = $root.find( '.js-iss-ai-pt-result' );
+		var action, data;
+
+		if ( 'add' === pageToolsMode ) {
+			var title = $.trim( $root.find( '.js-iss-ai-pt-page-title' ).val() || '' );
+			if ( ! title ) {
+				$root.find( '.js-iss-ai-pt-page-title' ).focus();
+				return;
+			}
+			action = 'inspiro_starter_sites_ai_add_page';
+			data   = { title: title, details: $.trim( $root.find( '.js-iss-ai-pt-details' ).val() || '' ) };
+		} else {
+			var pageId = $root.find( '.js-iss-ai-pt-page-select' ).val();
+			if ( ! pageId ) {
+				return;
+			}
+			action = 'inspiro_starter_sites_ai_regenerate_page';
+			data   = { page_id: pageId, feedback: $.trim( $root.find( '.js-iss-ai-pt-feedback' ).val() || '' ) };
+		}
+
+		$go.prop( 'disabled', true ).hide();
+		$root.find( '.js-iss-ai-pt-form' ).hide();
+		$root.find( '.js-iss-ai-pt-working' ).removeAttr( 'hidden' );
+		$result.attr( 'hidden', 'hidden' ).removeClass( 'is-error' );
+
+		ajax( action, data, 180000 )
+			.done( function ( response ) {
+				$root.find( '.js-iss-ai-pt-working' ).attr( 'hidden', 'hidden' );
+
+				if ( ! response || ! response.success || ! response.data ) {
+					$root.find( '.js-iss-ai-pt-form' ).show();
+					$go.prop( 'disabled', false ).show();
+					$result.addClass( 'is-error' ).text( responseMessage( response ) ).removeAttr( 'hidden' );
+					return;
+				}
+
+				$result.text( sprintf( t.page_done || '', response.data.title || '' ) ).removeAttr( 'hidden' );
+				$root.find( '.js-iss-ai-pt-view' ).attr( 'href', response.data.view_url || '#' ).removeAttr( 'hidden' );
+				$root.find( '.js-iss-ai-pt-edit' ).attr( 'href', response.data.edit_url || '#' ).removeAttr( 'hidden' );
+
+				// New pages become regenerable immediately.
+				if ( 'add' === pageToolsMode && response.data.page_id ) {
+					config.demo_pages = ( config.demo_pages || [] ).concat( [ { id: response.data.page_id, title: response.data.title || '' } ] );
+				}
+			} )
+			.fail( function ( xhr, textStatus ) {
+				$root.find( '.js-iss-ai-pt-working' ).attr( 'hidden', 'hidden' );
+				$root.find( '.js-iss-ai-pt-form' ).show();
+				$go.prop( 'disabled', false ).show();
+				$result.addClass( 'is-error' ).text( xhrDetail( xhr, textStatus ) || t.error_generic || '' ).removeAttr( 'hidden' );
+			} );
 	} );
 
 	// "Enhance with AI": expand a thin description into a vivid brief

@@ -76,6 +76,8 @@ class AiDemoGenerator {
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_delete', array( $this, 'ajax_delete' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_get_css', array( $this, 'ajax_get_css' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_save_css', array( $this, 'ajax_save_css' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_add_page', array( $this, 'ajax_add_ai_page' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_regenerate_page', array( $this, 'ajax_regenerate_ai_page' ) );
 
 		// Mirror of the pre-import starter-content warning: when an AI demo
 		// exists, warn before a CLASSIC demo import that it won't remove the
@@ -252,6 +254,11 @@ class AiDemoGenerator {
 				// Premium theme without an activated license: the exhausted-
 				// quota card asks to activate instead of upselling.
 				'is_premium_theme' => class_exists( 'WPZOOM' ),
+				// Premium page tools also require an ACTIVE license.
+				'has_license'      => '' !== AiProxyClient::premium_license(),
+				// Pages of the active demo, for the regenerate picker (the
+				// posts page has no AI design to rebuild).
+				'demo_pages'       => $this->demo_pages_for_picker(),
 				'license_url'      => admin_url( 'admin.php?page=wpzoom_license#license' ),
 				'styles'     => array_map(
 					static function ( $style ) {
@@ -396,6 +403,29 @@ class AiDemoGenerator {
 					'edit_css_save'    => __( 'Save stylesheet', 'inspiro-starter-sites' ),
 					'saving'           => __( 'Saving…', 'inspiro-starter-sites' ),
 					'back'             => __( 'Back', 'inspiro-starter-sites' ),
+					'add_page_link'    => __( 'Add AI page', 'inspiro-starter-sites' ),
+					'regen_page_link'  => __( 'Regenerate a page', 'inspiro-starter-sites' ),
+					'add_page_title'   => __( 'Add a page with AI', 'inspiro-starter-sites' ),
+					'add_page_intro'   => __( 'The new page is designed with your demo\'s existing style and added to the menu.', 'inspiro-starter-sites' ),
+					'add_page_label'   => __( 'Page title', 'inspiro-starter-sites' ),
+					'add_page_ph'      => __( 'e.g. Pricing', 'inspiro-starter-sites' ),
+					'add_page_details' => __( 'What should be on it? (optional)', 'inspiro-starter-sites' ),
+					'add_page_go'      => __( 'Generate page', 'inspiro-starter-sites' ),
+					'regen_title'      => __( 'Regenerate a page', 'inspiro-starter-sites' ),
+					'regen_intro'      => __( 'A fresh take on the page — same purpose, new layout and imagery. The current design is replaced.', 'inspiro-starter-sites' ),
+					'regen_label'      => __( 'Which page?', 'inspiro-starter-sites' ),
+					'regen_feedback'   => __( 'What would you like different? (optional)', 'inspiro-starter-sites' ),
+					'regen_go'         => __( 'Regenerate page', 'inspiro-starter-sites' ),
+					'page_working'     => __( 'Designing the page — this takes about half a minute…', 'inspiro-starter-sites' ),
+					/* translators: %s: page title */
+					'page_done'        => __( '“%s” is ready.', 'inspiro-starter-sites' ),
+					'view_page'        => __( 'View page', 'inspiro-starter-sites' ),
+					'edit_page'        => __( 'Edit page', 'inspiro-starter-sites' ),
+					'premium_feature'  => __( 'Included with Inspiro Premium', 'inspiro-starter-sites' ),
+					'premium_upsell'   => __( 'Adding and regenerating single pages is included with Inspiro Premium — along with 50+ starter sites and more AI generations.', 'inspiro-starter-sites' ),
+					'premium_cta'      => __( 'Upgrade to Inspiro Premium →', 'inspiro-starter-sites' ),
+					'license_upsell'   => __( 'These AI page tools are included with an active Inspiro Premium license.', 'inspiro-starter-sites' ),
+					'license_cta'      => __( 'Activate your license →', 'inspiro-starter-sites' ),
 					'step_plan'        => __( 'Designing your site structure and writing the copy…', 'inspiro-starter-sites' ),
 					/* translators: %1$s: current page number, %2$s: total pages, %3$s: page title */
 					'step_page'        => __( 'Creating page %1$s of %2$s: %3$s', 'inspiro-starter-sites' ),
@@ -1111,6 +1141,33 @@ class AiDemoGenerator {
 	}
 
 	/**
+	 * The active demo's regenerable pages, for the picker in the modal.
+	 *
+	 * @return array[] [ [ 'id' => int, 'title' => string ], … ]
+	 */
+	private function demo_pages_for_picker() {
+		$demo = $this->latest_demo();
+		if ( ! $demo || empty( $demo['record']['pages'] ) ) {
+			return array();
+		}
+
+		$posts_page = (int) get_option( 'page_for_posts' );
+		$out        = array();
+		foreach ( (array) $demo['record']['pages'] as $pid ) {
+			$pid = (int) $pid;
+			if ( $pid === $posts_page || 'page' !== get_post_type( $pid ) ) {
+				continue;
+			}
+			$out[] = array(
+				'id'    => $pid,
+				'title' => get_the_title( $pid ),
+			);
+		}
+
+		return $out;
+	}
+
+	/**
 	 * The most recently generated demo record.
 	 *
 	 * @return array|null [ 'plan_id' => string, 'record' => array ] or null.
@@ -1127,6 +1184,347 @@ class AiDemoGenerator {
 		return array(
 			'plan_id' => $plan_id,
 			'record'  => $demos[ $plan_id ],
+		);
+	}
+
+	/* ---------------------------------------------------------------------
+	 * AJAX: add / regenerate a single page of the active demo
+	 * (Inspiro Premium only — surfaced as an upsell on Lite)
+	 * ------------------------------------------------------------------ */
+
+	/**
+	 * Both single-page operations are Premium perks. On Lite the buttons are
+	 * shown locked; a direct request answers with the upsell code so the UI
+	 * can never be scripted around meaningfully.
+	 */
+	private function require_premium_theme() {
+		if ( ! class_exists( 'WPZOOM' ) ) {
+			wp_send_json_error(
+				array(
+					'code'    => 'premium_required',
+					'message' => esc_html__( 'Adding and regenerating single pages is included with Inspiro Premium.', 'inspiro-starter-sites' ),
+				)
+			);
+		}
+
+		// Premium perk = ACTIVE license, consistent with the generation
+		// limits (premium_license() also requires the premium theme).
+		if ( '' === AiProxyClient::premium_license() ) {
+			wp_send_json_error(
+				array(
+					'code'    => 'license_required',
+					'message' => esc_html__( 'Activate your Inspiro Premium license to add or regenerate pages.', 'inspiro-starter-sites' ),
+				)
+			);
+		}
+	}
+
+	/**
+	 * Generate ONE additional page for the active demo.
+	 */
+	public function ajax_add_ai_page() {
+		Helpers::verify_ajax_call();
+		$this->require_premium_theme();
+
+		$demo = $this->latest_demo();
+		if ( ! $demo ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'No AI demo found on this site.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$title   = isset( $_POST['title'] ) ? sanitize_text_field( wp_unslash( $_POST['title'] ) ) : '';
+		$details = isset( $_POST['details'] ) ? sanitize_textarea_field( wp_unslash( $_POST['details'] ) ) : '';
+
+		if ( '' === $title || mb_strlen( $title ) > 80 ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'Please enter a page title (up to 80 characters).', 'inspiro-starter-sites' ) ) );
+		}
+
+		$slug = sanitize_title( $title );
+		if ( '' === $slug ) {
+			$slug = 'page';
+		}
+
+		$page = array(
+			'title' => $title,
+			'slug'  => $slug,
+			'brief' => '' !== $details
+				? mb_substr( $details, 0, 500 )
+				/* translators: %s: page title */
+				: sprintf( __( 'A "%s" page that fits this site naturally.', 'inspiro-starter-sites' ), $title ),
+		);
+
+		$this->generate_single_page( $demo['plan_id'], $demo['record'], $page, 0 );
+	}
+
+	/**
+	 * Rebuild ONE existing page of the active demo, optionally steered by the
+	 * user's feedback.
+	 */
+	public function ajax_regenerate_ai_page() {
+		Helpers::verify_ajax_call();
+		$this->require_premium_theme();
+
+		$demo = $this->latest_demo();
+		if ( ! $demo ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'No AI demo found on this site.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$page_id  = isset( $_POST['page_id'] ) ? (int) $_POST['page_id'] : 0;
+		$feedback = isset( $_POST['feedback'] ) ? sanitize_textarea_field( wp_unslash( $_POST['feedback'] ) ) : '';
+
+		$post = $page_id ? get_post( $page_id ) : null;
+		if ( ! $post
+			|| 'page' !== $post->post_type
+			|| get_post_meta( $page_id, self::GENERATED_META_KEY, true ) !== $demo['plan_id'] ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'That page does not belong to the current AI demo.', 'inspiro-starter-sites' ) ) );
+		}
+
+		// The blog page is a plain container for the posts page — there is no
+		// designed layout to regenerate.
+		if ( (int) get_option( 'page_for_posts' ) === $page_id ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'The Blog page displays your latest posts and has no AI design to regenerate.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$brief = sprintf(
+			/* translators: %s: page title */
+			__( 'Redesign the "%s" page of this site with a fresh take — same purpose, different layout and imagery.', 'inspiro-starter-sites' ),
+			$post->post_title
+		);
+		if ( '' !== $feedback ) {
+			$brief .= ' ' . sprintf(
+				/* translators: %s: user feedback */
+				__( 'The user asked for this revision: %s', 'inspiro-starter-sites' ),
+				mb_substr( $feedback, 0, 400 )
+			);
+		}
+
+		$page = array(
+			'title' => $post->post_title,
+			'slug'  => $post->post_name,
+			'brief' => $brief,
+		);
+
+		$this->generate_single_page( $demo['plan_id'], $demo['record'], $page, $page_id );
+	}
+
+	/**
+	 * The shared single-page pipeline: one demo-page Claude call against the
+	 * stored demo context, image resolution with the demo's existing photos
+	 * as the de-dup list and reuse pool, block conversion, then insert (new
+	 * page + menu item) or content replace (regenerate). Streams keep-alive
+	 * bytes and never returns.
+	 *
+	 * @param string $plan_id          Active demo ID.
+	 * @param array  $record           Stored demo record.
+	 * @param array  $page             [ title, slug, brief ].
+	 * @param int    $existing_page_id Page to replace, 0 to add a new one.
+	 */
+	private function generate_single_page( $plan_id, array $record, array $page, $existing_page_id = 0 ) {
+		if ( function_exists( 'set_time_limit' ) ) {
+			@set_time_limit( 180 ); // phpcs:ignore
+		}
+
+		$record = $this->split_font_css( $plan_id, $record );
+
+		if ( empty( $record['css'] ) ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'The demo stylesheet could not be found.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$stream = new StreamingResponse();
+		$stream->begin();
+
+		// The site's page list: existing demo pages plus, for additions, the
+		// new page — the AI uses it for internal links.
+		$page_ids   = isset( $record['pages'] ) ? array_map( 'intval', (array) $record['pages'] ) : array();
+		$pages_list = array();
+		$page_links = array();
+		foreach ( $page_ids as $pid ) {
+			$p = get_post( $pid );
+			if ( ! $p ) {
+				continue;
+			}
+			$pages_list[]                  = array(
+				'slug'  => $p->post_name,
+				'title' => $p->post_title,
+			);
+			$page_links[ $p->post_name ] = ( (int) get_option( 'page_on_front' ) === $pid ) ? home_url( '/' ) : get_permalink( $pid );
+		}
+		if ( ! $existing_page_id ) {
+			$pages_list[]                  = array(
+				'slug'  => $page['slug'],
+				'title' => $page['title'],
+			);
+			$page_links[ $page['slug'] ] = home_url( '/' . $page['slug'] . '/' );
+		}
+
+		$html = $this->proxy->claude_task(
+			'demo-page',
+			array(
+				'description'      => isset( $record['description'] ) ? $record['description'] : '',
+				'site_title'       => isset( $record['site_title'] ) ? $record['site_title'] : '',
+				'tagline'          => isset( $record['tagline'] ) ? $record['tagline'] : '',
+				'language'         => isset( $record['language'] ) ? $record['language'] : '',
+				'css'              => $record['css'],
+				'page'             => $page,
+				'pages'            => $pages_list,
+				'portfolio_needed' => post_type_exists( 'portfolio_item' ) && ! empty( $record['portfolio'] ),
+				'posts_feed'       => ! empty( $record['posts'] ),
+				'has_contact_form' => post_type_exists( 'wpzf-form' ),
+			),
+			array( $stream, 'tick' )
+		);
+
+		if ( is_wp_error( $html ) ) {
+			$stream->finish_error(
+				array(
+					'message' => $html->get_error_message(),
+					'detail'  => $html->get_error_code(),
+				)
+			);
+		}
+
+		$html = preg_replace( '/^```(?:html)?\s*|\s*```$/s', '', trim( $html ) );
+
+		// De-dup list + reuse pool from the demo's existing attachments (the
+		// Pexels ID is stamped on each at sideload time).
+		$used_photo_ids = array();
+		$image_pool     = array();
+		$attachments    = get_posts(
+			array(
+				'post_type'      => 'attachment',
+				'post_status'    => 'any',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'meta_key'       => self::GENERATED_META_KEY, // phpcs:ignore WordPress.DB.SlowDBQuery
+				'meta_value'     => $plan_id, // phpcs:ignore WordPress.DB.SlowDBQuery
+			)
+		);
+		foreach ( $attachments as $att_id ) {
+			$photo_id = (int) get_post_meta( $att_id, '_iss_pexels_photo_id', true );
+			$att_url  = wp_get_attachment_image_url( $att_id, 'full' );
+			if ( $photo_id ) {
+				$used_photo_ids[] = $photo_id;
+			}
+			if ( $att_url ) {
+				$image_pool[] = array(
+					'id'       => (int) $att_id,
+					'url'      => $att_url,
+					'photo_id' => $photo_id,
+				);
+			}
+		}
+
+		// Per-operation download budget: single pages need only a handful of
+		// fresh photos; overflow reuses the demo's existing imagery. The
+		// counter option matches the orphan-sweep pattern (…_imgs).
+		$op_id        = $plan_id . 'op' . substr( md5( uniqid( '', true ) ), 0, 6 );
+		$max_images   = max( 2, (int) apply_filters( 'inspiro_starter_sites/ai_max_images_single_page', 6 ) );
+		$generator    = $this;
+		$site_title   = isset( $record['site_title'] ) ? $record['site_title'] : '';
+		$reuse_cursor = 0;
+		$last_reused  = 0;
+		$resolver     = function ( $query, $orientation ) use ( $generator, &$used_photo_ids, &$image_pool, &$reuse_cursor, &$last_reused, $max_images, $op_id, $plan_id, $site_title, $stream ) {
+			if ( $generator->reserve_image_download( $op_id ) > $max_images ) {
+				if ( ! $image_pool ) {
+					return null;
+				}
+				$image = $image_pool[ $reuse_cursor % count( $image_pool ) ];
+				$reuse_cursor++;
+				if ( count( $image_pool ) > 1 && (int) $image['id'] === $last_reused ) {
+					$image = $image_pool[ $reuse_cursor % count( $image_pool ) ];
+					$reuse_cursor++;
+				}
+				$last_reused = (int) $image['id'];
+				return $image;
+			}
+
+			$images = $generator->resolve_images( $query, 1, $used_photo_ids, $site_title, $plan_id, array( $stream, 'tick' ), $orientation );
+			if ( ! $images ) {
+				return null;
+			}
+			$used_photo_ids[] = $images[0]['photo_id'];
+			$image_pool[]     = $images[0];
+			$last_reused      = (int) $images[0]['id'];
+			$stream->tick();
+			return $images[0];
+		};
+
+		$brand     = isset( $record['brand'] ) && is_array( $record['brand'] ) ? $record['brand'] : array();
+		$converter = new HtmlToBlocks( $page_links, $resolver, $brand );
+		$content   = $converter->convert( $html, $page['slug'] );
+
+		delete_option( self::PLAN_TRANSIENT_PREFIX . $op_id . '_imgs' );
+
+		if ( '' === $content ) {
+			$stream->finish_error( array( 'message' => esc_html__( 'The AI returned an unusable page design. Please try again.', 'inspiro-starter-sites' ) ) );
+		}
+
+		if ( $existing_page_id ) {
+			$result = wp_update_post(
+				wp_slash(
+					array(
+						'ID'           => $existing_page_id,
+						'post_content' => $content,
+					)
+				),
+				true
+			);
+			if ( is_wp_error( $result ) ) {
+				$stream->finish_error( array( 'message' => $result->get_error_message() ) );
+			}
+			$page_id = $existing_page_id;
+		} else {
+			$page_id = wp_insert_post(
+				wp_slash(
+					array(
+						'post_type'    => 'page',
+						'post_status'  => 'publish',
+						'post_title'   => $page['title'],
+						'post_name'    => $page['slug'],
+						'post_content' => $content,
+						'menu_order'   => count( $page_ids ),
+						'meta_input'   => array(
+							self::GENERATED_META_KEY => $plan_id,
+							'_wp_page_template'      => 'page-templates/full-width-no-title.php',
+						),
+					)
+				),
+				true
+			);
+			if ( is_wp_error( $page_id ) ) {
+				$stream->finish_error( array( 'message' => $page_id->get_error_message() ) );
+			}
+
+			// Into the demo's menu and its record, so delete/replace flows
+			// keep covering the new page.
+			$menu_id = isset( $record['menu_id'] ) ? (int) $record['menu_id'] : 0;
+			if ( $menu_id && wp_get_nav_menu_object( $menu_id ) ) {
+				wp_update_nav_menu_item(
+					$menu_id,
+					0,
+					array(
+						'menu-item-object-id' => (int) $page_id,
+						'menu-item-object'    => 'page',
+						'menu-item-type'      => 'post_type',
+						'menu-item-status'    => 'publish',
+						'menu-item-title'     => $page['title'],
+					)
+				);
+			}
+
+			$demos = get_option( self::DEMOS_OPTION, array() );
+			if ( isset( $demos[ $plan_id ] ) ) {
+				$demos[ $plan_id ]['pages'][] = (int) $page_id;
+				update_option( self::DEMOS_OPTION, $demos, false );
+			}
+		}
+
+		$stream->finish_success(
+			array(
+				'page_id'  => (int) $page_id,
+				'title'    => get_the_title( $page_id ),
+				'view_url' => get_permalink( $page_id ),
+				'edit_url' => get_edit_post_link( $page_id, 'raw' ),
+			)
 		);
 	}
 
@@ -2176,6 +2574,10 @@ class AiDemoGenerator {
 		$demos[ $plan_id ] = array(
 			'site_title'  => $state['plan']['site_title'],
 			'description' => $state['description'],
+			// Context for post-finalize page operations (add / regenerate).
+			'tagline'     => isset( $state['plan']['tagline'] ) ? $state['plan']['tagline'] : '',
+			'language'    => isset( $state['plan']['language'] ) ? $state['plan']['language'] : '',
+			'brand'       => isset( $state['plan']['brand'] ) ? $state['plan']['brand'] : array(),
 			// Kept apart so the CSS editor can round-trip the design rules
 			// without re-sanitizing (and mangling) the font-file URLs.
 			'css'         => isset( $state['plan']['css'] ) ? trim( $state['plan']['css'] ) : '',
@@ -2670,6 +3072,11 @@ class AiDemoGenerator {
 		if ( $plan_id ) {
 			update_post_meta( $attachment_id, self::GENERATED_META_KEY, $plan_id );
 		}
+
+		// The source photo ID makes the attachment re-fetchable and lets
+		// post-finalize operations (add/regenerate page, future export)
+		// rebuild the de-duplication list and reuse pool.
+		update_post_meta( $attachment_id, '_iss_pexels_photo_id', (int) $photo['id'] );
 
 		return array(
 			'id'       => (int) $attachment_id,

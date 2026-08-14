@@ -5,7 +5,7 @@ Author URI:			https://www.wpzoom.com/
 Requires at least: 	6.5
 Tested up to: 		7.1
 Requires PHP: 		7.4  
-Stable tag: 		1.2.2
+Stable tag: 		1.2.3
 License: 			GPLv2 or later  
 License URI: 		https://www.gnu.org/licenses/gpl-2.0.html
 Tags: 				starter sites, templates, demo importer, elementor, gutenberg
@@ -139,6 +139,12 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 4. Demo Imported message
 
 == Changelog ==
+
+= 1.2.3 =
+* Minor improvements
+* New (Inspiro Premium): Add a single AI-generated page to your demo — e.g. a Pricing page — designed in your demo's existing style
+* New (Inspiro Premium): Regenerate any page of your AI demo with a fresh design, optionally guided by your feedback
+
 
 = 1.2.2 =
 * Multiple fixes and improvements for the AI Demo Generator

@@ -998,6 +998,77 @@ body.iss-ai-open {
   color: #8a2424;
 }
 
+/* The hidden attribute must always win — author rules like
+   .iss-ai-pt-working{display:flex} and wp-admin's .button{display:inline-block}
+   otherwise override the UA's [hidden]{display:none}. */
+.iss-ai-root [hidden] {
+  display: none !important;
+}
+
+/* Locked (Lite) state for premium-only actions. */
+.iss-ai-mini-btn.is-locked {
+  border-style: dashed;
+  color: #787c82;
+}
+
+.iss-ai-mini-btn.is-locked:hover,
+.iss-ai-mini-btn.is-locked:focus {
+  border-color: #8c8f94;
+  background: #f6f7f7;
+  color: #50575e;
+}
+
+.iss-ai-premium-upsell {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #f0f3ff;
+  color: #2c3338;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.iss-ai-premium-upsell a {
+  font-weight: 600;
+  color: #3858e9;
+}
+
+/* Add / regenerate page step */
+.iss-ai-input {
+  display: block;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 9px 12px;
+  border: 1px solid #dcdcde;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.iss-ai-input:focus {
+  border-color: #3858e9;
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 1px #3858e9;
+}
+
+select.iss-ai-input {
+  max-width: 100%;
+}
+
+.iss-ai-pt-working {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 10px;
+  color: #50575e;
+  font-size: 13px;
+}
+
+.iss-ai-pt-working .spinner {
+  float: none;
+  margin: 0;
+}
+
 /* Connect step (email registration) */
 .iss-ai-step-connect {
   display: none;
