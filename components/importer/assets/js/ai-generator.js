@@ -305,8 +305,15 @@ jQuery( function ( $ ) {
 								'<div class="js-iss-ai-pt-regen">' +
 									'<p class="iss-ai-field-label">' + esc( t.regen_label || '' ) + '</p>' +
 									'<select class="iss-ai-input js-iss-ai-pt-page-select"></select>' +
-									'<p class="iss-ai-field-label">' + esc( t.regen_feedback || '' ) + '</p>' +
-									'<textarea class="iss-ai-textarea js-iss-ai-pt-feedback" rows="3" maxlength="400"></textarea>' +
+									'<p class="iss-ai-field-label">' + esc( t.regen_mode_label || '' ) + '</p>' +
+									'<div class="iss-ai-mode-choice js-iss-ai-pt-mode">' +
+										'<label class="iss-ai-mode-option is-active"><input type="radio" name="iss_ai_regen_mode" value="replace" checked> ' +
+											'<strong>' + esc( t.regen_mode_replace || '' ) + '</strong><span>' + esc( t.regen_mode_replace_hint || '' ) + '</span></label>' +
+										'<label class="iss-ai-mode-option"><input type="radio" name="iss_ai_regen_mode" value="append"> ' +
+											'<strong>' + esc( t.regen_mode_append || '' ) + '</strong><span>' + esc( t.regen_mode_append_hint || '' ) + '</span></label>' +
+									'</div>' +
+									'<p class="iss-ai-field-label js-iss-ai-pt-feedback-label">' + esc( t.regen_feedback || '' ) + '</p>' +
+									'<textarea class="iss-ai-textarea js-iss-ai-pt-feedback" rows="3" maxlength="500"></textarea>' +
 								'</div>' +
 							'</div>' +
 							'<div class="iss-ai-pt-working js-iss-ai-pt-working" hidden>' +
@@ -1104,6 +1111,12 @@ jQuery( function ( $ ) {
 			.text( 'add' === mode ? ( t.add_page_go || '' ) : ( t.regen_go || '' ) )
 			.show();
 
+		if ( 'regen' === mode ) {
+			// Fresh open always starts in "replace" mode.
+			$root.find( 'input[name="iss_ai_regen_mode"][value="replace"]' ).prop( 'checked', true );
+			syncRegenMode();
+		}
+
 		showStep( 'pagetools' );
 	}
 
@@ -1119,6 +1132,25 @@ jQuery( function ( $ ) {
 		showStep( 'input' );
 	} );
 
+	// Regenerate mode switch: the feedback field's label, placeholder and
+	// button change meaning between "replace" and "append".
+	function syncRegenMode() {
+		var mode = $root.find( 'input[name="iss_ai_regen_mode"]:checked' ).val() || 'replace';
+		var isAppend = 'append' === mode;
+
+		$root.find( '.iss-ai-mode-option' ).each( function () {
+			$( this ).toggleClass( 'is-active', $( this ).find( 'input' ).prop( 'checked' ) );
+		} );
+		$root.find( '.js-iss-ai-pt-feedback-label' ).text( isAppend ? ( t.append_describe || '' ) : ( t.regen_feedback || '' ) );
+		$root.find( '.js-iss-ai-pt-feedback' ).attr( 'placeholder', isAppend ? ( t.append_ph || '' ) : '' );
+		$root.find( '.js-iss-ai-pt-intro' ).text( isAppend ? ( t.append_intro || '' ) : ( t.regen_intro || '' ) );
+		if ( 'regen' === pageToolsMode ) {
+			$root.find( '.js-iss-ai-pt-go' ).text( isAppend ? ( t.append_go || '' ) : ( t.regen_go || '' ) );
+		}
+	}
+
+	$root.on( 'change', 'input[name="iss_ai_regen_mode"]', syncRegenMode );
+
 	$root.on( 'click', '.js-iss-ai-pt-go', function () {
 		var $go     = $( this );
 		var $result = $root.find( '.js-iss-ai-pt-result' );
@@ -1133,12 +1165,19 @@ jQuery( function ( $ ) {
 			action = 'inspiro_starter_sites_ai_add_page';
 			data   = { title: title, details: $.trim( $root.find( '.js-iss-ai-pt-details' ).val() || '' ) };
 		} else {
-			var pageId = $root.find( '.js-iss-ai-pt-page-select' ).val();
+			var pageId   = $root.find( '.js-iss-ai-pt-page-select' ).val();
+			var mode     = $root.find( 'input[name="iss_ai_regen_mode"]:checked' ).val() || 'replace';
+			var feedback = $.trim( $root.find( '.js-iss-ai-pt-feedback' ).val() || '' );
 			if ( ! pageId ) {
 				return;
 			}
+			// In append mode the description is what gets built — required.
+			if ( 'append' === mode && ! feedback ) {
+				$root.find( '.js-iss-ai-pt-feedback' ).focus();
+				return;
+			}
 			action = 'inspiro_starter_sites_ai_regenerate_page';
-			data   = { page_id: pageId, feedback: $.trim( $root.find( '.js-iss-ai-pt-feedback' ).val() || '' ) };
+			data   = { page_id: pageId, mode: mode, feedback: feedback };
 		}
 
 		$go.prop( 'disabled', true ).hide();

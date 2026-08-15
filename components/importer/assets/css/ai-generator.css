@@ -1034,6 +1034,58 @@ body.iss-ai-open {
   color: #3858e9;
 }
 
+/* Regenerate: replace vs append choice */
+.iss-ai-mode-choice {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.iss-ai-mode-option {
+  display: block;
+  padding: 11px 13px;
+  border: 1.5px solid #dcdcde;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.iss-ai-mode-option:hover {
+  border-color: #a7aaad;
+}
+
+.iss-ai-mode-option.is-active {
+  border-color: #1d1d1f;
+  background: #fafafa;
+}
+
+.iss-ai-mode-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.iss-ai-mode-option strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 13px;
+  color: #1d1d1f;
+}
+
+.iss-ai-mode-option span {
+  display: block;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #646970;
+}
+
+@media (max-width: 600px) {
+  .iss-ai-mode-choice {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Add / regenerate page step */
 .iss-ai-input {
   display: block;

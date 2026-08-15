@@ -416,6 +416,15 @@ class AiDemoGenerator {
 					'regen_label'      => __( 'Which page?', 'inspiro-starter-sites' ),
 					'regen_feedback'   => __( 'What would you like different? (optional)', 'inspiro-starter-sites' ),
 					'regen_go'         => __( 'Regenerate page', 'inspiro-starter-sites' ),
+					'regen_mode_label' => __( 'How?', 'inspiro-starter-sites' ),
+					'regen_mode_replace'      => __( 'Replace the page', 'inspiro-starter-sites' ),
+					'regen_mode_replace_hint' => __( 'A fresh design replaces the current layout.', 'inspiro-starter-sites' ),
+					'regen_mode_append'       => __( 'Add to the page', 'inspiro-starter-sites' ),
+					'regen_mode_append_hint'  => __( 'Keep the current layout and add new sections below it.', 'inspiro-starter-sites' ),
+					'append_intro'     => __( 'Your current layout stays. Describe what to add, and AI designs new sections in your demo\'s style, added at the bottom of the page.', 'inspiro-starter-sites' ),
+					'append_describe'  => __( 'What should be added?', 'inspiro-starter-sites' ),
+					'append_ph'        => __( 'e.g. A section with our opening hours and a map, and a short FAQ', 'inspiro-starter-sites' ),
+					'append_go'        => __( 'Add to page', 'inspiro-starter-sites' ),
 					'page_working'     => __( 'Designing the page — this takes about half a minute…', 'inspiro-starter-sites' ),
 					/* translators: %s: page title */
 					'page_done'        => __( '“%s” is ready.', 'inspiro-starter-sites' ),
@@ -1284,17 +1293,30 @@ class AiDemoGenerator {
 			wp_send_json_error( array( 'message' => esc_html__( 'The Blog page displays your latest posts and has no AI design to regenerate.', 'inspiro-starter-sites' ) ) );
 		}
 
-		$brief = sprintf(
-			/* translators: %s: page title */
-			__( 'Redesign the "%s" page of this site with a fresh take — same purpose, different layout and imagery.', 'inspiro-starter-sites' ),
-			$post->post_title
-		);
-		if ( '' !== $feedback ) {
-			$brief .= ' ' . sprintf(
-				/* translators: %s: user feedback */
-				__( 'The user asked for this revision: %s', 'inspiro-starter-sites' ),
-				mb_substr( $feedback, 0, 400 )
+		// 'replace' rebuilds the whole page; 'append' keeps the current layout
+		// and adds new sections below it.
+		$mode   = isset( $_POST['mode'] ) && 'append' === $_POST['mode'] ? 'append' : 'replace';
+		$append = 'append' === $mode;
+
+		if ( $append ) {
+			// In append mode the feedback IS the brief — it says what to add.
+			if ( '' === $feedback ) {
+				wp_send_json_error( array( 'message' => esc_html__( 'Describe the section(s) you want to add to this page.', 'inspiro-starter-sites' ) ) );
+			}
+			$brief = mb_substr( $feedback, 0, 500 );
+		} else {
+			$brief = sprintf(
+				/* translators: %s: page title */
+				__( 'Redesign the "%s" page of this site with a fresh take — same purpose, different layout and imagery.', 'inspiro-starter-sites' ),
+				$post->post_title
 			);
+			if ( '' !== $feedback ) {
+				$brief .= ' ' . sprintf(
+					/* translators: %s: user feedback */
+					__( 'The user asked for this revision: %s', 'inspiro-starter-sites' ),
+					mb_substr( $feedback, 0, 400 )
+				);
+			}
 		}
 
 		$page = array(
@@ -1303,7 +1325,7 @@ class AiDemoGenerator {
 			'brief' => $brief,
 		);
 
-		$this->generate_single_page( $demo['plan_id'], $demo['record'], $page, $page_id );
+		$this->generate_single_page( $demo['plan_id'], $demo['record'], $page, $page_id, $append );
 	}
 
 	/**
@@ -1317,8 +1339,10 @@ class AiDemoGenerator {
 	 * @param array  $record           Stored demo record.
 	 * @param array  $page             [ title, slug, brief ].
 	 * @param int    $existing_page_id Page to replace, 0 to add a new one.
+	 * @param bool   $append           With an existing page: keep its content
+	 *                                 and add the new sections below it.
 	 */
-	private function generate_single_page( $plan_id, array $record, array $page, $existing_page_id = 0 ) {
+	private function generate_single_page( $plan_id, array $record, array $page, $existing_page_id = 0, $append = false ) {
 		if ( function_exists( 'set_time_limit' ) ) {
 			@set_time_limit( 180 ); // phpcs:ignore
 		}
@@ -1369,6 +1393,8 @@ class AiDemoGenerator {
 				'portfolio_needed' => post_type_exists( 'portfolio_item' ) && ! empty( $record['portfolio'] ),
 				'posts_feed'       => ! empty( $record['posts'] ),
 				'has_contact_form' => post_type_exists( 'wpzf-form' ),
+				// Sections-only output (no hero, no h1) that continues the page.
+				'append'           => $append && $existing_page_id ? 1 : 0,
 			),
 			array( $stream, 'tick' )
 		);
@@ -1383,6 +1409,14 @@ class AiDemoGenerator {
 		}
 
 		$html = preg_replace( '/^```(?:html)?\s*|\s*```$/s', '', trim( $html ) );
+
+		// Append hygiene, independent of the prompt version: appended sections
+		// continue an existing page, so a page-level <h1> becomes an <h2>
+		// (there is already one h1 on the page).
+		if ( $append && $existing_page_id ) {
+			$html = preg_replace( '/<h1(\s[^>]*)?>/i', '<h2$1>', $html );
+			$html = preg_replace( '/<\/h1>/i', '</h2>', $html );
+		}
 
 		// De-dup list + reuse pool from the demo's existing attachments (the
 		// Pexels ID is stamped on each at sideload time).
@@ -1459,6 +1493,13 @@ class AiDemoGenerator {
 		}
 
 		if ( $existing_page_id ) {
+			if ( $append ) {
+				// Keep the current layout; the new per-section wrappers slot
+				// in below it as ordinary sibling blocks.
+				$current = (string) get_post_field( 'post_content', $existing_page_id, 'raw' );
+				$content = rtrim( $current ) . "\n\n" . $content;
+			}
+
 			$result = wp_update_post(
 				wp_slash(
 					array(
