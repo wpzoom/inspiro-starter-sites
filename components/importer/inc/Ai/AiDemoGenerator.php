@@ -485,7 +485,7 @@ class AiDemoGenerator {
 		// server first — without one, tell the UI to show the connect step
 		// instead of quota numbers.
 		if ( ! $this->proxy->is_connected() ) {
-			wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info() ) ) );
+			wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'demo_pages' => $this->demo_pages_for_picker() ) ) );
 		}
 
 		$quota = $this->proxy->quota( 'check' );
@@ -495,12 +495,12 @@ class AiDemoGenerator {
 				// The server no longer recognizes our key (e.g. wiped data) —
 				// forget it so the user can re-connect.
 				$this->proxy->disconnect();
-				wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info() ) ) );
+				wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'demo_pages' => $this->demo_pages_for_picker() ) ) );
 			}
 			wp_send_json_error( array( 'message' => $quota->get_error_message() ) );
 		}
 
-		wp_send_json_success( array_merge( $this->quota_payload( $quota ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info() ) ) );
+		wp_send_json_success( array_merge( $this->quota_payload( $quota ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'demo_pages' => $this->demo_pages_for_picker() ) ) );
 	}
 
 	/**
@@ -852,7 +852,7 @@ class AiDemoGenerator {
 
 		wp_send_json_success( array_merge(
 			$this->quota_payload( is_wp_error( $quota ) ? array() : $quota ),
-			array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info() )
+			array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'demo_pages' => $this->demo_pages_for_picker() )
 		) );
 	}
 
@@ -893,7 +893,7 @@ class AiDemoGenerator {
 
 		wp_send_json_success( array_merge(
 			$this->quota_payload( is_wp_error( $quota ) ? array() : $quota ),
-			array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info() )
+			array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'demo_pages' => $this->demo_pages_for_picker() )
 		) );
 	}
 
@@ -2602,8 +2602,11 @@ class AiDemoGenerator {
 
 		$stream->finish_success(
 			array(
-				'view_url'  => home_url( '/' ),
-				'pages_url' => admin_url( 'edit.php?post_type=page' ),
+				'view_url'   => home_url( '/' ),
+				'pages_url'  => admin_url( 'edit.php?post_type=page' ),
+				// So the regenerate picker is populated even if the modal is
+				// never closed between generation and page tools.
+				'demo_pages' => $this->demo_pages_for_picker(),
 			)
 		);
 	}

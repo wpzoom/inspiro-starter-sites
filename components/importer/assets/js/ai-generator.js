@@ -495,6 +495,13 @@ jQuery( function ( $ ) {
 		quota     = data;
 		connected = !! data.connected;
 
+		// The regenerate picker's page list is refreshed with every state
+		// fetch (the modal re-fetches on open), so a demo generated in this
+		// same session is available without a page reload.
+		if ( data.demo_pages ) {
+			config.demo_pages = data.demo_pages;
+		}
+
 		renderQuota();
 		renderReplaceNotice( data.previous, data.classic );
 
@@ -849,6 +856,9 @@ jQuery( function ( $ ) {
 				if ( planState.site_title ) {
 					$root.find( '.js-iss-ai-success-title' ).text( ( t.success_title || '' ) + ' — ' + planState.site_title );
 				}
+				if ( response.data.demo_pages ) {
+					config.demo_pages = response.data.demo_pages;
+				}
 				if ( response.data.view_url ) {
 					$root.find( '.js-iss-ai-view-site' ).attr( 'href', response.data.view_url );
 				}
@@ -952,6 +962,7 @@ jQuery( function ( $ ) {
 					$result.text( response.data.message || '' ).removeAttr( 'hidden' );
 					$root.find( '.js-iss-ai-replace-notice' ).attr( 'hidden', 'hidden' );
 					renderHeroExisting( null );
+					config.demo_pages = [];
 				} else {
 					$result.text( responseMessage( response ) ).removeAttr( 'hidden' );
 				}
