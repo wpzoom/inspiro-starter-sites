@@ -118,18 +118,25 @@ jQuery( function ( $ ) {
 			'</button>';
 		} );
 
-		// Design level chips. Advanced is Premium: it renders locked and is
-		// unlocked by the quota response, whose `licensed` flag the proxy
-		// decides after verifying the Inspiro license.
-		var designLevelChips = '';
+		// Generation-mode cards. The Creative mode is Premium: it renders
+		// locked and is unlocked by the quota response, whose `licensed` flag
+		// the proxy decides after verifying the Inspiro license.
+		var designLevelCards = '';
 		$.each( config.design_levels || {}, function ( slug, level ) {
-			var isPro = !! level.pro;
-			designLevelChips += '<button type="button" class="iss-ai-chip iss-ai-chip--level' +
-				( 'standard' === slug ? ' is-active' : '' ) +
-				( isPro ? ' iss-ai-chip--pro is-locked' : '' ) +
-				'" data-value="' + esc( slug ) + '" title="' + esc( level.hint || '' ) + '">' +
-				'<span>' + esc( level.label || '' ) + '</span>' +
-				( isPro ? '<span class="iss-ai-chip-lock" aria-hidden="true">&#128274;</span>' : '' ) +
+			var isPro    = !! level.pro;
+			var isActive = 'standard' === slug;
+			designLevelCards += '<button type="button" role="radio" aria-checked="' + ( isActive ? 'true' : 'false' ) + '"' +
+				' class="iss-ai-level-card' +
+				( isActive ? ' is-active' : '' ) +
+				( isPro ? ' iss-ai-level-card--pro is-locked' : '' ) +
+				'" data-value="' + esc( slug ) + '">' +
+				'<span class="iss-ai-level-mark" aria-hidden="true"></span>' +
+				'<span class="iss-ai-level-body">' +
+					'<span class="iss-ai-level-name">' + esc( level.label || '' ) +
+						( isPro ? '<span class="iss-ai-level-badge">' + esc( t.design_level_badge || '' ) + '</span>' : '' ) +
+					'</span>' +
+					'<span class="iss-ai-level-desc">' + esc( level.hint || '' ) + '</span>' +
+				'</span>' +
 			'</button>';
 		} );
 
@@ -232,16 +239,6 @@ jQuery( function ( $ ) {
 							'</div>' +
 							'<div class="iss-ai-ideas js-iss-ai-ideas" hidden>' + ideas + '</div>' +
 
-							( designLevelChips ?
-								'<p class="iss-ai-field-label">' + esc( t.design_level_label || '' ) + '</p>' +
-								'<div class="iss-ai-chips js-iss-ai-design-level">' + designLevelChips + '</div>' +
-								'<p class="iss-ai-level-lock js-iss-ai-level-lock" hidden>' +
-									'<a href="' + esc( ( config.is_premium_theme ? ( config.license_url || '#' ) : ( config.upgrade_url || '#' ) ) ) + '"' +
-									( config.is_premium_theme ? '' : ' target="_blank" rel="noopener"' ) + '>' +
-									esc( t.design_level_lock || '' ) +
-								'</a></p>'
-							: '' ) +
-
 							'<div class="iss-ai-field-columns">' +
 								'<div class="iss-ai-field">' +
 									'<p class="iss-ai-field-label">' + esc( t.style_label || '' ) + '</p>' +
@@ -254,6 +251,19 @@ jQuery( function ( $ ) {
 
 							'<p class="iss-ai-field-label">' + esc( t.palette_label || '' ) + '</p>' +
 							'<div class="iss-ai-chips iss-ai-chips--grid js-iss-ai-palette">' + paletteChips + '</div>' +
+
+							// Generation mode comes last: it is the one setting
+							// that trades time for design variety, so it reads as
+							// the final call before generating.
+							( designLevelCards ?
+								'<p class="iss-ai-field-label">' + esc( t.design_level_label || '' ) + '</p>' +
+								'<div class="iss-ai-level-cards js-iss-ai-design-level" role="radiogroup" aria-label="' + esc( t.design_level_label || '' ) + '">' + designLevelCards + '</div>' +
+								'<p class="iss-ai-level-lock js-iss-ai-level-lock" hidden>' +
+									'<a href="' + esc( ( config.is_premium_theme ? ( config.license_url || '#' ) : ( config.upgrade_url || '#' ) ) ) + '"' +
+									( config.is_premium_theme ? '' : ' target="_blank" rel="noopener"' ) + '>' +
+									esc( t.design_level_lock || '' ) +
+								'</a></p>'
+							: '' ) +
 
 							'<p class="iss-ai-error js-iss-ai-input-error" hidden></p>' +
 						'</div>' +
@@ -444,11 +454,23 @@ jQuery( function ( $ ) {
 	 * Quota
 	 * -------------------------------------------------------------- */
 
-	// Set once the user picks a design level themselves, so a later quota
+	// Set once the user picks a generation mode themselves, so a later quota
 	// refresh never overrides their choice with the licensed default.
 	var designLevelTouched = false;
 
-	// Reflect the server's licensing decision on the design-level chips.
+	// Single-select across the mode cards, keeping aria-checked in step with
+	// the visual state for the radiogroup.
+	function selectDesignLevel( $card ) {
+		if ( ! $card || ! $card.length ) {
+			return;
+		}
+		$card.closest( '.iss-ai-level-cards' ).find( '.iss-ai-level-card' )
+			.removeClass( 'is-active' )
+			.attr( 'aria-checked', 'false' );
+		$card.addClass( 'is-active' ).attr( 'aria-checked', 'true' );
+	}
+
+	// Reflect the server's licensing decision on the generation-mode cards.
 	// Purely cosmetic: the proxy re-verifies the license on every task call,
 	// so unlocking this by hand still yields standard output.
 	function renderDesignLevels() {
@@ -458,18 +480,16 @@ jQuery( function ( $ ) {
 		}
 
 		var licensed = !! ( quota && quota.licensed );
-		var $pro     = $group.find( '.iss-ai-chip--pro' );
+		var $pro     = $group.find( '.iss-ai-level-card--pro' );
 
 		$pro.toggleClass( 'is-locked', ! licensed );
 		$root.find( '.js-iss-ai-level-lock' ).attr( 'hidden', licensed ? 'hidden' : null );
 
 		if ( licensed && ! designLevelTouched ) {
 			// Licence holders get the better output unless they say otherwise.
-			$group.find( '.iss-ai-chip' ).removeClass( 'is-active' );
-			$pro.addClass( 'is-active' );
+			selectDesignLevel( $pro.first() );
 		} else if ( ! licensed && $pro.hasClass( 'is-active' ) ) {
-			$pro.removeClass( 'is-active' );
-			$group.find( '.iss-ai-chip' ).not( $pro ).first().addClass( 'is-active' );
+			selectDesignLevel( $group.find( '.iss-ai-level-card' ).not( $pro ).first() );
 		}
 	}
 
@@ -681,7 +701,7 @@ jQuery( function ( $ ) {
 			style:       $root.find( '.js-iss-ai-style .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
 			palette:     $root.find( '.js-iss-ai-palette .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
 			typography:  $root.find( '.js-iss-ai-typography .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
-			design_level: $root.find( '.js-iss-ai-design-level .iss-ai-chip.is-active' ).attr( 'data-value' ) || 'standard',
+			design_level: $root.find( '.js-iss-ai-design-level .iss-ai-level-card.is-active' ).attr( 'data-value' ) || 'standard',
 			// A fresh seed per run, so re-generating the same description picks
 			// a different art direction instead of rebuilding the same site.
 			variant_seed: Math.random().toString( 36 ).slice( 2, 12 ) + Date.now().toString( 36 ).slice( -6 ),
@@ -994,22 +1014,24 @@ jQuery( function ( $ ) {
 		$( this ).attr( 'hidden', 'hidden' );
 	} );
 
-	// Style / palette / design-level chips — single-select per group.
+	// Style / typography / palette chips — single-select per group.
 	$root.on( 'click', '.iss-ai-chip', function () {
 		var $chip = $( this );
 
-		// A locked Premium chip is not selectable; the hint beneath the row
-		// carries the upgrade / activate link.
-		if ( $chip.hasClass( 'is-locked' ) ) {
+		$chip.closest( '.iss-ai-chips' ).find( '.iss-ai-chip' ).removeClass( 'is-active' );
+		$chip.addClass( 'is-active' );
+	} );
+
+	// Generation-mode cards. A locked Premium card is not selectable; the note
+	// beneath the cards carries the upgrade / activate link.
+	$root.on( 'click', '.iss-ai-level-card', function () {
+		var $card = $( this );
+		if ( $card.hasClass( 'is-locked' ) ) {
 			return;
 		}
 
-		if ( $chip.closest( '.js-iss-ai-design-level' ).length ) {
-			designLevelTouched = true;
-		}
-
-		$chip.closest( '.iss-ai-chips' ).find( '.iss-ai-chip' ).removeClass( 'is-active' );
-		$chip.addClass( 'is-active' );
+		designLevelTouched = true;
+		selectDesignLevel( $card );
 	} );
 
 	$root.on( 'click', '.js-iss-ai-generate', function () {

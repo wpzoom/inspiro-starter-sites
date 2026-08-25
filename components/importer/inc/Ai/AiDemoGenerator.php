@@ -334,7 +334,8 @@ class AiDemoGenerator {
 					'ideas_show'       => __( 'Need inspiration? View ideas', 'inspiro-starter-sites' ),
 					'ideas_hide'       => __( 'Hide ideas', 'inspiro-starter-sites' ),
 					'style_label'      => __( 'Design style', 'inspiro-starter-sites' ),
-					'design_level_label' => __( 'Design level', 'inspiro-starter-sites' ),
+					'design_level_label' => __( 'How should the AI design it?', 'inspiro-starter-sites' ),
+					'design_level_badge' => __( 'Premium', 'inspiro-starter-sites' ),
 					'design_level_lock'  => __( 'Included with Inspiro Premium', 'inspiro-starter-sites' ),
 					'palette_label'    => __( 'Color palette', 'inspiro-starter-sites' ),
 					'typography_label' => __( 'Typography', 'inspiro-starter-sites' ),
@@ -2570,7 +2571,7 @@ class AiDemoGenerator {
 	}
 
 	/**
-	 * User-selectable design levels: slug => [ label, hint, pro ].
+	 * User-selectable generation modes: slug => [ label, hint, pro ].
 	 *
 	 * 'pro' unlocks the proxy's art-direction recipe library — concrete,
 	 * mutually distinct design specs that replace the generic prompt defaults
@@ -2584,13 +2585,13 @@ class AiDemoGenerator {
 	private function design_level_options() {
 		return array(
 			'standard' => array(
-				'label' => __( 'Standard', 'inspiro-starter-sites' ),
-				'hint'  => __( 'The classic Inspiro demo layout', 'inspiro-starter-sites' ),
+				'label' => __( 'Balanced', 'inspiro-starter-sites' ),
+				'hint'  => __( 'Faster, built on the clean layouts Inspiro demos are known for.', 'inspiro-starter-sites' ),
 				'pro'   => false,
 			),
 			'pro'      => array(
-				'label' => __( 'Advanced', 'inspiro-starter-sites' ),
-				'hint'  => __( 'A distinct art direction per site — varied layouts, type and spacing', 'inspiro-starter-sites' ),
+				'label' => __( 'Creative', 'inspiro-starter-sites' ),
+				'hint'  => __( 'Slower, more creative — a distinct art direction, layout and type for every site.', 'inspiro-starter-sites' ),
 				'pro'   => true,
 			),
 		);

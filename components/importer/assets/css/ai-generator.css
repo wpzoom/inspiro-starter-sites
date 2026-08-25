@@ -553,37 +553,125 @@ body.iss-ai-open {
   border-color: #1d1d1f;
 }
 
-/* Typography chips: "Ag" specimen in the style's actual display font. */
-/* Design level: the Advanced chip is Premium-gated. It stays visible but
-   unselectable until the proxy confirms a verified license, so the value
+/* Generation mode: two selectable cards, each with a check mark and a
+   one-line trade-off. The Creative card is Premium-gated — it stays visible
+   but unselectable until the proxy confirms a verified license, so the value
    of upgrading is legible rather than hidden. */
-.iss-ai-chip--level {
-  gap: 6px;
+.iss-ai-level-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.iss-ai-chip--pro.is-locked {
-  color: #8a8a8f;
-  background: #f6f6f7;
+.iss-ai-level-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 14px 16px;
+  border: 1.5px solid #e4e4e7;
+  border-radius: 12px;
+  background: #ffffff;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.iss-ai-level-card:hover {
+  border-color: #c7ccd4;
+}
+
+.iss-ai-level-card.is-active {
+  border-color: #1d1d1f;
+  background: #fafafa;
+}
+
+/* Check mark: an empty ring while idle, filled with a tick once selected. */
+.iss-ai-level-mark {
+  position: relative;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border: 1.5px solid #d4d4d8;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.iss-ai-level-card.is-active .iss-ai-level-mark {
+  border-color: #1d1d1f;
+  background: #1d1d1f;
+}
+
+.iss-ai-level-card.is-active .iss-ai-level-mark::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 5.5px;
+  width: 4px;
+  height: 8px;
+  border: solid #ffffff;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+
+.iss-ai-level-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.iss-ai-level-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #18181b;
+}
+
+.iss-ai-level-desc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #6b6b70;
+}
+
+.iss-ai-level-badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(11, 180, 170, 0.12);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #08978f;
+}
+
+.iss-ai-level-card--pro.is-locked {
   border-style: dashed;
+  background: #fafafa;
   cursor: not-allowed;
 }
 
-.iss-ai-chip--pro.is-locked:hover {
+.iss-ai-level-card--pro.is-locked:hover {
   border-color: #e4e4e7;
 }
 
-.iss-ai-chip-lock {
-  font-size: 11px;
-  line-height: 1;
+.iss-ai-level-card--pro.is-locked .iss-ai-level-name,
+.iss-ai-level-card--pro.is-locked .iss-ai-level-desc {
+  color: #8a8a8f;
 }
 
-/* An unlocked Advanced chip has no lock to show. */
-.iss-ai-chip--pro:not(.is-locked) .iss-ai-chip-lock {
-  display: none;
+.iss-ai-level-card--pro.is-locked .iss-ai-level-mark {
+  border-style: dashed;
 }
 
 .iss-ai-level-lock {
-  margin: -4px 0 0;
+  margin: 10px 0 0;
   font-size: 12px;
   color: #6b6b70;
 }
@@ -598,6 +686,7 @@ body.iss-ai-open {
   text-decoration: underline;
 }
 
+/* Typography chips: "Ag" specimen in the style's actual display font. */
 .iss-ai-chip--type {
   padding: 6px 16px 6px 13px;
 }
@@ -1453,6 +1542,9 @@ body.iss-ai-open {
     padding: 12px 20px;
   }
   .iss-ai-ideas {
+    grid-template-columns: 1fr;
+  }
+  .iss-ai-level-cards {
     grid-template-columns: 1fr;
   }
 }
