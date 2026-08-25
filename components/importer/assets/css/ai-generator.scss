@@ -1509,6 +1509,485 @@ body.iss-ai-open {
 	padding-inline: 22px;
 }
 
+/* Art-direction grid (Premium)
+	 ------------------------------------------------------------------
+	 Its own step between describing the site and reviewing the pages, shown
+	 only to licensed sites generating in Creative mode — the only runs the
+	 proxy applies a recipe to, so there is no locked state to render. */
+.iss-ai-art-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+	gap: 12px;
+}
+
+.iss-ai-art-card {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	box-sizing: border-box;
+	width: 100%;
+	margin: 0;
+	padding: 9px 9px 12px;
+	border: 1.5px solid #e4e4e7;
+	border-radius: 12px;
+	background: #ffffff;
+	font: inherit;
+	text-align: start;
+	cursor: pointer;
+	transition: border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.iss-ai-art-card:hover {
+	border-color: #c7ccd4;
+}
+
+.iss-ai-art-card.is-active {
+	border-color: #1d1d1f;
+	box-shadow: 0 0 0 1px #1d1d1f;
+}
+
+.iss-ai-art-name {
+	display: block;
+	padding-inline: 2px;
+	font-size: 12.5px;
+	font-weight: 600;
+	color: #18181b;
+}
+
+.iss-ai-art-desc {
+	display: block;
+	padding-inline: 2px;
+	font-size: 11.5px;
+	line-height: 1.45;
+	color: #6b6b70;
+}
+
+/* Directions that don't suit the selected design style — a hint, not a rule:
+	 they stay clickable and return to full strength on hover. */
+.iss-ai-art-card.is-off-style {
+	opacity: 0.45;
+}
+
+.iss-ai-art-card.is-off-style:hover,
+.iss-ai-art-card.is-off-style.is-active {
+	opacity: 1;
+}
+
+/* Back sits opposite the primary action rather than beside it. */
+.iss-ai-footer .iss-ai-back-btn {
+	margin-inline-end: auto;
+}
+
+/* Art-direction wireframes
+	 ------------------------------------------------------------------
+	 An abstract mock of each recipe's layout system, drawn in its own page
+	 tone, corner radius and accent. Everything derives from two custom
+	 properties per tone so a new recipe needs no new colors. */
+.iss-ai-wf {
+	--iss-wf-ink-rgb: 29, 29, 31;
+	--iss-wf-ground: #ffffff;
+	--iss-wf-accent: #1d1d1f;
+	--iss-wf-radius: 2px;
+	--iss-wf-ink: rgb(var(--iss-wf-ink-rgb));
+	--iss-wf-mute: rgba(var(--iss-wf-ink-rgb), 0.3);
+	--iss-wf-photo: rgba(var(--iss-wf-ink-rgb), 0.14);
+	--iss-wf-tile: rgba(var(--iss-wf-ink-rgb), 0.07);
+	--iss-wf-rule: rgba(var(--iss-wf-ink-rgb), 0.16);
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	box-sizing: border-box;
+	width: 100%;
+	aspect-ratio: 4/3;
+	min-height: 110px;
+	padding: 7px;
+	border-radius: 9px;
+	background: var(--iss-wf-ground);
+	box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.07);
+	overflow: hidden;
+}
+
+.iss-ai-wf--paper {
+	--iss-wf-ground: #faf9f7;
+}
+
+.iss-ai-wf--ivory {
+	--iss-wf-ground: #faf6ee;
+	--iss-wf-ink-rgb: 43, 38, 32;
+}
+
+.iss-ai-wf--warm {
+	--iss-wf-ground: #f3ebdf;
+	--iss-wf-ink-rgb: 58, 44, 34;
+}
+
+.iss-ai-wf--dark {
+	--iss-wf-ground: #141416;
+	--iss-wf-ink-rgb: 244, 244, 245;
+}
+
+.iss-ai-wf--accent {
+	--iss-wf-ground: #16161a;
+	--iss-wf-ink-rgb: 244, 244, 245;
+}
+
+/* "Let AI choose" has no layout to show yet, so it carries a mark instead. */
+.iss-ai-wf--auto {
+	align-items: center;
+	justify-content: center;
+	background: #f6f7f9;
+	color: #9aa0a8;
+}
+
+.iss-ai-wf--auto svg {
+	width: 34px;
+	height: 34px;
+}
+
+.iss-ai-wf-hero {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 3px;
+	flex: 1 1 58%;
+	min-height: 0;
+}
+
+.iss-ai-wf-band {
+	display: flex;
+	gap: 5px;
+	flex: 1 1 42%;
+	min-height: 0;
+}
+
+/* Pieces */
+.iss-ai-wf-line {
+	display: block;
+	height: 3px;
+	border-radius: 1px;
+	background: var(--iss-wf-mute);
+}
+
+.iss-ai-wf-line.is-eyebrow {
+	height: 2px;
+	background: var(--iss-wf-accent);
+}
+
+.iss-ai-wf-head {
+	display: block;
+	height: 6px;
+	border-radius: 1px;
+	background: var(--iss-wf-ink);
+}
+
+.iss-ai-wf-head.is-xl {
+	height: 9px;
+}
+
+.iss-ai-wf-photo {
+	display: block;
+	flex: 1 1 auto;
+	min-height: 10px;
+	border-radius: var(--iss-wf-radius);
+	background: var(--iss-wf-photo);
+}
+
+.iss-ai-wf-rule {
+	display: block;
+	height: 1px;
+	background: var(--iss-wf-rule);
+}
+
+.iss-ai-wf-copy {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 3px;
+	flex: 1 1 55%;
+	min-width: 0;
+}
+
+.iss-ai-wf .is-w20 { width: 20%; }
+.iss-ai-wf .is-w25 { width: 25%; }
+.iss-ai-wf .is-w40 { width: 40%; }
+.iss-ai-wf .is-w45 { width: 45%; }
+.iss-ai-wf .is-w50 { width: 50%; }
+.iss-ai-wf .is-w55 { width: 55%; }
+.iss-ai-wf .is-w60 { width: 60%; }
+.iss-ai-wf .is-w70 { width: 70%; }
+.iss-ai-wf .is-w75 { width: 75%; }
+.iss-ai-wf .is-w80 { width: 80%; }
+.iss-ai-wf .is-w90 { width: 90%; }
+.iss-ai-wf .is-w95 { width: 95%; }
+
+/* Hero: photo cover, headline over it bottom-left */
+.iss-ai-wf-photo.is-fill {
+	position: absolute;
+	inset: 0;
+	/* A cover carries white type, so it sits darker than an inline photo. */
+	background: rgba(var(--iss-wf-ink-rgb), 0.42);
+}
+
+.iss-ai-wf-photo.is-wash {
+	background: var(--iss-wf-accent);
+	opacity: 0.9;
+}
+
+.iss-ai-wf-over {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	box-sizing: border-box;
+	width: 100%;
+	margin-top: auto;
+	padding: 6px;
+}
+
+.iss-ai-wf-over .iss-ai-wf-head {
+	background: #ffffff;
+}
+
+.iss-ai-wf-over .iss-ai-wf-line {
+	background: rgba(255, 255, 255, 0.55);
+}
+
+.iss-ai-wf-over .iss-ai-wf-line.is-eyebrow {
+	background: #ffffff;
+}
+
+/* Hero: two-column splits */
+.iss-ai-wf-hero.is-split,
+.iss-ai-wf-hero.is-overlap,
+.iss-ai-wf-hero.is-meta,
+.iss-ai-wf-hero.is-bento {
+	flex-direction: row;
+	align-items: stretch;
+	gap: 6px;
+}
+
+.iss-ai-wf-photo.is-tall {
+	flex: 0 0 40%;
+}
+
+/* The photograph deliberately breaks the section boundary below it. */
+.iss-ai-wf-photo.is-break {
+	position: relative;
+	z-index: 1;
+	margin-bottom: -14px;
+}
+
+.iss-ai-wf-copy.is-outdent {
+	margin-inline-start: -4px;
+}
+
+.iss-ai-wf-metacol {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 4px;
+	flex: 0 0 22%;
+}
+
+.iss-ai-wf-hero.is-meta .iss-ai-wf-copy {
+	flex: 1 1 auto;
+}
+
+/* Hero: centred compositions */
+.iss-ai-wf-hero.is-stack > .iss-ai-wf-line,
+.iss-ai-wf-hero.is-stack > .iss-ai-wf-head,
+.iss-ai-wf-hero.is-centered > .iss-ai-wf-line,
+.iss-ai-wf-hero.is-centered > .iss-ai-wf-head {
+	margin-inline: auto;
+}
+
+.iss-ai-wf-photo.is-inset {
+	flex: 0 0 42%;
+	width: 84%;
+	margin: 3px auto 0;
+}
+
+/* Hero: gallery of four */
+.iss-ai-wf-gal {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 3px;
+	flex: 1 1 auto;
+	min-height: 0;
+	margin-bottom: 2px;
+}
+
+.iss-ai-wf-gal .iss-ai-wf-photo {
+	min-height: 0;
+}
+
+/* Hero: poster — display type, a solid colour band, a ticker row */
+.iss-ai-wf-fill {
+	display: block;
+	height: 13px;
+	margin-top: 2px;
+	border-radius: var(--iss-wf-radius);
+	background: var(--iss-wf-accent);
+}
+
+.iss-ai-wf-ticker {
+	display: flex;
+	gap: 4px;
+	margin-top: 2px;
+}
+
+.iss-ai-wf-ticker span {
+	flex: 1 1 0;
+	height: 2px;
+	background: var(--iss-wf-mute);
+}
+
+/* Tiles (bento hero and bento sections) */
+.iss-ai-wf-tile {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 3px;
+	flex: 1 1 auto;
+	box-sizing: border-box;
+	min-width: 0;
+	min-height: 0;
+	padding: 5px;
+	border-radius: var(--iss-wf-radius);
+	background: var(--iss-wf-tile);
+}
+
+.iss-ai-wf-tile.is-photo {
+	flex: 0 0 40%;
+	background: var(--iss-wf-photo);
+}
+
+.iss-ai-wf-tile.is-accent {
+	background: var(--iss-wf-accent);
+}
+
+.iss-ai-wf-stack {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	flex: 1 1 55%;
+	min-height: 0;
+}
+
+.iss-ai-wf-stat {
+	display: block;
+	width: 45%;
+	height: 8px;
+	border-radius: 1px;
+	background: rgba(255, 255, 255, 0.85);
+}
+
+/* Sections: numbered editorial rows */
+.iss-ai-wf-band.is-rows {
+	flex-direction: column;
+	justify-content: center;
+	gap: 4px;
+}
+
+.iss-ai-wf-row {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	padding-bottom: 4px;
+	border-bottom: 1px solid var(--iss-wf-rule);
+}
+
+.iss-ai-wf-row:last-child {
+	padding-bottom: 0;
+	border-bottom: 0;
+}
+
+.iss-ai-wf-num {
+	flex: 0 0 auto;
+	width: 7px;
+	height: 3px;
+	border-radius: 1px;
+	background: var(--iss-wf-accent);
+}
+
+/* Sections: two-up media and text */
+.iss-ai-wf-band.is-pairs .iss-ai-wf-photo {
+	flex: 0 0 42%;
+}
+
+.iss-ai-wf-band.is-pairs .iss-ai-wf-copy {
+	flex: 1 1 auto;
+}
+
+/* Sections: three equal filled cards */
+.iss-ai-wf-card {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 3px;
+	flex: 1 1 0;
+	box-sizing: border-box;
+	min-width: 0;
+	padding: 5px;
+	border-radius: var(--iss-wf-radius);
+	background: var(--iss-wf-tile);
+}
+
+/* Sections: bento — one wide tile beside two narrower ones */
+.iss-ai-wf-band.is-tiles .iss-ai-wf-tile {
+	flex: 1 1 0;
+}
+
+.iss-ai-wf-band.is-tiles .iss-ai-wf-tile.is-wide {
+	flex: 1.9 1 0;
+}
+
+/* Sections: four bordered cells reading as one grid, not four cards */
+.iss-ai-wf-band.is-grid4 {
+	gap: 0;
+}
+
+.iss-ai-wf-cell {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 3px;
+	flex: 1 1 0;
+	box-sizing: border-box;
+	min-width: 0;
+	margin-inline-end: -1px;
+	padding: 5px;
+	border: 1px solid var(--iss-wf-mute);
+}
+
+.iss-ai-wf-cell:last-child {
+	margin-inline-end: 0;
+}
+
+/* Sections: text columns divided by vertical rules */
+.iss-ai-wf-band.is-ruled {
+	gap: 0;
+}
+
+.iss-ai-wf-col {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 3px;
+	flex: 1 1 0;
+	box-sizing: border-box;
+	min-width: 0;
+	padding: 0 7px;
+	border-inline-start: 1px solid var(--iss-wf-rule);
+}
+
+.iss-ai-wf-col:first-child {
+	padding-inline-start: 0;
+	border-inline-start: 0;
+}
+
+
 /* Responsive */
 @media (max-width: 900px) {
 	.iss-ai-overlay {
@@ -1556,5 +2035,9 @@ body.iss-ai-open {
 
 	.iss-ai-level-cards {
 		grid-template-columns: 1fr;
+	}
+
+	.iss-ai-art-grid {
+		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
 	}
 }

@@ -86,6 +86,158 @@ jQuery( function ( $ ) {
 		travel:       '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 16l5.5-9 3.5 5.5L13 9l5 7z"/><circle cx="14.5" cy="4.5" r="1.5"/></svg>'
 	};
 
+
+	/* -----------------------------------------------------------------
+	 * Art-direction wireframes
+	 *
+	 * Each recipe declares a hero shape and a section shape in PHP; these
+	 * draw them from a handful of spans so a new recipe gets a preview
+	 * without a screenshot that would drift from the prompt behind it.
+	 * -------------------------------------------------------------- */
+
+	function wfLine( mods ) {
+		return '<span class="iss-ai-wf-line ' + mods + '"></span>';
+	}
+
+	function wfHead( mods ) {
+		return '<span class="iss-ai-wf-head ' + mods + '"></span>';
+	}
+
+	function wfPhoto( mods ) {
+		return '<span class="iss-ai-wf-photo ' + ( mods || '' ) + '"></span>';
+	}
+
+	function wfRepeat( markup, times ) {
+		var out = '';
+		while ( times-- > 0 ) {
+			out += markup;
+		}
+		return out;
+	}
+
+	var WF_HERO = {
+		// Photo cover, headline sitting over it bottom-left.
+		cover: function () {
+			return wfPhoto( 'is-fill' ) +
+				'<span class="iss-ai-wf-over">' + wfLine( 'is-eyebrow is-w25' ) + wfHead( 'is-w70' ) + wfLine( 'is-w45' ) + '</span>';
+		},
+		// The same cover, but washed in the accent instead of plain black.
+		duotone: function () {
+			return wfPhoto( 'is-fill is-wash' ) +
+				'<span class="iss-ai-wf-over">' + wfLine( 'is-eyebrow is-w25' ) + wfHead( 'is-xl is-w80' ) + '</span>';
+		},
+		// Copy left, one tall photograph right.
+		split: function () {
+			return '<span class="iss-ai-wf-copy">' + wfLine( 'is-eyebrow is-w40' ) + wfHead( 'is-w90' ) + wfHead( 'is-w60' ) + wfLine( 'is-w80' ) + '</span>' +
+				wfPhoto( 'is-tall' );
+		},
+		// A split whose photograph breaks the section boundary.
+		overlap: function () {
+			return '<span class="iss-ai-wf-copy is-outdent">' + wfHead( 'is-w95' ) + wfHead( 'is-w60' ) + wfLine( 'is-w75' ) + '</span>' +
+				wfPhoto( 'is-tall is-break' );
+		},
+		// No photograph at all — oversized type on a flat ground.
+		type: function () {
+			return wfLine( 'is-eyebrow is-w25' ) + wfHead( 'is-xl is-w95' ) + wfHead( 'is-xl is-w70' ) + wfLine( 'is-w50' ) +
+				'<span class="iss-ai-wf-rule"></span>';
+		},
+		// Centred masthead with the photograph stacked below the type.
+		stack: function () {
+			return wfLine( 'is-eyebrow is-w20' ) + wfHead( 'is-w60' ) + wfLine( 'is-w45' ) + wfPhoto( 'is-inset' );
+		},
+		// Centred and framed top and bottom by hairline rules.
+		centered: function () {
+			return '<span class="iss-ai-wf-rule"></span>' + wfLine( 'is-eyebrow is-w20' ) + wfHead( 'is-w55' ) + wfLine( 'is-w40' ) +
+				'<span class="iss-ai-wf-rule"></span>';
+		},
+		// The photography opens the page; the title follows underneath.
+		gallery: function () {
+			return '<span class="iss-ai-wf-gal">' + wfRepeat( wfPhoto( '' ), 4 ) + '</span>' + wfHead( 'is-w55' ) + wfLine( 'is-w40' );
+		},
+		// Narrow meta stack on the left, headline on the right.
+		meta: function () {
+			return '<span class="iss-ai-wf-metacol">' + wfRepeat( wfLine( 'is-eyebrow is-w80' ), 3 ) + '</span>' +
+				'<span class="iss-ai-wf-copy">' + wfHead( 'is-w90' ) + wfHead( 'is-w60' ) + wfLine( 'is-w80' ) + '</span>';
+		},
+		// A tile cluster of uneven weights rather than a banner.
+		bento: function () {
+			return '<span class="iss-ai-wf-tile is-photo"></span>' +
+				'<span class="iss-ai-wf-stack">' +
+					'<span class="iss-ai-wf-tile">' + wfHead( 'is-w70' ) + wfLine( 'is-w90' ) + '</span>' +
+					'<span class="iss-ai-wf-tile is-accent"><span class="iss-ai-wf-stat"></span></span>' +
+				'</span>';
+		},
+		// Dense display headline, solid colour band, ticker row.
+		poster: function () {
+			return wfHead( 'is-xl is-w95' ) + wfHead( 'is-xl is-w75' ) +
+				'<span class="iss-ai-wf-fill"></span>' +
+				'<span class="iss-ai-wf-ticker">' + wfRepeat( '<span></span>', 5 ) + '</span>';
+		}
+	};
+
+	var WF_BODY = {
+		// Numbered editorial rows on hairline rules.
+		rows: function () {
+			return wfRepeat( '<span class="iss-ai-wf-row"><span class="iss-ai-wf-num"></span>' + wfLine( 'is-w70' ) + '</span>', 3 );
+		},
+		// Two-up media and text.
+		pairs: function () {
+			return wfPhoto( '' ) + '<span class="iss-ai-wf-copy">' + wfLine( 'is-w90' ) + wfLine( 'is-w60' ) + '</span>';
+		},
+		// Three equal filled cards.
+		cards: function () {
+			return wfRepeat( '<span class="iss-ai-wf-card">' + wfLine( 'is-w70' ) + wfLine( 'is-w90' ) + '</span>', 3 );
+		},
+		// Bento: one wide tile beside two narrower ones.
+		tiles: function () {
+			return '<span class="iss-ai-wf-tile is-wide">' + wfLine( 'is-w40' ) + '</span>' +
+				'<span class="iss-ai-wf-tile">' + wfLine( 'is-w70' ) + '</span>' +
+				'<span class="iss-ai-wf-tile is-accent"></span>';
+		},
+		// Four hard-bordered cells reading as one grid.
+		grid4: function () {
+			return wfRepeat( '<span class="iss-ai-wf-cell">' + wfLine( 'is-eyebrow is-w50' ) + wfLine( 'is-w80' ) + '</span>', 4 );
+		},
+		// Text columns divided by vertical rules — no boxes.
+		ruled: function () {
+			return wfRepeat( '<span class="iss-ai-wf-col">' + wfLine( 'is-w80' ) + wfLine( 'is-w60' ) + '</span>', 3 );
+		}
+	};
+
+	// The "let AI choose" card gets a mark rather than a layout, since its
+	// whole point is that the layout isn't decided yet.
+	var WF_AUTO = '<span class="iss-ai-wf iss-ai-wf--auto" aria-hidden="true">' +
+		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">' +
+			'<path d="M11 3.5l2.1 5.4 5.4 2.1-5.4 2.1L11 18.5 8.9 13.1 3.5 11l5.4-2.1z"/>' +
+			'<path d="M18 15l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z"/>' +
+		'</svg>' +
+	'</span>';
+
+	// Draw one recipe's layout system in its own tone, corner radius and
+	// accent. Values come from the localized catalog, but are validated here
+	// anyway since they land in a style attribute.
+	function artPreview( preview ) {
+		var hero = WF_HERO[ preview.hero ] ? preview.hero : 'split';
+		var body = WF_BODY[ preview.body ] ? preview.body : 'pairs';
+		var tone = /^[a-z]+$/.test( String( preview.tone || '' ) ) ? preview.tone : 'light';
+		var vars = '';
+
+		if ( /^#[0-9a-fA-F]{3,8}$/.test( String( preview.accent || '' ) ) ) {
+			vars += '--iss-wf-accent:' + preview.accent + ';';
+		}
+
+		// The recipe's real corner radius, scaled to the wireframe.
+		var radius = parseInt( preview.radius, 10 );
+		if ( ! isNaN( radius ) ) {
+			vars += '--iss-wf-radius:' + Math.min( 7, Math.round( radius / 3 ) ) + 'px;';
+		}
+
+		return '<span class="iss-ai-wf iss-ai-wf--' + tone + '" style="' + vars + '" aria-hidden="true">' +
+			'<span class="iss-ai-wf-hero is-' + hero + '">' + WF_HERO[ hero ]() + '</span>' +
+			'<span class="iss-ai-wf-band is-' + body + '">' + WF_BODY[ body ]() + '</span>' +
+		'</span>';
+	}
+
 	function buildModal() {
 		var ideas = '';
 		$.each( config.ideas || [], function ( i, idea ) {
@@ -150,6 +302,41 @@ jQuery( function ( $ ) {
 			} );
 			paletteChips += '<button type="button" class="iss-ai-chip iss-ai-chip--palette" data-value="' + esc( slug ) + '">' + swatches + '<span>' + esc( palette.label ) + '</span></button>';
 		} );
+
+
+		// Art-direction cards (Premium): "let AI choose" first — the default and
+		// what the proxy does on its own — then one card per recipe.
+		var artCards = '';
+		$.each( config.art_directions || {}, function ( slug, art ) {
+			if ( ! artCards ) {
+				artCards = '<button type="button" class="iss-ai-art-card is-active" data-value="" data-styles="">' +
+					WF_AUTO +
+					'<span class="iss-ai-art-name">' + esc( t.art_auto || '' ) + '</span>' +
+					'<span class="iss-ai-art-desc">' + esc( t.art_auto_hint || '' ) + '</span>' +
+				'</button>';
+			}
+
+			artCards += '<button type="button" class="iss-ai-art-card" data-value="' + esc( slug ) + '"' +
+				' data-styles="' + esc( ( art.styles || [] ).join( ' ' ) ) + '">' +
+				artPreview( art.preview || {} ) +
+				'<span class="iss-ai-art-name">' + esc( art.label || '' ) + '</span>' +
+				'<span class="iss-ai-art-desc">' + esc( art.hint || '' ) + '</span>' +
+			'</button>';
+		} );
+
+		// The style chips stay on the describe step; the art-direction grid
+		// gets its own step after it (see the art step below).
+		var lookFields =
+			'<div class="iss-ai-field-columns">' +
+				'<div class="iss-ai-field">' +
+					'<p class="iss-ai-field-label">' + esc( t.style_label || '' ) + '</p>' +
+					'<div class="iss-ai-chips js-iss-ai-style">' + styleChips + '</div>' +
+				'</div>' +
+			'</div>' +
+			'<p class="iss-ai-field-label">' + esc( t.typography_label || '' ) + '</p>' +
+			'<div class="iss-ai-chips js-iss-ai-typography">' + typographyChips + '</div>' +
+			'<p class="iss-ai-field-label">' + esc( t.palette_label || '' ) + '</p>' +
+			'<div class="iss-ai-chips iss-ai-chips--grid js-iss-ai-palette">' + paletteChips + '</div>';
 
 		var steps =
 			'<ol class="iss-ai-steps js-iss-ai-steps">' +
@@ -239,18 +426,7 @@ jQuery( function ( $ ) {
 							'</div>' +
 							'<div class="iss-ai-ideas js-iss-ai-ideas" hidden>' + ideas + '</div>' +
 
-							'<div class="iss-ai-field-columns">' +
-								'<div class="iss-ai-field">' +
-									'<p class="iss-ai-field-label">' + esc( t.style_label || '' ) + '</p>' +
-									'<div class="iss-ai-chips js-iss-ai-style">' + styleChips + '</div>' +
-								'</div>' +
-							'</div>' +
-
-							'<p class="iss-ai-field-label">' + esc( t.typography_label || '' ) + '</p>' +
-							'<div class="iss-ai-chips js-iss-ai-typography">' + typographyChips + '</div>' +
-
-							'<p class="iss-ai-field-label">' + esc( t.palette_label || '' ) + '</p>' +
-							'<div class="iss-ai-chips iss-ai-chips--grid js-iss-ai-palette">' + paletteChips + '</div>' +
+							lookFields +
 
 							// Generation mode comes last: it is the one setting
 							// that trades time for design variety, so it reads as
@@ -266,6 +442,16 @@ jQuery( function ( $ ) {
 							: '' ) +
 
 							'<p class="iss-ai-error js-iss-ai-input-error" hidden></p>' +
+						'</div>' +
+
+
+						// Step: art direction (Premium). Skipped entirely unless the
+						// site is licensed AND on the Creative level — those are the
+						// only runs the proxy actually applies a recipe to.
+						'<div class="iss-ai-step iss-ai-step-art" data-step="art">' +
+							'<h3 class="iss-ai-plan-title">' + esc( t.art_title || '' ) + '</h3>' +
+							'<p class="iss-ai-plan-hint">' + esc( t.art_hint || '' ) + '</p>' +
+							'<div class="iss-ai-art-grid js-iss-ai-art-grid">' + artCards + '</div>' +
 						'</div>' +
 
 						// Step: plan review.
@@ -314,7 +500,9 @@ jQuery( function ( $ ) {
 
 					'</div>' +
 					'<div class="iss-ai-footer js-iss-ai-footer">' +
+						'<button type="button" class="button iss-ai-back-btn js-iss-ai-art-back" style="display:none">' + esc( t.back || '' ) + '</button>' +
 						'<button type="button" class="button button-primary iss-ai-generate-btn js-iss-ai-generate">' + esc( t['continue'] || '' ) + '</button>' +
+						'<button type="button" class="button button-primary iss-ai-generate-btn js-iss-ai-art-next" style="display:none">' + esc( t['continue'] || '' ) + '</button>' +
 						'<button type="button" class="button button-primary iss-ai-generate-btn js-iss-ai-build" style="display:none">' + esc( t.generate || '' ) + '</button>' +
 					'</div>' +
 				'</div>' +
@@ -336,12 +524,15 @@ jQuery( function ( $ ) {
 	function showStep( step ) {
 		$root.find( '.iss-ai-step' ).removeClass( 'is-active' );
 		$root.find( '.iss-ai-step[data-step="' + step + '"]' ).addClass( 'is-active' );
-		$root.find( '.js-iss-ai-footer' ).toggle( 'input' === step || 'plan' === step );
+		$root.find( '.js-iss-ai-footer' ).toggle( 'input' === step || 'art' === step || 'plan' === step );
 		$root.find( '.js-iss-ai-generate' ).toggle( 'input' === step );
+		$root.find( '.js-iss-ai-art-next' ).toggle( 'art' === step );
+		$root.find( '.js-iss-ai-art-back' ).toggle( 'art' === step );
 		$root.find( '.js-iss-ai-build' ).toggle( 'plan' === step );
 
-		// Sidebar step indicator: connect/input/plan → 1, progress → 2, done → 3.
-		var current = ( 'connect' === step || 'input' === step || 'plan' === step ) ? 1 : ( 'progress' === step ? 2 : 3 );
+		// Sidebar step indicator: everything before the build → 1, progress → 2,
+		// done → 3. The art step is a detour inside step 1, not a step of its own.
+		var current = ( 'progress' === step ) ? 2 : ( ( 'success' === step || 'error' === step ) ? 3 : 1 );
 		$root.find( '.js-iss-ai-steps li' ).each( function () {
 			var num = parseInt( $( this ).attr( 'data-step-num' ), 10 );
 			$( this )
@@ -493,6 +684,58 @@ jQuery( function ( $ ) {
 		}
 	}
 
+	/* -----------------------------------------------------------------
+	 * Art direction (Premium)
+	 * -------------------------------------------------------------- */
+
+	// Single-select across the art-direction cards.
+	function selectArtDirection( $card ) {
+		if ( ! $card || ! $card.length ) {
+			return;
+		}
+		$card.closest( '.iss-ai-art-grid' ).find( '.iss-ai-art-card' ).removeClass( 'is-active' );
+		$card.addClass( 'is-active' );
+	}
+
+	function currentDesignLevel() {
+		return $root.find( '.js-iss-ai-design-level .iss-ai-level-card.is-active' ).attr( 'data-value' ) || 'standard';
+	}
+
+	function currentArtDirection() {
+		return $root.find( '.js-iss-ai-art-grid .iss-ai-art-card.is-active' ).attr( 'data-value' ) || '';
+	}
+
+	// Whether the picker gets a page of its own between describing the site
+	// and reviewing the pages. Premium-only, and only for Creative runs — the
+	// proxy ignores a recipe on any other request, so showing the step there
+	// would offer a choice that gets discarded.
+	function hasArtStep() {
+		return !! $root.find( '.js-iss-ai-art-grid .iss-ai-art-card' ).length &&
+			!! ( quota && quota.licensed ) &&
+			'pro' === currentDesignLevel();
+	}
+
+	// A pin can't outlive the license that allows it: if the server says the
+	// site isn't licensed, drop back to "let AI choose" so what the modal
+	// shows matches what the proxy will really do.
+	function renderArtDirection() {
+		if ( ! ( quota && quota.licensed ) && currentArtDirection() ) {
+			selectArtDirection( $root.find( '.js-iss-ai-art-grid .iss-ai-art-card' ).first() );
+		}
+	}
+
+	// De-emphasise the directions that don't suit the chosen design style.
+	// They stay selectable — the affinity is a hint, not a rule.
+	function syncArtDirectionStyles() {
+		var style = $root.find( '.js-iss-ai-style .iss-ai-chip.is-active' ).attr( 'data-value' ) || '';
+
+		$root.find( '.js-iss-ai-art-grid .iss-ai-art-card' ).each( function () {
+			var $card  = $( this );
+			var styles = $card.attr( 'data-styles' ) || '';
+			$card.toggleClass( 'is-off-style', !! style && !! styles && -1 === $.inArray( style, styles.split( ' ' ) ) );
+		} );
+	}
+
 	function refreshQuota() {
 		var $quota = $root.find( '.js-iss-ai-quota' );
 		$quota.text( t.quota_loading || '' );
@@ -516,6 +759,7 @@ jQuery( function ( $ ) {
 
 		renderQuota();
 		renderDesignLevels();
+		renderArtDirection();
 		renderReplaceNotice( data.previous );
 
 		if ( ! connected ) {
@@ -636,17 +880,31 @@ jQuery( function ( $ ) {
 	// list if the suggestion service hiccups.
 	var suggestBriefs = {};
 
-	function suggestPages() {
+	// The description gate lives on the describe step, but the art step now
+	// sits between it and the suggestion call — so both continue buttons run
+	// it, and neither can leave the description behind.
+	function validateDescription() {
 		var description = $.trim( $root.find( '.js-iss-ai-description' ).val() || '' );
-		var $inputError = $root.find( '.js-iss-ai-input-error' );
+		var $error      = $root.find( '.js-iss-ai-input-error' );
 
 		if ( description.length < 12 ) {
-			$inputError.text( t.too_short || '' ).removeAttr( 'hidden' );
+			$error.text( t.too_short || '' ).removeAttr( 'hidden' );
+			return '';
+		}
+
+		$error.attr( 'hidden', 'hidden' );
+		return description;
+	}
+
+	// $button is whichever continue the user actually clicked, so the
+	// "Suggesting…" label lands on a button they can see.
+	function suggestPages( $button ) {
+		var description = validateDescription();
+		if ( ! description ) {
 			return;
 		}
-		$inputError.attr( 'hidden', 'hidden' );
 
-		var $button = $root.find( '.js-iss-ai-generate' ).prop( 'disabled', true ).text( t.suggesting || '' );
+		$button.prop( 'disabled', true ).text( t.suggesting || '' );
 
 		function proceed( pages ) {
 			$button.prop( 'disabled', false ).text( t['continue'] || '' );
@@ -685,6 +943,7 @@ jQuery( function ( $ ) {
 		}
 
 		var description = $.trim( $root.find( '.js-iss-ai-description' ).val() || '' );
+		var level       = currentDesignLevel();
 		var $replace    = $root.find( '.js-iss-ai-replace' );
 		var replace     = ( ! $replace.length || $replace.closest( '.js-iss-ai-replace-notice' ).attr( 'hidden' ) || $replace.is( ':checked' ) ) ? '1' : '0';
 
@@ -701,7 +960,10 @@ jQuery( function ( $ ) {
 			style:       $root.find( '.js-iss-ai-style .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
 			palette:     $root.find( '.js-iss-ai-palette .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
 			typography:  $root.find( '.js-iss-ai-typography .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
-			design_level: $root.find( '.js-iss-ai-design-level .iss-ai-level-card.is-active' ).attr( 'data-value' ) || 'standard',
+			design_level: level,
+			// Only Creative runs use a recipe, so don't send a pin the proxy
+			// would discard — the plan then records what it actually built to.
+			art_direction: 'pro' === level ? currentArtDirection() : '',
 			// A fresh seed per run, so re-generating the same description picks
 			// a different art direction instead of rebuilding the same site.
 			variant_seed: Math.random().toString( 36 ).slice( 2, 12 ) + Date.now().toString( 36 ).slice( -6 ),
@@ -1020,6 +1282,10 @@ jQuery( function ( $ ) {
 
 		$chip.closest( '.iss-ai-chips' ).find( '.iss-ai-chip' ).removeClass( 'is-active' );
 		$chip.addClass( 'is-active' );
+
+		if ( $chip.closest( '.js-iss-ai-style' ).length ) {
+			syncArtDirectionStyles();
+		}
 	} );
 
 	// Generation-mode cards. A locked Premium card is not selectable; the note
@@ -1034,9 +1300,35 @@ jQuery( function ( $ ) {
 		selectDesignLevel( $card );
 	} );
 
+	$root.on( 'click', '.iss-ai-art-card', function () {
+		selectArtDirection( $( this ) );
+	} );
+
 	$root.on( 'click', '.js-iss-ai-generate', function () {
+		if ( running || ! validateDescription() ) {
+			return;
+		}
+
+		// Premium runs get the art-direction page in between; everyone else
+		// goes straight to the page suggestion, exactly as before.
+		if ( hasArtStep() ) {
+			syncArtDirectionStyles();
+			showStep( 'art' );
+			return;
+		}
+
+		suggestPages( $( this ) );
+	} );
+
+	$root.on( 'click', '.js-iss-ai-art-next', function () {
 		if ( ! running ) {
-			suggestPages();
+			suggestPages( $( this ) );
+		}
+	} );
+
+	$root.on( 'click', '.js-iss-ai-art-back', function () {
+		if ( ! running ) {
+			showStep( 'input' );
 		}
 	} );
 

@@ -253,6 +253,10 @@ class AiDemoGenerator {
 					},
 					$this->design_level_options()
 				),
+				// Premium art-direction picker. Mirrors the proxy's recipe catalog
+				// by slug; the display copy lives here so the grid renders without a
+				// round trip.
+				'art_directions' => $this->art_direction_options(),
 				'typographies' => array_map(
 					static function ( $typography ) {
 						return $typography['label'];
@@ -337,6 +341,10 @@ class AiDemoGenerator {
 					'design_level_label' => __( 'How should the AI design it?', 'inspiro-starter-sites' ),
 					'design_level_badge' => __( 'Premium', 'inspiro-starter-sites' ),
 					'design_level_lock'  => __( 'Included with Inspiro Premium', 'inspiro-starter-sites' ),
+					'art_title'          => __( 'Choose an art direction', 'inspiro-starter-sites' ),
+					'art_hint'           => __( 'Choose the layout system the AI builds to — every one is a different site, not a different color.', 'inspiro-starter-sites' ),
+					'art_auto'           => __( 'Let AI choose', 'inspiro-starter-sites' ),
+					'art_auto_hint'      => __( 'The AI picks the direction that suits your business — and picks differently each time you generate.', 'inspiro-starter-sites' ),
 					'palette_label'    => __( 'Color palette', 'inspiro-starter-sites' ),
 					'typography_label' => __( 'Typography', 'inspiro-starter-sites' ),
 					'auto'             => __( 'Let AI decide', 'inspiro-starter-sites' ),
@@ -352,6 +360,7 @@ class AiDemoGenerator {
 					'forms_item'       => __( 'Contact form (WPZOOM Forms)', 'inspiro-starter-sites' ),
 					'finalize_item'    => __( 'Menu, footer & homepage setup', 'inspiro-starter-sites' ),
 					'continue'         => __( 'Continue', 'inspiro-starter-sites' ),
+					'back'             => __( 'Back', 'inspiro-starter-sites' ),
 					'enhance'          => __( 'Enhance with AI', 'inspiro-starter-sites' ),
 					'enhancing'        => __( 'Enhancing…', 'inspiro-starter-sites' ),
 					'undo'             => __( 'Undo', 'inspiro-starter-sites' ),
@@ -698,6 +707,7 @@ class AiDemoGenerator {
 
 		$typography_options   = $this->typography_options();
 		$design_level_options = $this->design_level_options();
+		$art_options          = $this->art_direction_options();
 
 		$style      = isset( $_POST['style'] ) ? sanitize_key( wp_unslash( $_POST['style'] ) ) : '';
 		$palette    = isset( $_POST['palette'] ) ? sanitize_key( wp_unslash( $_POST['palette'] ) ) : '';
@@ -712,6 +722,13 @@ class AiDemoGenerator {
 		// a 'pro' request from an unlicensed site.
 		$design_level = isset( $_POST['design_level'] ) ? sanitize_key( wp_unslash( $_POST['design_level'] ) ) : '';
 		$design_level = isset( $design_level_options[ $design_level ] ) ? $design_level : 'standard';
+
+		// Art direction the user pinned in the Premium picker ('' = let the model
+		// choose from the proxy's seeded shortlist, which is the default). Only
+		// the slug travels; the proxy owns the recipe itself and ignores a pin
+		// from an unlicensed site, exactly like the design level above.
+		$art_direction = isset( $_POST['art_direction'] ) ? sanitize_key( wp_unslash( $_POST['art_direction'] ) ) : '';
+		$art_direction = isset( $art_options[ $art_direction ] ) ? $art_direction : '';
 
 		// Re-running the same description must not rebuild the same site: the
 		// seed decides which art-direction recipes the model gets to choose
@@ -740,6 +757,7 @@ class AiDemoGenerator {
 				'pages'          => $approved_pages,
 				'font_families'  => array_keys( $this->font_whitelist() ),
 				'design_level'   => $design_level,
+				'art_direction'  => $art_direction,
 				'variant_seed'   => $variant_seed,
 			),
 			array( $stream, 'tick' )
@@ -747,6 +765,13 @@ class AiDemoGenerator {
 
 		if ( ! is_wp_error( $plan ) ) {
 			$plan = $this->sanitize_plan( $plan, $approved_pages );
+		}
+
+		// A pinned art direction is authoritative for the page builds — the model
+		// echoes the slug back in the plan, but a miss would silently drop the
+		// user's choice for every page after this one.
+		if ( ! is_wp_error( $plan ) && '' !== $art_direction ) {
+			$plan['art_direction'] = $art_direction;
 		}
 
 		if ( is_wp_error( $plan ) ) {
@@ -2593,6 +2618,214 @@ class AiDemoGenerator {
 				'label' => __( 'Creative', 'inspiro-starter-sites' ),
 				'hint'  => __( 'Slower, more creative — a distinct art direction, layout and type for every site.', 'inspiro-starter-sites' ),
 				'pro'   => true,
+			),
+		);
+	}
+
+	/**
+	 * The Premium art-direction catalog, for the picker in the modal.
+	 *
+	 * Display data ONLY. The recipes themselves — the layout, surface and
+	 * prohibition specs the prompt is actually built from — live on the AI
+	 * proxy, which resolves the slug and re-verifies the license; the client
+	 * never sees them and cannot pin one without a Premium license.
+	 *
+	 * Keys must match the proxy catalog in wpzoom-ai-recipes.php. A slug the
+	 * proxy no longer knows is ignored server-side, so a stale entry here
+	 * degrades to 'let the AI choose' rather than failing a generation.
+	 *
+	 * Per entry:
+	 *   label   — name shown on the card.
+	 *   hint    — one sentence describing what the direction actually does.
+	 *   styles  — design styles this direction suits; the others are
+	 *             de-emphasised once the user picks a style, never hidden.
+	 *   preview — drives the CSS wireframe on the card: hero shape, body
+	 *             shape, corner radius, page tone, representative accent.
+	 *
+	 * @return array[]
+	 */
+	private function art_direction_options() {
+		return array(
+			'cover-editorial' => array(
+				'label'   => __( 'Cover editorial', 'inspiro-starter-sites' ),
+				'hint'    => __( 'A full-bleed photo cover with the headline set bottom-left like a magazine, then editorial index rows divided by hairline rules.', 'inspiro-starter-sites' ),
+				'styles'  => array( 'editorial', 'luxury', 'minimal', 'corporate', 'dark' ),
+				'preview' => array(
+					'hero'   => 'cover',
+					'body'   => 'rows',
+					'radius' => '0px',
+					'tone'   => 'light',
+					'accent' => '#c2410c',
+				),
+			),
+
+			'split-asymmetric' => array(
+				'label'   => __( 'Asymmetric split', 'inspiro-starter-sites' ),
+				'hint'    => __( 'Copy on the left, one tall photograph on the right, then pairs that alternate direction down the page. Outlined, never filled.', 'inspiro-starter-sites' ),
+				'styles'  => array( 'minimal', 'corporate', 'editorial', 'luxury' ),
+				'preview' => array(
+					'hero'   => 'split',
+					'body'   => 'pairs',
+					'radius' => '4px',
+					'tone'   => 'paper',
+					'accent' => '#57534e',
+				),
+			),
+
+			'type-first' => array(
+				'label'   => __( 'Type first', 'inspiro-starter-sites' ),
+				'hint'    => __( 'No photograph in the hero at all — an oversized headline on a flat tint, with the first image arriving in the section below.', 'inspiro-starter-sites' ),
+				'styles'  => array( 'minimal', 'bold', 'editorial', 'corporate' ),
+				'preview' => array(
+					'hero'   => 'type',
+					'body'   => 'rows',
+					'radius' => '0px',
+					'tone'   => 'light',
+					'accent' => '#2563eb',
+				),
+			),
+
+			'stacked-editorial' => array(
+				'label'   => __( 'Stacked editorial', 'inspiro-starter-sites' ),
+				'hint'    => __( 'A centred masthead with a wide photograph directly beneath it, then unhurried media-and-text rows. Reads like a long-form article.', 'inspiro-starter-sites' ),
+				'styles'  => array( 'editorial', 'luxury', 'retro' ),
+				'preview' => array(
+					'hero'   => 'stack',
+					'body'   => 'pairs',
+					'radius' => '2px',
+					'tone'   => 'paper',
+					'accent' => '#7c6a58',
+				),
+			),
+
+			'bento-tiles' => array(
+				'label'   => __( 'Bento tiles', 'inspiro-starter-sites' ),
+				'hint'    => __( 'A cluster of rounded filled tiles instead of a banner, with tile weights that change from row to row.', 'inspiro-starter-sites' ),
+				'styles'  => array( 'playful', 'corporate', 'bold', 'dark' ),
+				'preview' => array(
+					'hero'   => 'bento',
+					'body'   => 'tiles',
+					'radius' => '16px',
+					'tone'   => 'light',
+					'accent' => '#0ea5e9',
+				),
+			),
+
+			'poster-brutal' => array(
+				'label'   => __( 'Poster', 'inspiro-starter-sites' ),
+				'hint'    => __( 'A dense uppercase display headline, a solid colour band, a ticker row, and four hard-bordered cells. Nothing rounded, nothing soft.', 'inspiro-starter-sites' ),
+				'styles'  => array( 'bold', 'playful', 'retro', 'dark' ),
+				'preview' => array(
+					'hero'   => 'poster',
+					'body'   => 'grid4',
+					'radius' => '0px',
+					'tone'   => 'light',
+					'accent' => '#ff4d2d',
+				),
+			),
+
+			'soft-rounded' => array(
+				'label'   => __( 'Soft rounded', 'inspiro-starter-sites' ),
+				'hint'    => __( 'Heavily rounded photography sitting as an object on the page, tinted cards with no borders, and pill-shaped buttons.', 'inspiro-starter-sites' ),
+				'styles'  => array( 'playful', 'corporate' ),
+				'preview' => array(
+					'hero'   => 'split',
+					'body'   => 'cards',
+					'radius' => '24px',
+					'tone'   => 'light',
+					'accent' => '#14b8a6',
+				),
+			),
+
+			'duotone-band' => array(
+				'label'   => __( 'Duotone bands', 'inspiro-starter-sites' ),
+				'hint'    => __( 'A photo cover washed in the accent colour, then full-bleed bands alternating deep accent, near-black and near-white.', 'inspiro-starter-sites' ),
+				'styles'  => array( 'bold', 'dark', 'editorial' ),
+				'preview' => array(
+					'hero'   => 'duotone',
+					'body'   => 'pairs',
+					'radius' => '0px',
+					'tone'   => 'accent',
+					'accent' => '#1e3a8a',
+				),
+			),
+
+			'gallery-led' => array(
+				'label'   => __( 'Gallery led', 'inspiro-starter-sites' ),
+				'hint'    => __( 'The photography is the hero: a gallery opens the page and the title sits underneath it. Quiet type, no painted colour.', 'inspiro-starter-sites' ),
+				'styles'  => array( 'minimal', 'editorial', 'luxury', 'dark' ),
+				'preview' => array(
+					'hero'   => 'gallery',
+					'body'   => 'pairs',
+					'radius' => '2px',
+					'tone'   => 'light',
+					'accent' => '#6b7280',
+				),
+			),
+
+			'centered-classic' => array(
+				'label'   => __( 'Centered classic', 'inspiro-starter-sites' ),
+				'hint'    => __( 'A centred hero framed above and below by hairline rules, then three text columns divided by vertical rules. Restrained throughout.', 'inspiro-starter-sites' ),
+				'styles'  => array( 'luxury', 'editorial', 'retro', 'minimal' ),
+				'preview' => array(
+					'hero'   => 'centered',
+					'body'   => 'ruled',
+					'radius' => '0px',
+					'tone'   => 'ivory',
+					'accent' => '#8a6d3b',
+				),
+			),
+
+			'sidebar-index' => array(
+				'label'   => __( 'Sidebar index', 'inspiro-starter-sites' ),
+				'hint'    => __( 'A narrow meta column beside the headline, then rows numbered 01, 02, 03 down the left edge. Structured by alignment alone.', 'inspiro-starter-sites' ),
+				'styles'  => array( 'minimal', 'corporate', 'editorial', 'bold', 'dark' ),
+				'preview' => array(
+					'hero'   => 'meta',
+					'body'   => 'rows',
+					'radius' => '0px',
+					'tone'   => 'light',
+					'accent' => '#2563eb',
+				),
+			),
+
+			'overlap-offset' => array(
+				'label'   => __( 'Overlap offset', 'inspiro-starter-sites' ),
+				'hint'    => __( 'The hero photograph deliberately breaks its section boundary, and paired items sit nudged up and down so no row reads flat.', 'inspiro-starter-sites' ),
+				'styles'  => array( 'playful', 'editorial', 'bold' ),
+				'preview' => array(
+					'hero'   => 'overlap',
+					'body'   => 'pairs',
+					'radius' => '12px',
+					'tone'   => 'light',
+					'accent' => '#f97316',
+				),
+			),
+
+			'mono-contrast' => array(
+				'label'   => __( 'Mono contrast', 'inspiro-starter-sites' ),
+				'hint'    => __( 'Near-black end to end with one luminous accent, a light-weight oversized headline, and cells divided by dim hairline rules.', 'inspiro-starter-sites' ),
+				'styles'  => array( 'dark', 'bold', 'minimal' ),
+				'preview' => array(
+					'hero'   => 'type',
+					'body'   => 'grid4',
+					'radius' => '0px',
+					'tone'   => 'dark',
+					'accent' => '#a3e635',
+				),
+			),
+
+			'warm-editorial' => array(
+				'label'   => __( 'Warm editorial', 'inspiro-starter-sites' ),
+				'hint'    => __( 'Cream paper, deep brown ink, and an italic serif accent word inside an otherwise plain headline. No pure white, no pure black.', 'inspiro-starter-sites' ),
+				'styles'  => array( 'retro', 'luxury', 'editorial', 'playful' ),
+				'preview' => array(
+					'hero'   => 'split',
+					'body'   => 'pairs',
+					'radius' => '4px',
+					'tone'   => 'warm',
+					'accent' => '#a1522d',
+				),
 			),
 		);
 	}
