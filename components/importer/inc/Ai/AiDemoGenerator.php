@@ -243,6 +243,16 @@ class AiDemoGenerator {
 					},
 					$this->style_options()
 				),
+				'design_levels' => array_map(
+					static function ( $level ) {
+						return array(
+							'label' => $level['label'],
+							'hint'  => $level['hint'],
+							'pro'   => ! empty( $level['pro'] ),
+						);
+					},
+					$this->design_level_options()
+				),
 				'typographies' => array_map(
 					static function ( $typography ) {
 						return $typography['label'];
@@ -324,6 +334,8 @@ class AiDemoGenerator {
 					'ideas_show'       => __( 'Need inspiration? View ideas', 'inspiro-starter-sites' ),
 					'ideas_hide'       => __( 'Hide ideas', 'inspiro-starter-sites' ),
 					'style_label'      => __( 'Design style', 'inspiro-starter-sites' ),
+					'design_level_label' => __( 'Design level', 'inspiro-starter-sites' ),
+					'design_level_lock'  => __( 'Included with Inspiro Premium', 'inspiro-starter-sites' ),
 					'palette_label'    => __( 'Color palette', 'inspiro-starter-sites' ),
 					'typography_label' => __( 'Typography', 'inspiro-starter-sites' ),
 					'auto'             => __( 'Let AI decide', 'inspiro-starter-sites' ),
@@ -683,7 +695,8 @@ class AiDemoGenerator {
 		$style_options   = $this->style_options();
 		$palette_options = $this->palette_options();
 
-		$typography_options = $this->typography_options();
+		$typography_options   = $this->typography_options();
+		$design_level_options = $this->design_level_options();
 
 		$style      = isset( $_POST['style'] ) ? sanitize_key( wp_unslash( $_POST['style'] ) ) : '';
 		$palette    = isset( $_POST['palette'] ) ? sanitize_key( wp_unslash( $_POST['palette'] ) ) : '';
@@ -692,6 +705,21 @@ class AiDemoGenerator {
 		$style      = isset( $style_options[ $style ] ) ? $style : '';
 		$palette    = isset( $palette_options[ $palette ] ) ? $palette : '';
 		$typography = isset( $typography_options[ $typography ] ) ? $typography : '';
+
+		// Design level. Whitelisted here for the prompt vars, but the PROXY is
+		// the gate: it re-verifies the Inspiro license and silently downgrades
+		// a 'pro' request from an unlicensed site.
+		$design_level = isset( $_POST['design_level'] ) ? sanitize_key( wp_unslash( $_POST['design_level'] ) ) : '';
+		$design_level = isset( $design_level_options[ $design_level ] ) ? $design_level : 'standard';
+
+		// Re-running the same description must not rebuild the same site: the
+		// seed decides which art-direction recipes the model gets to choose
+		// between. Generated here when the browser didn't send one.
+		$variant_seed = isset( $_POST['variant_seed'] ) ? preg_replace( '/[^A-Za-z0-9]/', '', (string) wp_unslash( $_POST['variant_seed'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		$variant_seed = substr( $variant_seed, 0, 32 );
+		if ( '' === $variant_seed ) {
+			$variant_seed = strtolower( wp_generate_password( 12, false, false ) );
+		}
 
 		// Pages the user approved in the review step (before this call).
 		$approved_raw   = isset( $_POST['pages'] ) ? json_decode( wp_unslash( $_POST['pages'] ), true ) : null; // phpcs:ignore WordPress.Security.ValidatedSanitized
@@ -710,6 +738,8 @@ class AiDemoGenerator {
 				'theme_css_var'  => class_exists( 'WPZOOM' ) ? '--color-accent' : '--inspiro-primary-color',
 				'pages'          => $approved_pages,
 				'font_families'  => array_keys( $this->font_whitelist() ),
+				'design_level'   => $design_level,
+				'variant_seed'   => $variant_seed,
 			),
 			array( $stream, 'tick' )
 		);
@@ -786,6 +816,7 @@ class AiDemoGenerator {
 				'description'    => $description,
 				'plan'           => $plan,
 				'palette'        => $palette, // chosen palette slug ('' = AI decides)
+				'design_level'   => $design_level,
 				'replace'        => $replace,
 				'created_pages'  => array(), // page index => post ID
 				'used_photo_ids' => array(),
@@ -1055,6 +1086,11 @@ class AiDemoGenerator {
 				// A real WPZOOM Forms form can be placed on the contact page
 				// (checked at build time — the plugin installs right before).
 				'has_contact_form' => ! empty( $state['plan']['contact_form_needed'] ) && post_type_exists( 'wpzf-form' ),
+				// Premium: the art direction the plan committed to. The proxy
+				// re-resolves the slug and re-verifies the license, so a tampered
+				// value simply yields the standard page prompt.
+				'design_level'     => isset( $state['design_level'] ) ? $state['design_level'] : 'standard',
+				'art_direction'    => isset( $state['plan']['art_direction'] ) ? $state['plan']['art_direction'] : '',
 			),
 			array( $stream, 'tick' )
 		);
@@ -2152,6 +2188,10 @@ class AiDemoGenerator {
 			'css'        => $this->sanitize_css( isset( $plan['css'] ) ? $plan['css'] : '' ),
 			'footer'     => array(),
 			'pages'      => array(),
+			// Opaque slug naming the art-direction recipe this plan committed
+			// to (Premium only, '' otherwise). The page builds hand it back to
+			// the proxy, which owns the catalog — the client never needs it.
+			'art_direction' => isset( $plan['art_direction'] ) ? substr( sanitize_key( (string) $plan['art_direction'] ), 0, 40 ) : '',
 		);
 
 		if ( ! empty( $plan['footer'] ) && is_array( $plan['footer'] ) ) {
@@ -2525,6 +2565,33 @@ class AiDemoGenerator {
 			),
 			'classic'      => array(
 				'label'  => __( 'Classic Serif', 'inspiro-starter-sites' ),
+			),
+		);
+	}
+
+	/**
+	 * User-selectable design levels: slug => [ label, hint, pro ].
+	 *
+	 * 'pro' unlocks the proxy's art-direction recipe library — concrete,
+	 * mutually distinct design specs that replace the generic prompt defaults
+	 * responsible for every generated site arriving as the same photo-cover
+	 * hero plus three equal cards. The proxy verifies the Inspiro license
+	 * itself and silently downgrades an unlicensed request, so this list only
+	 * drives the UI — it is not the gate.
+	 *
+	 * @return array[]
+	 */
+	private function design_level_options() {
+		return array(
+			'standard' => array(
+				'label' => __( 'Standard', 'inspiro-starter-sites' ),
+				'hint'  => __( 'The classic Inspiro demo layout', 'inspiro-starter-sites' ),
+				'pro'   => false,
+			),
+			'pro'      => array(
+				'label' => __( 'Advanced', 'inspiro-starter-sites' ),
+				'hint'  => __( 'A distinct art direction per site — varied layouts, type and spacing', 'inspiro-starter-sites' ),
+				'pro'   => true,
 			),
 		);
 	}

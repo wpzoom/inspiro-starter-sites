@@ -118,6 +118,21 @@ jQuery( function ( $ ) {
 			'</button>';
 		} );
 
+		// Design level chips. Advanced is Premium: it renders locked and is
+		// unlocked by the quota response, whose `licensed` flag the proxy
+		// decides after verifying the Inspiro license.
+		var designLevelChips = '';
+		$.each( config.design_levels || {}, function ( slug, level ) {
+			var isPro = !! level.pro;
+			designLevelChips += '<button type="button" class="iss-ai-chip iss-ai-chip--level' +
+				( 'standard' === slug ? ' is-active' : '' ) +
+				( isPro ? ' iss-ai-chip--pro is-locked' : '' ) +
+				'" data-value="' + esc( slug ) + '" title="' + esc( level.hint || '' ) + '">' +
+				'<span>' + esc( level.label || '' ) + '</span>' +
+				( isPro ? '<span class="iss-ai-chip-lock" aria-hidden="true">&#128274;</span>' : '' ) +
+			'</button>';
+		} );
+
 		var paletteChips = '<button type="button" class="iss-ai-chip is-active" data-value="">' + esc( t.auto || '' ) + '</button>';
 		$.each( config.palettes || {}, function ( slug, palette ) {
 			var swatches = '';
@@ -216,6 +231,16 @@ jQuery( function ( $ ) {
 								'<button type="button" class="iss-ai-enhance js-iss-ai-enhance">&#10024; ' + esc( t.enhance || '' ) + '</button>' +
 							'</div>' +
 							'<div class="iss-ai-ideas js-iss-ai-ideas" hidden>' + ideas + '</div>' +
+
+							( designLevelChips ?
+								'<p class="iss-ai-field-label">' + esc( t.design_level_label || '' ) + '</p>' +
+								'<div class="iss-ai-chips js-iss-ai-design-level">' + designLevelChips + '</div>' +
+								'<p class="iss-ai-level-lock js-iss-ai-level-lock" hidden>' +
+									'<a href="' + esc( ( config.is_premium_theme ? ( config.license_url || '#' ) : ( config.upgrade_url || '#' ) ) ) + '"' +
+									( config.is_premium_theme ? '' : ' target="_blank" rel="noopener"' ) + '>' +
+									esc( t.design_level_lock || '' ) +
+								'</a></p>'
+							: '' ) +
 
 							'<div class="iss-ai-field-columns">' +
 								'<div class="iss-ai-field">' +
@@ -419,6 +444,35 @@ jQuery( function ( $ ) {
 	 * Quota
 	 * -------------------------------------------------------------- */
 
+	// Set once the user picks a design level themselves, so a later quota
+	// refresh never overrides their choice with the licensed default.
+	var designLevelTouched = false;
+
+	// Reflect the server's licensing decision on the design-level chips.
+	// Purely cosmetic: the proxy re-verifies the license on every task call,
+	// so unlocking this by hand still yields standard output.
+	function renderDesignLevels() {
+		var $group = $root.find( '.js-iss-ai-design-level' );
+		if ( ! $group.length ) {
+			return;
+		}
+
+		var licensed = !! ( quota && quota.licensed );
+		var $pro     = $group.find( '.iss-ai-chip--pro' );
+
+		$pro.toggleClass( 'is-locked', ! licensed );
+		$root.find( '.js-iss-ai-level-lock' ).attr( 'hidden', licensed ? 'hidden' : null );
+
+		if ( licensed && ! designLevelTouched ) {
+			// Licence holders get the better output unless they say otherwise.
+			$group.find( '.iss-ai-chip' ).removeClass( 'is-active' );
+			$pro.addClass( 'is-active' );
+		} else if ( ! licensed && $pro.hasClass( 'is-active' ) ) {
+			$pro.removeClass( 'is-active' );
+			$group.find( '.iss-ai-chip' ).not( $pro ).first().addClass( 'is-active' );
+		}
+	}
+
 	function refreshQuota() {
 		var $quota = $root.find( '.js-iss-ai-quota' );
 		$quota.text( t.quota_loading || '' );
@@ -441,6 +495,7 @@ jQuery( function ( $ ) {
 		connected = !! data.connected;
 
 		renderQuota();
+		renderDesignLevels();
 		renderReplaceNotice( data.previous );
 
 		if ( ! connected ) {
@@ -626,6 +681,10 @@ jQuery( function ( $ ) {
 			style:       $root.find( '.js-iss-ai-style .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
 			palette:     $root.find( '.js-iss-ai-palette .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
 			typography:  $root.find( '.js-iss-ai-typography .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
+			design_level: $root.find( '.js-iss-ai-design-level .iss-ai-chip.is-active' ).attr( 'data-value' ) || 'standard',
+			// A fresh seed per run, so re-generating the same description picks
+			// a different art direction instead of rebuilding the same site.
+			variant_seed: Math.random().toString( 36 ).slice( 2, 12 ) + Date.now().toString( 36 ).slice( -6 ),
 			pages:       JSON.stringify( pages )
 		}, 300000 )
 			.done( function ( response ) {
@@ -935,9 +994,20 @@ jQuery( function ( $ ) {
 		$( this ).attr( 'hidden', 'hidden' );
 	} );
 
-	// Style / palette chips — single-select per group.
+	// Style / palette / design-level chips — single-select per group.
 	$root.on( 'click', '.iss-ai-chip', function () {
 		var $chip = $( this );
+
+		// A locked Premium chip is not selectable; the hint beneath the row
+		// carries the upgrade / activate link.
+		if ( $chip.hasClass( 'is-locked' ) ) {
+			return;
+		}
+
+		if ( $chip.closest( '.js-iss-ai-design-level' ).length ) {
+			designLevelTouched = true;
+		}
+
 		$chip.closest( '.iss-ai-chips' ).find( '.iss-ai-chip' ).removeClass( 'is-active' );
 		$chip.addClass( 'is-active' );
 	} );

@@ -166,12 +166,17 @@ class AiProxyClient {
 	public function claude_task( $task, array $vars, $heartbeat = null ) {
 		return $this->request_claude(
 			array(
-				'task'     => $task,
-				'vars'     => $vars,
-				'stream'   => false,
-				// Task requests are free-tier only: the server requires an
-				// active email registration and rate-limits per email/day.
-				'site_key' => (string) get_option( self::SITE_KEY_OPTION, '' ),
+				'task'        => $task,
+				'vars'        => $vars,
+				'stream'      => false,
+				// Every task request needs an active email registration; the
+				// server rate-limits per email/day.
+				'site_key'    => (string) get_option( self::SITE_KEY_OPTION, '' ),
+				// A VERIFIED premium license additionally unlocks the Premium
+				// design level, using the same server-side gate as the licensed
+				// quota. Absent or invalid keys silently get the standard
+				// prompts — the server never errors on this.
+				'license_key' => self::premium_license(),
 			),
 			$heartbeat
 		);

@@ -554,6 +554,50 @@ body.iss-ai-open {
 }
 
 /* Typography chips: "Ag" specimen in the style's actual display font. */
+/* Design level: the Advanced chip is Premium-gated. It stays visible but
+   unselectable until the proxy confirms a verified license, so the value
+   of upgrading is legible rather than hidden. */
+.iss-ai-chip--level {
+  gap: 6px;
+}
+
+.iss-ai-chip--pro.is-locked {
+  color: #8a8a8f;
+  background: #f6f6f7;
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+.iss-ai-chip--pro.is-locked:hover {
+  border-color: #e4e4e7;
+}
+
+.iss-ai-chip-lock {
+  font-size: 11px;
+  line-height: 1;
+}
+
+/* An unlocked Advanced chip has no lock to show. */
+.iss-ai-chip--pro:not(.is-locked) .iss-ai-chip-lock {
+  display: none;
+}
+
+.iss-ai-level-lock {
+  margin: -4px 0 0;
+  font-size: 12px;
+  color: #6b6b70;
+}
+
+.iss-ai-level-lock a {
+  color: #0bb4aa;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.iss-ai-level-lock a:hover {
+  text-decoration: underline;
+}
+
 .iss-ai-chip--type {
   padding: 6px 16px 6px 13px;
 }
