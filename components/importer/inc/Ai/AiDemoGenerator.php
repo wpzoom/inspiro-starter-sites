@@ -2432,6 +2432,7 @@ class AiDemoGenerator {
 			. ".iss-ai-demo .wp-block-buttons{display:flex;flex-wrap:wrap;gap:.75rem}"
 			. ".iss-ai-demo ul.wp-block-list,.iss-ai-demo ol.wp-block-list{padding-left:1.4em;margin-bottom:1em}"
 			. ".iss-ai-demo .wp-block-quote{padding-left:1.2em}"
+			. ".iss-ai-demo .ai-card{margin-block-start:0}"
 			. ".iss-ai-demo h1,.iss-ai-demo h2,.iss-ai-demo h3,.iss-ai-demo h4{margin-top:0;margin-bottom:.5em}"
 			. ".iss-ai-demo p{margin-top:0;margin-bottom:1em}"
 			. ".iss-ai-demo p:last-child,.iss-ai-demo h2:last-child,.iss-ai-demo h3:last-child{margin-bottom:0}"
