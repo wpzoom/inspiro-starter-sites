@@ -1546,6 +1546,16 @@ body.iss-ai-open {
 	box-shadow: 0 0 0 1px #1d1d1f;
 }
 
+/* The preview itself answers the pointer, so the whole card feels live. */
+.iss-ai-art-card .iss-ai-wf {
+	transition: transform 0.18s ease;
+}
+
+.iss-ai-art-card:hover .iss-ai-wf,
+.iss-ai-art-card.is-active .iss-ai-wf {
+	transform: translateY(-1px);
+}
+
 .iss-ai-art-name {
 	display: block;
 	padding-inline: 2px;
@@ -1598,12 +1608,14 @@ body.iss-ai-open {
 	gap: 5px;
 	box-sizing: border-box;
 	width: 100%;
-	aspect-ratio: 4/3;
-	min-height: 110px;
+	/* Slightly taller than a banner: a page, with a header above the fold. */
+	aspect-ratio: 4/3.4;
+	min-height: 132px;
 	padding: 7px;
 	border-radius: 9px;
 	background: var(--iss-wf-ground);
-	box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.07);
+	/* Derived from the ink so the dark tones keep a visible edge too. */
+	box-shadow: inset 0 0 0 1px rgba(var(--iss-wf-ink-rgb), 0.1);
 	overflow: hidden;
 }
 
@@ -1631,17 +1643,100 @@ body.iss-ai-open {
 	--iss-wf-ink-rgb: 244, 244, 245;
 }
 
-/* "Let AI choose" has no layout to show yet, so it carries a mark instead. */
-.iss-ai-wf--auto {
+/* Header — identical on every recipe, so the tone, accent and corner radius
+	 are readable before the eye reaches the hero. */
+.iss-ai-wf-nav {
+	display: flex;
 	align-items: center;
-	justify-content: center;
-	background: #f6f7f9;
-	color: #9aa0a8;
+	gap: 5px;
+	flex: 0 0 auto;
+	padding-bottom: 5px;
+	border-bottom: 1px solid var(--iss-wf-rule);
 }
 
-.iss-ai-wf--auto svg {
-	width: 34px;
-	height: 34px;
+.iss-ai-wf-logo {
+	flex: 0 0 auto;
+	width: 13px;
+	height: 4px;
+	border-radius: 1px;
+	background: var(--iss-wf-ink);
+}
+
+.iss-ai-wf-navlinks {
+	display: flex;
+	gap: 5px;
+	margin-inline-start: auto;
+}
+
+.iss-ai-wf-navlinks span {
+	width: 8px;
+	height: 2px;
+	border-radius: 1px;
+	background: var(--iss-wf-mute);
+}
+
+/* Buttons carry the recipe's radius — square on Poster, a pill on Soft
+	 rounded — which is what separates several otherwise similar layouts. */
+.iss-ai-wf-btn {
+	display: block;
+	flex: 0 0 auto;
+	width: 26px;
+	height: 7px;
+	margin-top: 2px;
+	border-radius: var(--iss-wf-radius);
+	background: var(--iss-wf-accent);
+}
+
+.iss-ai-wf-btn.is-sm {
+	width: 15px;
+	height: 6px;
+	margin-top: 0;
+}
+
+/* Sitting on a photograph, the call to action reads light-on-dark. */
+.iss-ai-wf-btn.is-light {
+	background: #ffffff;
+}
+
+/* "Let AI choose" has no layout to show yet, so it greys one out behind the
+	 mark rather than sitting empty beside a dozen drawn previews. */
+.iss-ai-wf--auto {
+	position: relative;
+	background: #f7f8fa;
+	color: #5b6472;
+}
+
+.iss-ai-wf-ghost {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	flex: 1 1 auto;
+	min-height: 0;
+	opacity: 0.45;
+}
+
+.iss-ai-wf-spark {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* A soft disc keeps the mark legible over the layout behind it. */
+.iss-ai-wf-spark::before {
+	content: '';
+	position: absolute;
+	width: 46px;
+	height: 46px;
+	border-radius: 50%;
+	background: radial-gradient(circle, rgba(247, 248, 250, 0.95) 55%, rgba(247, 248, 250, 0) 100%);
+}
+
+.iss-ai-wf-spark svg {
+	position: relative;
+	width: 30px;
+	height: 30px;
 }
 
 .iss-ai-wf-hero {
@@ -1685,12 +1780,23 @@ body.iss-ai-open {
 	height: 9px;
 }
 
+/* A horizon and a sun, drawn in ink at low opacity: enough for the blocks to
+	 read as photography rather than as empty placeholders. */
+.iss-ai-wf-photo,
+.iss-ai-wf-tile.is-photo {
+	background-color: var(--iss-wf-photo);
+	background-image:
+		radial-gradient(circle at 73% 27%, rgba(var(--iss-wf-ink-rgb), 0.15) 0 10%, transparent 10.5%),
+		linear-gradient(26deg, rgba(var(--iss-wf-ink-rgb), 0.13) 0 34%, transparent 34%),
+		linear-gradient(-22deg, rgba(var(--iss-wf-ink-rgb), 0.08) 0 26%, transparent 26%);
+	background-repeat: no-repeat;
+}
+
 .iss-ai-wf-photo {
 	display: block;
 	flex: 1 1 auto;
 	min-height: 10px;
 	border-radius: var(--iss-wf-radius);
-	background: var(--iss-wf-photo);
 }
 
 .iss-ai-wf-rule {
@@ -1726,11 +1832,11 @@ body.iss-ai-open {
 	position: absolute;
 	inset: 0;
 	/* A cover carries white type, so it sits darker than an inline photo. */
-	background: rgba(var(--iss-wf-ink-rgb), 0.42);
+	background-color: rgba(var(--iss-wf-ink-rgb), 0.42);
 }
 
 .iss-ai-wf-photo.is-wash {
-	background: var(--iss-wf-accent);
+	background-color: var(--iss-wf-accent);
 	opacity: 0.9;
 }
 
@@ -1797,8 +1903,10 @@ body.iss-ai-open {
 /* Hero: centred compositions */
 .iss-ai-wf-hero.is-stack > .iss-ai-wf-line,
 .iss-ai-wf-hero.is-stack > .iss-ai-wf-head,
+.iss-ai-wf-hero.is-stack > .iss-ai-wf-btn,
 .iss-ai-wf-hero.is-centered > .iss-ai-wf-line,
-.iss-ai-wf-hero.is-centered > .iss-ai-wf-head {
+.iss-ai-wf-hero.is-centered > .iss-ai-wf-head,
+.iss-ai-wf-hero.is-centered > .iss-ai-wf-btn {
 	margin-inline: auto;
 }
 
@@ -1860,7 +1968,6 @@ body.iss-ai-open {
 
 .iss-ai-wf-tile.is-photo {
 	flex: 0 0 40%;
-	background: var(--iss-wf-photo);
 }
 
 .iss-ai-wf-tile.is-accent {
@@ -2038,6 +2145,6 @@ body.iss-ai-open {
 	}
 
 	.iss-ai-art-grid {
-		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+		grid-template-columns: repeat(auto-fill, minmax(152px, 1fr));
 	}
 }

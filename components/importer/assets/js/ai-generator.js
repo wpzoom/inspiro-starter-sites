@@ -107,6 +107,12 @@ jQuery( function ( $ ) {
 		return '<span class="iss-ai-wf-photo ' + ( mods || '' ) + '"></span>';
 	}
 
+	// A call to action. It carries the recipe's own corner radius, which is
+	// often the quickest way to tell two otherwise similar directions apart.
+	function wfBtn( mods ) {
+		return '<span class="iss-ai-wf-btn ' + ( mods || '' ) + '"></span>';
+	}
+
 	function wfRepeat( markup, times ) {
 		var out = '';
 		while ( times-- > 0 ) {
@@ -115,39 +121,50 @@ jQuery( function ( $ ) {
 		return out;
 	}
 
+	// Every preview opens with the same header, so a card reads as a page
+	// rather than as loose bars, and the tone, accent and corner radius are
+	// all legible before the eye reaches the hero.
+	function wfNav() {
+		return '<span class="iss-ai-wf-nav">' +
+			'<span class="iss-ai-wf-logo"></span>' +
+			'<span class="iss-ai-wf-navlinks">' + wfRepeat( '<span></span>', 3 ) + '</span>' +
+			wfBtn( 'is-sm' ) +
+		'</span>';
+	}
+
 	var WF_HERO = {
 		// Photo cover, headline sitting over it bottom-left.
 		cover: function () {
 			return wfPhoto( 'is-fill' ) +
-				'<span class="iss-ai-wf-over">' + wfLine( 'is-eyebrow is-w25' ) + wfHead( 'is-w70' ) + wfLine( 'is-w45' ) + '</span>';
+				'<span class="iss-ai-wf-over">' + wfLine( 'is-eyebrow is-w25' ) + wfHead( 'is-w70' ) + wfLine( 'is-w45' ) + wfBtn( 'is-light' ) + '</span>';
 		},
 		// The same cover, but washed in the accent instead of plain black.
 		duotone: function () {
 			return wfPhoto( 'is-fill is-wash' ) +
-				'<span class="iss-ai-wf-over">' + wfLine( 'is-eyebrow is-w25' ) + wfHead( 'is-xl is-w80' ) + '</span>';
+				'<span class="iss-ai-wf-over">' + wfLine( 'is-eyebrow is-w25' ) + wfHead( 'is-xl is-w80' ) + wfBtn( 'is-light' ) + '</span>';
 		},
 		// Copy left, one tall photograph right.
 		split: function () {
-			return '<span class="iss-ai-wf-copy">' + wfLine( 'is-eyebrow is-w40' ) + wfHead( 'is-w90' ) + wfHead( 'is-w60' ) + wfLine( 'is-w80' ) + '</span>' +
+			return '<span class="iss-ai-wf-copy">' + wfLine( 'is-eyebrow is-w40' ) + wfHead( 'is-w90' ) + wfHead( 'is-w60' ) + wfLine( 'is-w80' ) + wfBtn( '' ) + '</span>' +
 				wfPhoto( 'is-tall' );
 		},
 		// A split whose photograph breaks the section boundary.
 		overlap: function () {
-			return '<span class="iss-ai-wf-copy is-outdent">' + wfHead( 'is-w95' ) + wfHead( 'is-w60' ) + wfLine( 'is-w75' ) + '</span>' +
+			return '<span class="iss-ai-wf-copy is-outdent">' + wfHead( 'is-w95' ) + wfHead( 'is-w60' ) + wfLine( 'is-w75' ) + wfBtn( '' ) + '</span>' +
 				wfPhoto( 'is-tall is-break' );
 		},
 		// No photograph at all — oversized type on a flat ground.
 		type: function () {
-			return wfLine( 'is-eyebrow is-w25' ) + wfHead( 'is-xl is-w95' ) + wfHead( 'is-xl is-w70' ) + wfLine( 'is-w50' ) +
+			return wfLine( 'is-eyebrow is-w25' ) + wfHead( 'is-xl is-w95' ) + wfHead( 'is-xl is-w70' ) + wfLine( 'is-w50' ) + wfBtn( '' ) +
 				'<span class="iss-ai-wf-rule"></span>';
 		},
 		// Centred masthead with the photograph stacked below the type.
 		stack: function () {
-			return wfLine( 'is-eyebrow is-w20' ) + wfHead( 'is-w60' ) + wfLine( 'is-w45' ) + wfPhoto( 'is-inset' );
+			return wfLine( 'is-eyebrow is-w20' ) + wfHead( 'is-w60' ) + wfLine( 'is-w45' ) + wfBtn( '' ) + wfPhoto( 'is-inset' );
 		},
 		// Centred and framed top and bottom by hairline rules.
 		centered: function () {
-			return '<span class="iss-ai-wf-rule"></span>' + wfLine( 'is-eyebrow is-w20' ) + wfHead( 'is-w55' ) + wfLine( 'is-w40' ) +
+			return '<span class="iss-ai-wf-rule"></span>' + wfLine( 'is-eyebrow is-w20' ) + wfHead( 'is-w55' ) + wfLine( 'is-w40' ) + wfBtn( '' ) +
 				'<span class="iss-ai-wf-rule"></span>';
 		},
 		// The photography opens the page; the title follows underneath.
@@ -157,13 +174,13 @@ jQuery( function ( $ ) {
 		// Narrow meta stack on the left, headline on the right.
 		meta: function () {
 			return '<span class="iss-ai-wf-metacol">' + wfRepeat( wfLine( 'is-eyebrow is-w80' ), 3 ) + '</span>' +
-				'<span class="iss-ai-wf-copy">' + wfHead( 'is-w90' ) + wfHead( 'is-w60' ) + wfLine( 'is-w80' ) + '</span>';
+				'<span class="iss-ai-wf-copy">' + wfHead( 'is-w90' ) + wfHead( 'is-w60' ) + wfLine( 'is-w80' ) + wfBtn( '' ) + '</span>';
 		},
 		// A tile cluster of uneven weights rather than a banner.
 		bento: function () {
 			return '<span class="iss-ai-wf-tile is-photo"></span>' +
 				'<span class="iss-ai-wf-stack">' +
-					'<span class="iss-ai-wf-tile">' + wfHead( 'is-w70' ) + wfLine( 'is-w90' ) + '</span>' +
+					'<span class="iss-ai-wf-tile">' + wfHead( 'is-w70' ) + wfLine( 'is-w90' ) + wfBtn( '' ) + '</span>' +
 					'<span class="iss-ai-wf-tile is-accent"><span class="iss-ai-wf-stat"></span></span>' +
 				'</span>';
 		},
@@ -204,13 +221,21 @@ jQuery( function ( $ ) {
 		}
 	};
 
-	// The "let AI choose" card gets a mark rather than a layout, since its
-	// whole point is that the layout isn't decided yet.
+	// The "let AI choose" card has no layout to show, since its whole point is
+	// that the layout isn't decided yet — so it greys one out behind the mark
+	// rather than sitting empty beside a dozen drawn previews.
 	var WF_AUTO = '<span class="iss-ai-wf iss-ai-wf--auto" aria-hidden="true">' +
-		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">' +
-			'<path d="M11 3.5l2.1 5.4 5.4 2.1-5.4 2.1L11 18.5 8.9 13.1 3.5 11l5.4-2.1z"/>' +
-			'<path d="M18 15l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z"/>' +
-		'</svg>' +
+		'<span class="iss-ai-wf-ghost">' +
+			wfNav() +
+			'<span class="iss-ai-wf-hero is-split">' + WF_HERO.split() + '</span>' +
+			'<span class="iss-ai-wf-band is-cards">' + WF_BODY.cards() + '</span>' +
+		'</span>' +
+		'<span class="iss-ai-wf-spark">' +
+			'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">' +
+				'<path d="M11 3.5l2.1 5.4 5.4 2.1-5.4 2.1L11 18.5 8.9 13.1 3.5 11l5.4-2.1z"/>' +
+				'<path d="M18 15l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z"/>' +
+			'</svg>' +
+		'</span>' +
 	'</span>';
 
 	// Draw one recipe's layout system in its own tone, corner radius and
@@ -233,6 +258,7 @@ jQuery( function ( $ ) {
 		}
 
 		return '<span class="iss-ai-wf iss-ai-wf--' + tone + '" style="' + vars + '" aria-hidden="true">' +
+			wfNav() +
 			'<span class="iss-ai-wf-hero is-' + hero + '">' + WF_HERO[ hero ]() + '</span>' +
 			'<span class="iss-ai-wf-band is-' + body + '">' + WF_BODY[ body ]() + '</span>' +
 		'</span>';
