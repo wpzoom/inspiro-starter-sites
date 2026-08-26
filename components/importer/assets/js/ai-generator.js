@@ -551,18 +551,13 @@ jQuery( function ( $ ) {
 								'<h4>' + esc( t.feedback_title || '' ) + '</h4>' +
 								'<p class="iss-ai-feedback__hint">' + esc( t.feedback_hint || '' ) + '</p>' +
 								'<div class="iss-ai-feedback__form js-iss-ai-feedback-form">' +
-									// The two one-click questions share a row; the
-									// panel is full width, so stacking them would
-									// leave most of it empty.
-									'<div class="iss-ai-feedback__row">' +
-										'<div class="iss-ai-feedback__field">' +
-											'<span class="iss-ai-feedback__label">' + esc( t.feedback_rating || '' ) + '</span>' +
-											'<div class="iss-ai-stars js-iss-ai-stars">' + feedbackStars() + '</div>' +
-										'</div>' +
-										'<div class="iss-ai-feedback__field">' +
-											'<span class="iss-ai-feedback__label">' + esc( t.feedback_keep || '' ) + '</span>' +
-											'<div class="iss-ai-feedback__choices">' + feedbackChoices() + '</div>' +
-										'</div>' +
+									'<div class="iss-ai-feedback__field">' +
+										'<span class="iss-ai-feedback__label">' + esc( t.feedback_rating || '' ) + '</span>' +
+										'<div class="iss-ai-stars js-iss-ai-stars">' + feedbackStars() + '</div>' +
+									'</div>' +
+									'<div class="iss-ai-feedback__field">' +
+										'<span class="iss-ai-feedback__label">' + esc( t.feedback_keep || '' ) + '</span>' +
+										'<div class="iss-ai-feedback__choices">' + feedbackChoices() + '</div>' +
 									'</div>' +
 									'<div class="iss-ai-feedback__row iss-ai-feedback__row--split">' +
 										'<div class="iss-ai-feedback__field">' +

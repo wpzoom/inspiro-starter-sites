@@ -2149,8 +2149,12 @@ body.iss-ai-open {
 	color: #1d1d1f;
 }
 
-/* Row 1 sizes to its content (a rating and three chips); row 2 splits the
-   width evenly between the two free-text answers. */
+/* The one-click questions stack, each on its own row; the two free-text
+   answers share one, splitting the width evenly. */
+.iss-ai-feedback__form > .iss-ai-feedback__field {
+	margin-bottom: 18px;
+}
+
 .iss-ai-feedback__row {
 	display: flex;
 	flex-wrap: wrap;
