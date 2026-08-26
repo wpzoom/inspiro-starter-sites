@@ -44,6 +44,14 @@ class Starter_Content_Notice {
 			return;
 		}
 
+		// A demo has already been imported (classic or AI) — the pre-import
+		// cleanup advice no longer applies, and the title-based detection
+		// would false-positive on the imported demo's own About/Contact/Blog
+		// pages (offering to delete them!).
+		if ( self::demo_already_imported() ) {
+			return;
+		}
+
 		// Check if the theme has the detection function
 		if ( ! function_exists( 'inspiro_has_starter_content' ) ) {
 			return;
@@ -107,6 +115,11 @@ class Starter_Content_Notice {
 			return;
 		}
 
+		// No notice after a demo import (see display_notice()).
+		if ( self::demo_already_imported() ) {
+			return;
+		}
+
 		// Check if starter content exists
 		if ( ! function_exists( 'inspiro_has_starter_content' ) || ! inspiro_has_starter_content() ) {
 			return;
@@ -132,6 +145,24 @@ class Starter_Content_Notice {
 				'error'         => esc_html__( 'Error deleting starter content. Please try again.', 'inspiro-starter-sites' ),
 			)
 		);
+	}
+
+	/**
+	 * Whether any demo — classic starter site or AI-generated — has been
+	 * imported on this site. Once one has, the pre-import cleanup notice
+	 * must never show: the advice is moot, and the title-based starter
+	 * content detection would flag the imported demo's own pages.
+	 *
+	 * @return bool
+	 */
+	private static function demo_already_imported() {
+		if ( get_option( 'inspiro_starter_sites_imported_demo_id' ) ) {
+			return true;
+		}
+
+		$ai_demos = get_option( 'inspiro_starter_sites_ai_demos', array() );
+
+		return is_array( $ai_demos ) && ! empty( $ai_demos );
 	}
 
 	/**

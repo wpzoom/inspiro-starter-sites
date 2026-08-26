@@ -3,9 +3,9 @@ Contributors: 		WPZOOM
 Donate link:		http://paypal.me/wpzm/10usd
 Author URI:			https://www.wpzoom.com/  
 Requires at least: 	6.5
-Tested up to: 		7.0
+Tested up to: 		7.1
 Requires PHP: 		7.4  
-Stable tag: 		1.1.4
+Stable tag: 		1.2.3
 License: 			GPLv2 or later  
 License URI: 		https://www.gnu.org/licenses/gpl-2.0.html
 Tags: 				starter sites, templates, demo importer, elementor, gutenberg
@@ -15,6 +15,8 @@ Import free starter sites & demo templates for Gutenberg, Elementor and WooComme
 == Description ==
 
 **Inspiro Starter Sites** is a free library of **starter sites and demo templates** for WordPress. Import a complete, professionally designed website — built for the **Gutenberg block editor**, **Elementor**, and **WooCommerce** — in just a few clicks, then customize it to match your brand.
+
+**✨ NEW: AI Demo Generator (Beta)** — don't see a demo that fits? Describe your website and let AI design and build a custom demo just for you: real pages, photos, menu and colors, ready in about two minutes and 100% editable with native blocks.
 
 No page-building from scratch and no coding required: pick a demo, run the one-click importer, and get a ready-made site with pages, images, menus, widgets and customizer settings already set up.
 
@@ -83,6 +85,18 @@ This plugin incorporates code from the [One Click Demo Import](https://wordpress
 * 📘 [Facebook Group](https://www.facebook.com/groups/wpzoom)
 * 🌄 [Instagram](https://instagram.com/wpzoom)
 
+== External services ==
+
+This plugin connects to the following external services. No data is sent to any of them without an explicit action by the site administrator (importing a starter site, or using the AI Demo Generator).
+
+**WPZOOM demo servers (wpzoom.com, ai.wpzoom.com)**
+When you import a starter site, the demo package (content, images, widgets and customizer settings) is downloaded from WPZOOM's servers to your site. If you submit the optional "Suggest a demo" feedback form, the text you enter is sent to wpzoom.com.
+Terms of service: https://www.wpzoom.com/terms-and-conditions/ — Privacy policy: https://www.wpzoom.com/privacy-policy/
+
+**Google Fonts (fonts.googleapis.com)**
+Font stylesheets for AI-generated demos are fetched once by your server and the font files are stored locally on your site. Your visitors' browsers never connect to Google's servers.
+Terms: https://developers.google.com/fonts/terms — Privacy policy: https://policies.google.com/privacy
+
 == Installation ==
 
 = Installation from within WordPress =
@@ -125,6 +139,30 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 4. Demo Imported message
 
 == Changelog ==
+
+= 1.2.3 =
+* Minor improvements
+* New (Inspiro Premium): Add a single AI-generated page to your demo — e.g. a Pricing page — designed in your demo's existing style
+* New (Inspiro Premium): Regenerate any page of your AI demo with a fresh design, optionally guided by your feedback
+
+
+= 1.2.2 =
+* Multiple fixes and improvements for the AI Demo Generator
+
+= 1.2.1 =
+* Multiple fixes and improvements for the AI Demo Generator
+
+= 1.2.0 =
+* New: ✨ AI Demo Generator (Beta) — describe your website and AI designs and builds a complete, custom demo with pages, photos, menu and colors in about two minutes
+* New: AI demos are built with 100% native blocks — cover, columns, gallery, query loop, social icons — plus WPZOOM Portfolio and WPZOOM Forms integration where the site calls for them
+* New: Pick a design style, color palette and typography for AI demos, or let the AI decide; the chosen palette is also applied to the theme's accent color
+* New: Free AI generations included after connecting your email; Inspiro Premium users with an active license get more
+* New: The AI generator also appears at the top of the Inspiro Premium demo importer
+* Improved: Demo Importer page layout — the AI generator sits at the top and the starter sites header is more compact
+* New: The fonts chosen for an AI demo are applied to the theme's own Typography options, so they load site-wide and can be changed in the Customizer
+* New: View and edit the stylesheet of your AI demo directly from the generator
+* Improved: Generated demo pages align with the theme's content width on all screen sizes
+* Fixed: The "Default Starter Content Detected" notice no longer appears after a demo has been imported (it could mistake the imported demo's own pages for starter content)
 
 = 1.1.4 =
 * New demo: Creative Agency

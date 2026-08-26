@@ -75,6 +75,16 @@ class AiDemoGenerator {
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_finalize', array( $this, 'ajax_finalize' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_delete', array( $this, 'ajax_delete' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_feedback', array( $this, 'ajax_feedback' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_get_css', array( $this, 'ajax_get_css' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_save_css', array( $this, 'ajax_save_css' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_add_page', array( $this, 'ajax_add_ai_page' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_regenerate_page', array( $this, 'ajax_regenerate_ai_page' ) );
+
+		// Mirror of the pre-import starter-content warning: when an AI demo
+		// exists, warn before a CLASSIC demo import that it won't remove the
+		// AI content (priority 6 = right after the starter-content notice).
+		add_action( 'inspiro_starter_sites_admin_page', array( $this, 'render_import_over_ai_notice' ), 6 );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_dismiss_import_notice', array( $this, 'ajax_dismiss_import_notice' ) );
 	}
 
 	/**
@@ -109,7 +119,7 @@ class AiDemoGenerator {
 		?>
 		<div class="inspiro-starter-sites-ai-hero">
 			<button type="button" class="inspiro-starter-sites-ai-hero__existing js-iss-ai-hero-existing js-inspiro-starter-sites-ai-generate"<?php echo $previous ? '' : ' hidden'; ?> title="<?php esc_attr_e( 'Manage or delete your generated demo', 'inspiro-starter-sites' ); ?>">
-				<span class="inspiro-starter-sites-ai-hero__existing-dot" aria-hidden="true"></span>
+				<svg class="inspiro-starter-sites-ai-hero__existing-gear" aria-hidden="true" width="13" height="13" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M18 12h-2.18c-.17.7-.44 1.35-.81 1.93l1.54 1.54-2.1 2.1-1.54-1.54c-.58.36-1.23.63-1.93.81V19H8v-2.18c-.7-.18-1.35-.45-1.93-.81l-1.54 1.54-2.12-2.12 1.54-1.54c-.36-.58-.63-1.23-.81-1.93H1V9.03h2.17c.16-.7.44-1.35.8-1.94L2.43 5.55l2.1-2.1 1.54 1.54c.58-.37 1.24-.64 1.93-.81V2h3v2.18c.68.17 1.32.44 1.9.8l1.56-1.53 2.12 2.12-1.54 1.54c.36.59.64 1.24.82 1.94H18V12zm-8.5 1.5c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3z" fill="currentColor"/></svg>
 				<?php esc_html_e( 'AI demo:', 'inspiro-starter-sites' ); ?>
 				<strong class="js-iss-ai-hero-existing-title"><?php echo esc_html( $previous && '' !== $previous['site_title'] ? $previous['site_title'] : __( 'active', 'inspiro-starter-sites' ) ); ?></strong>
 			</button>
@@ -156,6 +166,7 @@ class AiDemoGenerator {
 		<div class="iss-ai-root js-iss-ai-root" hidden></div>
 		<div class="js-iss-ai-premium-hero" hidden>
 			<?php $this->render_hero(); ?>
+			<?php $this->render_import_over_ai_notice(); ?>
 		</div>
 		<script>
 		jQuery( function ( $ ) {
@@ -225,18 +236,30 @@ class AiDemoGenerator {
 			wp_enqueue_style( 'inspiro-starter-sites-ai-preview-fonts', $preview_fonts, array(), null ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
 		}
 
+		// WordPress' own CSS editor (CodeMirror) for the demo stylesheet —
+		// same syntax highlighting and linting as Customizer → Additional CSS.
+		// Returns false when the user disabled syntax highlighting in their
+		// profile, in which case the plain textarea is used as-is.
+		$code_editor = wp_enqueue_code_editor( array( 'type' => 'text/css' ) );
+
 		wp_localize_script(
 			'inspiro-starter-sites-ai-generator-js',
 			'inspiro_starter_sites_ai',
 			array(
 				'ajax_url'    => admin_url( 'admin-ajax.php' ),
 				'ajax_nonce'  => wp_create_nonce( 'inspiro-starter-sites-ajax-verification' ),
+				'code_editor' => $code_editor ? $code_editor : null,
 				'pages_url'   => admin_url( 'edit.php?post_type=page' ),
 				'site_url'    => home_url( '/' ),
 				'upgrade_url' => 'https://www.wpzoom.com/themes/inspiro-lite/upgrade/?utm_source=wpadmin&utm_medium=ai-demo&utm_campaign=ai-quota-upsell',
 				// Premium theme without an activated license: the exhausted-
 				// quota card asks to activate instead of upselling.
 				'is_premium_theme' => class_exists( 'WPZOOM' ),
+				// Premium page tools also require an ACTIVE license.
+				'has_license'      => '' !== AiProxyClient::premium_license(),
+				// Pages of the active demo, for the regenerate picker (the
+				// posts page has no AI design to rebuild).
+				'demo_pages'       => $this->demo_pages_for_picker(),
 				'license_url'      => admin_url( 'admin.php?page=wpzoom_license#license' ),
 				'styles'     => array_map(
 					static function ( $style ) {
@@ -386,11 +409,55 @@ class AiDemoGenerator {
 					'replace_notice'   => __( 'Generating a new demo will permanently delete the %2$s page(s) from “%1$s” — including any changes you made to them.', 'inspiro-starter-sites' ),
 					/* translators: %s: number of pages */
 					'replace_notice_unnamed' => __( 'Generating a new demo will permanently delete the %s previously generated AI page(s) — including any changes you made to them.', 'inspiro-starter-sites' ),
-					'replace_checkbox' => __( 'Delete the previous AI demo when generating the new one', 'inspiro-starter-sites' ),
-					'replace_keep_hint'=> __( 'Uncheck to keep the old pages — they will remain published alongside the new demo.', 'inspiro-starter-sites' ),
-					'delete_now'       => __( 'Delete the AI demo now (without generating a new one)', 'inspiro-starter-sites' ),
+					'replace_checkbox' => __( 'Delete the previous demo when generating the new one', 'inspiro-starter-sites' ),
+					'replace_keep_hint'=> __( 'Uncheck to keep the old content — it will remain published alongside the new demo.', 'inspiro-starter-sites' ),
+					'replace_title_classic' => __( 'You already have an imported demo', 'inspiro-starter-sites' ),
+					/* translators: %s: imported demo name */
+					'replace_notice_classic' => __( 'The previously imported “%s” demo was detected. Generating an AI demo will permanently delete its content (pages, posts, images, menus) — including any changes you made.', 'inspiro-starter-sites' ),
+					'replace_notice_classic_unnamed' => __( 'A previously imported starter site was detected. Generating an AI demo will permanently delete its content (pages, posts, images, menus) — including any changes you made.', 'inspiro-starter-sites' ),
+					'delete_now'       => __( 'Delete demo now', 'inspiro-starter-sites' ),
 					'delete_confirm'   => __( 'Permanently delete all AI-generated pages, their images, the demo menu and footer widgets? Content that existed before the AI demo is not affected. This cannot be undone.', 'inspiro-starter-sites' ),
 					'deleting'         => __( 'Deleting…', 'inspiro-starter-sites' ),
+					// Plain "&" — the modal's JS escapes strings before insertion.
+					'edit_css_link'    => __( 'View & edit CSS', 'inspiro-starter-sites' ),
+					'edit_css_title'   => __( 'Demo stylesheet', 'inspiro-starter-sites' ),
+					/* translators: %s: demo site title */
+					'edit_css_intro'   => __( 'This stylesheet gives “%s” its design. It only applies to the AI-generated pages, so changes here never affect the rest of your site. Every rule must stay scoped to .iss-ai-demo.', 'inspiro-starter-sites' ),
+					'edit_css_save'    => __( 'Save stylesheet', 'inspiro-starter-sites' ),
+					'saving'           => __( 'Saving…', 'inspiro-starter-sites' ),
+					'back'             => __( 'Back', 'inspiro-starter-sites' ),
+					'add_page_link'    => __( 'Add AI page', 'inspiro-starter-sites' ),
+					'regen_page_link'  => __( 'Regenerate a page', 'inspiro-starter-sites' ),
+					'add_page_title'   => __( 'Add a page with AI', 'inspiro-starter-sites' ),
+					'add_page_intro'   => __( 'The new page is designed with your demo\'s existing style and added to the menu.', 'inspiro-starter-sites' ),
+					'add_page_label'   => __( 'Page title', 'inspiro-starter-sites' ),
+					'add_page_ph'      => __( 'e.g. Pricing', 'inspiro-starter-sites' ),
+					'add_page_details' => __( 'What should be on it? (optional)', 'inspiro-starter-sites' ),
+					'add_page_go'      => __( 'Generate page', 'inspiro-starter-sites' ),
+					'regen_title'      => __( 'Regenerate a page', 'inspiro-starter-sites' ),
+					'regen_intro'      => __( 'A fresh take on the page — same purpose, new layout and imagery. The current design is replaced.', 'inspiro-starter-sites' ),
+					'regen_label'      => __( 'Which page?', 'inspiro-starter-sites' ),
+					'regen_feedback'   => __( 'What would you like different? (optional)', 'inspiro-starter-sites' ),
+					'regen_go'         => __( 'Regenerate page', 'inspiro-starter-sites' ),
+					'regen_mode_label' => __( 'How?', 'inspiro-starter-sites' ),
+					'regen_mode_replace'      => __( 'Replace the page', 'inspiro-starter-sites' ),
+					'regen_mode_replace_hint' => __( 'A fresh design replaces the current layout.', 'inspiro-starter-sites' ),
+					'regen_mode_append'       => __( 'Add to the page', 'inspiro-starter-sites' ),
+					'regen_mode_append_hint'  => __( 'Keep the current layout and add new sections below it.', 'inspiro-starter-sites' ),
+					'append_intro'     => __( 'Your current layout stays. Describe what to add, and AI designs new sections in your demo\'s style, added at the bottom of the page.', 'inspiro-starter-sites' ),
+					'append_describe'  => __( 'What should be added?', 'inspiro-starter-sites' ),
+					'append_ph'        => __( 'e.g. A section with our opening hours and a map, and a short FAQ', 'inspiro-starter-sites' ),
+					'append_go'        => __( 'Add to page', 'inspiro-starter-sites' ),
+					'page_working'     => __( 'Designing the page — this takes about half a minute…', 'inspiro-starter-sites' ),
+					/* translators: %s: page title */
+					'page_done'        => __( '“%s” is ready.', 'inspiro-starter-sites' ),
+					'view_page'        => __( 'View page', 'inspiro-starter-sites' ),
+					'edit_page'        => __( 'Edit page', 'inspiro-starter-sites' ),
+					'premium_feature'  => __( 'Included with Inspiro Premium', 'inspiro-starter-sites' ),
+					'premium_upsell'   => __( 'Adding and regenerating single pages is included with Inspiro Premium — along with 50+ starter sites and more AI generations.', 'inspiro-starter-sites' ),
+					'premium_cta'      => __( 'Upgrade to Inspiro Premium →', 'inspiro-starter-sites' ),
+					'license_upsell'   => __( 'These AI page tools are included with an active Inspiro Premium license.', 'inspiro-starter-sites' ),
+					'license_cta'      => __( 'Activate your license →', 'inspiro-starter-sites' ),
 					'step_plan'        => __( 'Designing your site structure and writing the copy…', 'inspiro-starter-sites' ),
 					/* translators: %1$s: current page number, %2$s: total pages, %3$s: page title */
 					'step_page'        => __( 'Creating page %1$s of %2$s: %3$s', 'inspiro-starter-sites' ),
@@ -468,7 +535,7 @@ class AiDemoGenerator {
 		// server first — without one, tell the UI to show the connect step
 		// instead of quota numbers.
 		if ( ! $this->proxy->is_connected() ) {
-			wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info() ) ) );
+			wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'demo_pages' => $this->demo_pages_for_picker() ) ) );
 		}
 
 		$quota = $this->proxy->quota( 'check' );
@@ -478,12 +545,12 @@ class AiDemoGenerator {
 				// The server no longer recognizes our key (e.g. wiped data) —
 				// forget it so the user can re-connect.
 				$this->proxy->disconnect();
-				wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info() ) ) );
+				wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'demo_pages' => $this->demo_pages_for_picker() ) ) );
 			}
 			wp_send_json_error( array( 'message' => $quota->get_error_message() ) );
 		}
 
-		wp_send_json_success( array_merge( $this->quota_payload( $quota ), array( 'previous' => $this->previous_demo_info() ) ) );
+		wp_send_json_success( array_merge( $this->quota_payload( $quota ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'demo_pages' => $this->demo_pages_for_picker() ) ) );
 	}
 
 	/**
@@ -510,6 +577,269 @@ class AiDemoGenerator {
 	 *
 	 * @return array|null
 	 */
+	/**
+	 * Warning shown above the classic demo grid when an AI-generated demo
+	 * exists: importing a starter site will NOT remove the AI content, so
+	 * offer one-click deletion first. Dismissal is remembered per AI demo —
+	 * generating a new one brings the notice back.
+	 */
+	public function render_import_over_ai_notice() {
+		$previous = $this->previous_demo_info();
+		if ( ! $previous || empty( $previous['page_count'] ) ) {
+			return;
+		}
+
+		$demos          = get_option( self::DEMOS_OPTION, array() );
+		$latest_plan_id = is_array( $demos ) && $demos ? (string) array_key_last( $demos ) : 'unknown';
+
+		if ( get_user_meta( get_current_user_id(), 'inspiro_ai_import_notice_dismissed', true ) === $latest_plan_id ) {
+			return;
+		}
+
+		$title = '' !== $previous['site_title']
+			/* translators: %s: AI demo site title */
+			? sprintf( __( 'You have an AI-generated demo: “%s”', 'inspiro-starter-sites' ), $previous['site_title'] )
+			: __( 'You have an AI-generated demo', 'inspiro-starter-sites' );
+		?>
+		<div class="notice notice-warning inspiro-ai-import-notice" style="margin: 20px 0; padding: 15px; border-left: 4px solid #ffba00;">
+			<h3 style="margin-top: 0;"><?php echo esc_html( $title ); ?></h3>
+			<p>
+				<?php
+				printf(
+					/* translators: %d: number of AI-generated pages */
+					esc_html__( 'Importing a starter site below will NOT remove your AI-generated demo — its %d page(s), menu and homepage setting would remain and collide with the imported demo. We recommend deleting the AI demo first.', 'inspiro-starter-sites' ),
+					(int) $previous['page_count']
+				);
+				?>
+			</p>
+			<p>
+				<button type="button" class="button button-primary js-inspiro-ai-import-notice-delete">
+					<?php esc_html_e( 'Delete AI Demo', 'inspiro-starter-sites' ); ?>
+				</button>
+				<button type="button" class="button js-inspiro-ai-import-notice-keep" style="margin-left: 8px;">
+					<?php esc_html_e( 'Keep It & Continue', 'inspiro-starter-sites' ); ?>
+				</button>
+				<span class="spinner" style="float: none; margin: 0 10px;"></span>
+				<span class="js-inspiro-ai-import-notice-result"></span>
+			</p>
+		</div>
+		<script>
+		jQuery( function ( $ ) {
+			var $notice = $( '.inspiro-ai-import-notice' );
+			var nonce   = <?php echo wp_json_encode( wp_create_nonce( 'inspiro-starter-sites-ajax-verification' ) ); ?>;
+
+			$notice.on( 'click', '.js-inspiro-ai-import-notice-delete', function () {
+				var $btn = $( this );
+				if ( $btn.prop( 'disabled' ) ) {
+					return;
+				}
+				$btn.prop( 'disabled', true );
+				$notice.find( '.spinner' ).addClass( 'is-active' );
+
+				$.post( ajaxurl, { action: 'inspiro_starter_sites_ai_delete', security: nonce } )
+					.done( function ( res ) {
+						if ( res && res.success ) {
+							window.location.reload();
+						} else {
+							$btn.prop( 'disabled', false );
+							$notice.find( '.spinner' ).removeClass( 'is-active' );
+							$notice.find( '.js-inspiro-ai-import-notice-result' ).text( ( res && res.data && res.data.message ) || <?php echo wp_json_encode( __( 'Something went wrong. Please try again.', 'inspiro-starter-sites' ) ); ?> );
+						}
+					} )
+					.fail( function () {
+						$btn.prop( 'disabled', false );
+						$notice.find( '.spinner' ).removeClass( 'is-active' );
+						$notice.find( '.js-inspiro-ai-import-notice-result' ).text( <?php echo wp_json_encode( __( 'Something went wrong. Please try again.', 'inspiro-starter-sites' ) ); ?> );
+					} );
+			} );
+
+			$notice.on( 'click', '.js-inspiro-ai-import-notice-keep', function () {
+				$notice.slideUp( 150 );
+				$.post( ajaxurl, { action: 'inspiro_starter_sites_ai_dismiss_import_notice', security: nonce } );
+			} );
+		} );
+		</script>
+		<?php
+	}
+
+	/**
+	 * Remember the "Keep It & Continue" dismissal for the current AI demo.
+	 */
+	public function ajax_dismiss_import_notice() {
+		Helpers::verify_ajax_call();
+
+		$demos          = get_option( self::DEMOS_OPTION, array() );
+		$latest_plan_id = is_array( $demos ) && $demos ? (string) array_key_last( $demos ) : 'unknown';
+
+		update_user_meta( get_current_user_id(), 'inspiro_ai_import_notice_dismissed', $latest_plan_id );
+		wp_send_json_success();
+	}
+
+	/**
+	 * Map the plan's display/body families onto the theme's typography
+	 * options. Both Inspiro Lite and Premium use the same mod names, and both
+	 * ship the same Google-font catalogue the AI picks from — so a family the
+	 * AI chose is almost always selectable in the Customizer too.
+	 *
+	 * Families the theme doesn't know are skipped; those keep working through
+	 * the @font-face rules baked into the demo stylesheet.
+	 *
+	 * @param array $plan Sanitized plan.
+	 * @return string[] Families handed over to the theme.
+	 */
+	private function apply_demo_fonts( array $plan ) {
+		$fonts = isset( $plan['fonts'] ) && is_array( $plan['fonts'] ) ? $plan['fonts'] : array();
+		if ( ! $fonts ) {
+			return array();
+		}
+
+		$display = isset( $fonts['display'] ) ? (string) $fonts['display'] : '';
+		$body    = isset( $fonts['body'] ) ? (string) $fonts['body'] : '';
+
+		$applied = array();
+
+		if ( '' !== $display && $this->theme_knows_font( $display ) ) {
+			set_theme_mod( 'headings-font-family', $display );
+			$applied[] = $display;
+		}
+
+		if ( '' !== $body && $this->theme_knows_font( $body ) ) {
+			set_theme_mod( 'body-font-family', $body );
+			$applied[] = $body;
+		}
+
+		return array_unique( $applied );
+	}
+
+	/**
+	 * Whether the active theme offers this family in its own font catalogue
+	 * (and can therefore load it itself).
+	 *
+	 * @param string $family Font family name, e.g. "DM Sans".
+	 * @return bool
+	 */
+	private function theme_knows_font( $family ) {
+		if ( ! class_exists( 'Inspiro_Font_Family_Manager' ) ) {
+			return false;
+		}
+
+		$fonts = \Inspiro_Font_Family_Manager::get_google_fonts();
+
+		return is_array( $fonts ) && isset( $fonts[ $family ] );
+	}
+
+	/**
+	 * A previously imported CLASSIC demo (starter site), from either this
+	 * plugin's importer or the premium theme framework's demo importer.
+	 * Premium detection goes by its tracking meta, not theme mods — theme
+	 * mods are per-theme and vanish from view after a theme switch while
+	 * the imported content remains.
+	 *
+	 * @return array|null [ 'title' => string, 'source' => string ] or null.
+	 */
+	public function classic_demo_info() {
+		$plugin_demo = (string) get_option( 'inspiro_starter_sites_imported_demo_id', '' );
+		if ( '' !== $plugin_demo ) {
+			return array(
+				'title'  => ucwords( str_replace( array( '-', '_' ), ' ', $plugin_demo ) ),
+				'source' => 'starter-sites',
+			);
+		}
+
+		$premium_posts = get_posts(
+			array(
+				'post_type'      => 'any',
+				'post_status'    => 'any',
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'meta_key'       => '_wpzoom_demo_importer_imported_post', // phpcs:ignore WordPress.DB.SlowDBQuery
+			)
+		);
+		if ( $premium_posts ) {
+			$design = (string) get_theme_mod( 'wpz_demo_imported', '' );
+
+			return array(
+				'title'  => $design ? ucwords( str_replace( array( '-', '_' ), ' ', $design ) ) : '',
+				'source' => 'premium',
+			);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Delete a previously imported classic demo — the counterpart of
+	 * delete_previous_ai_demos() for starter-site imports. Runs only in the
+	 * replace flow, after the user saw the explicit warning checkbox.
+	 */
+	private function delete_classic_demo() {
+		// This plugin's importer: reuse its own full cleanup (posts, forms,
+		// terms, widgets, customizer leftovers, demo marker).
+		if ( get_option( 'inspiro_starter_sites_imported_demo_id' )
+			&& class_exists( '\Inspiro\Starter_Sites\InspiroStarterSitesImporter' ) ) {
+			$importer = \Inspiro\Starter_Sites\InspiroStarterSitesImporter::get_instance();
+			if ( method_exists( $importer, 'delete_imported_demo' ) ) {
+				$importer->delete_imported_demo();
+			}
+		}
+
+		// Premium framework importer: delete its tracked content directly.
+		$premium_posts = get_posts(
+			array(
+				'post_type'      => 'any',
+				'post_status'    => 'any',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'meta_key'       => '_wpzoom_demo_importer_imported_post', // phpcs:ignore WordPress.DB.SlowDBQuery
+			)
+		);
+		foreach ( $premium_posts as $post_id ) {
+			if ( 'elementor_library' === get_post_type( $post_id ) ) {
+				continue;
+			}
+			wp_delete_post( $post_id, true );
+		}
+
+		$premium_forms = get_posts(
+			array(
+				'post_type'      => 'any',
+				'post_status'    => 'any',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'meta_key'       => '_wpzoom_demo_importer_imported_wp_forms', // phpcs:ignore WordPress.DB.SlowDBQuery
+			)
+		);
+		foreach ( $premium_forms as $form_id ) {
+			wp_delete_post( $form_id, true );
+		}
+
+		$premium_terms = get_terms(
+			array(
+				'hide_empty' => false,
+				'fields'     => 'ids',
+				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery
+					array(
+						'key'     => '_wpzoom_demo_importer_imported_term',
+						'compare' => 'EXISTS',
+					),
+				),
+			)
+		);
+		if ( ! is_wp_error( $premium_terms ) ) {
+			foreach ( $premium_terms as $term_id ) {
+				$term = get_term( $term_id );
+				if ( $term && ! is_wp_error( $term ) ) {
+					wp_delete_term( $term_id, $term->taxonomy );
+				}
+			}
+		}
+
+		if ( $premium_posts ) {
+			remove_theme_mod( 'wpz_demo_imported' );
+			remove_theme_mod( 'wpz_demo_imported_timestamp' );
+		}
+	}
+
 	public function previous_demo_info() {
 		$previous_pages = get_posts(
 			array(
@@ -572,7 +902,7 @@ class AiDemoGenerator {
 
 		wp_send_json_success( array_merge(
 			$this->quota_payload( is_wp_error( $quota ) ? array() : $quota ),
-			array( 'previous' => $this->previous_demo_info() )
+			array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'demo_pages' => $this->demo_pages_for_picker() )
 		) );
 	}
 
@@ -613,7 +943,7 @@ class AiDemoGenerator {
 
 		wp_send_json_success( array_merge(
 			$this->quota_payload( is_wp_error( $quota ) ? array() : $quota ),
-			array( 'previous' => $this->previous_demo_info() )
+			array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'demo_pages' => $this->demo_pages_for_picker() )
 		) );
 	}
 
@@ -695,6 +1025,644 @@ class AiDemoGenerator {
 	}
 
 	/* ---------------------------------------------------------------------
+	 * AJAX: read / write the current demo's stylesheet
+	 * ------------------------------------------------------------------ */
+
+	/**
+	 * The active demo's CSS, for the "Edit CSS" modal.
+	 */
+	public function ajax_get_css() {
+		Helpers::verify_ajax_call();
+
+		$demo = $this->latest_demo();
+
+		if ( ! $demo ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'No AI demo found on this site.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$record = $this->split_font_css( $demo['plan_id'], $demo['record'] );
+
+		wp_send_json_success(
+			array(
+				'plan_id'    => $demo['plan_id'],
+				'site_title' => $record['site_title'],
+				// Readable in the editor; stored and served minified.
+				'css'        => $this->beautify_css( $record['css'] ),
+			)
+		);
+	}
+
+	/**
+	 * Expand the stored (minified) stylesheet into a readable, indented form
+	 * for the editor. Quoted strings are protected so separators inside them
+	 * are never treated as syntax.
+	 *
+	 * @param string $css Minified CSS.
+	 * @return string Pretty-printed CSS.
+	 */
+	private function beautify_css( $css ) {
+		$css = (string) $css;
+		if ( '' === trim( $css ) ) {
+			return '';
+		}
+
+		list( $css, $strings ) = $this->mask_css_strings( $css );
+
+		// One declaration/selector per line.
+		$css = preg_replace( '/\s*\{\s*/', " {\n", $css );
+		$css = preg_replace( '/\s*;\s*/', ";\n", $css );
+		$css = preg_replace( '/\s*\}\s*/', "\n}\n", $css );
+		$css = preg_replace( '/,\s*(?=[^{}]*\{)/', ",\n", $css ); // selector lists
+
+		$out   = array();
+		$depth = 0;
+		foreach ( preg_split( '/\n/', $css ) as $line ) {
+			$line = trim( $line );
+			if ( '' === $line ) {
+				continue;
+			}
+			if ( 0 === strpos( $line, '}' ) ) {
+				$depth = max( 0, $depth - 1 );
+			}
+
+			// Space after the property colon — declarations only, so pseudo
+			// selectors (":where(", "a:hover") keep their exact syntax.
+			if ( '{' !== substr( $line, -1 ) && '}' !== $line ) {
+				$line = preg_replace( '/^([^:\s]+):(?!\s)/', '$1: ', $line );
+			}
+
+			$out[] = str_repeat( '    ', $depth ) . $line;
+			if ( '' !== $line && '{' === substr( $line, -1 ) ) {
+				$depth++;
+			}
+			// Blank line after each closing brace at the top level.
+			if ( '}' === $line && 0 === $depth ) {
+				$out[] = '';
+			}
+		}
+
+		return $this->unmask_css_strings( trim( implode( "\n", $out ) ), $strings );
+	}
+
+	/**
+	 * Shrink the stylesheet back down for storage and front-end output.
+	 * Deliberately conservative: whitespace around +, - and * is preserved so
+	 * calc()/clamp() expressions keep working.
+	 *
+	 * @param string $css Pretty CSS.
+	 * @return string Minified CSS.
+	 */
+	private function minify_css( $css ) {
+		list( $css, $strings ) = $this->mask_css_strings( (string) $css );
+
+		$css = preg_replace( '!/\*.*?\*/!s', '', $css );          // comments
+		$css = preg_replace( '/\s+/', ' ', $css );                 // whitespace runs
+		$css = preg_replace( '/\s*([{};:,>])\s*/', '$1', $css );   // around separators
+		$css = str_replace( ';}', '}', $css );                     // trailing semicolons
+
+		return $this->unmask_css_strings( trim( $css ), $strings );
+	}
+
+	/**
+	 * Replace quoted strings with placeholders so whitespace/​separator
+	 * rewriting can't corrupt their contents.
+	 *
+	 * @param string $css CSS.
+	 * @return array [ masked CSS, extracted strings ]
+	 */
+	private function mask_css_strings( $css ) {
+		$strings = array();
+
+		$css = preg_replace_callback(
+			'/"[^"]*"|\'[^\']*\'/',
+			static function ( $m ) use ( &$strings ) {
+				$strings[] = $m[0];
+				return '@@ISSSTR' . ( count( $strings ) - 1 ) . '@@';
+			},
+			$css
+		);
+
+		return array( (string) $css, $strings );
+	}
+
+	/**
+	 * @param string   $css     Masked CSS.
+	 * @param string[] $strings Extracted strings.
+	 * @return string
+	 */
+	private function unmask_css_strings( $css, array $strings ) {
+		foreach ( $strings as $i => $string ) {
+			$css = str_replace( '@@ISSSTR' . $i . '@@', $string, $css );
+		}
+
+		return $css;
+	}
+
+	/**
+	 * Demos generated before the split kept the @font-face rules inside
+	 * 'css'. Move them into 'font_css' once, so the editor only ever shows —
+	 * and re-saves — the design rules. Font URLs must never pass through
+	 * sanitize_css(), which rewrites url() as an SSRF guard.
+	 *
+	 * @param string $plan_id Demo ID.
+	 * @param array  $record  Stored record.
+	 * @return array Record with 'css' free of @font-face rules.
+	 */
+	private function split_font_css( $plan_id, array $record ) {
+		$css = isset( $record['css'] ) ? (string) $record['css'] : '';
+
+		if ( isset( $record['font_css'] ) || false === stripos( $css, '@font-face' ) ) {
+			return $record;
+		}
+
+		$fonts = array();
+		$design = preg_replace_callback(
+			'/@font-face\s*\{[^}]*\}/i',
+			static function ( $m ) use ( &$fonts ) {
+				$fonts[] = $m[0];
+				return '';
+			},
+			$css
+		);
+
+		// Comment markers left behind by the extracted blocks.
+		$design = preg_replace( '/\/\*[^*]*\*\/\s*(?=\n)/', '', (string) $design );
+		$design = trim( preg_replace( '/\n{3,}/', "\n\n", (string) $design ) );
+
+		$record['font_css'] = implode( "\n", $fonts );
+		$record['css']      = $design;
+
+		$demos = get_option( self::DEMOS_OPTION, array() );
+		if ( isset( $demos[ $plan_id ] ) ) {
+			$demos[ $plan_id ]['font_css'] = $record['font_css'];
+			$demos[ $plan_id ]['css']      = $record['css'];
+			update_option( self::DEMOS_OPTION, $demos, false );
+		}
+
+		return $record;
+	}
+
+	/**
+	 * Save an edited stylesheet back onto the active demo.
+	 */
+	public function ajax_save_css() {
+		Helpers::verify_ajax_call();
+
+		$demo = $this->latest_demo();
+
+		if ( ! $demo ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'No AI demo found on this site.', 'inspiro-starter-sites' ) ) );
+		}
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitize_css() handles it.
+		$css = isset( $_POST['css'] ) ? wp_unslash( $_POST['css'] ) : '';
+
+		// No bridge rules re-appended: the stored stylesheet already has them.
+		// Stored minified — the editor re-expands it on the next open.
+		$clean = $this->minify_css( $this->sanitize_css( $css, false ) );
+
+		if ( '' === $clean ) {
+			wp_send_json_error(
+				array(
+					'message' => esc_html__( 'The stylesheet must contain at least one .iss-ai-demo rule, so it only affects your generated pages.', 'inspiro-starter-sites' ),
+				)
+			);
+		}
+
+		$demos = get_option( self::DEMOS_OPTION, array() );
+
+		$demos[ $demo['plan_id'] ]['css'] = $clean;
+		update_option( self::DEMOS_OPTION, $demos, false );
+
+		wp_send_json_success(
+			array(
+				'css'     => $clean,
+				'message' => esc_html__( 'Stylesheet saved.', 'inspiro-starter-sites' ),
+			)
+		);
+	}
+
+	/**
+	 * The active demo's regenerable pages, for the picker in the modal.
+	 *
+	 * @return array[] [ [ 'id' => int, 'title' => string ], … ]
+	 */
+	private function demo_pages_for_picker() {
+		$demo = $this->latest_demo();
+		if ( ! $demo || empty( $demo['record']['pages'] ) ) {
+			return array();
+		}
+
+		$posts_page = (int) get_option( 'page_for_posts' );
+		$out        = array();
+		foreach ( (array) $demo['record']['pages'] as $pid ) {
+			$pid = (int) $pid;
+			if ( $pid === $posts_page || 'page' !== get_post_type( $pid ) ) {
+				continue;
+			}
+			$out[] = array(
+				'id'    => $pid,
+				'title' => get_the_title( $pid ),
+			);
+		}
+
+		return $out;
+	}
+
+	/**
+	 * The most recently generated demo record.
+	 *
+	 * @return array|null [ 'plan_id' => string, 'record' => array ] or null.
+	 */
+	private function latest_demo() {
+		$demos = get_option( self::DEMOS_OPTION, array() );
+
+		if ( ! is_array( $demos ) || ! $demos ) {
+			return null;
+		}
+
+		$plan_id = (string) array_key_last( $demos );
+
+		return array(
+			'plan_id' => $plan_id,
+			'record'  => $demos[ $plan_id ],
+		);
+	}
+
+	/* ---------------------------------------------------------------------
+	 * AJAX: add / regenerate a single page of the active demo
+	 * (Inspiro Premium only — surfaced as an upsell on Lite)
+	 * ------------------------------------------------------------------ */
+
+	/**
+	 * Both single-page operations are Premium perks. On Lite the buttons are
+	 * shown locked; a direct request answers with the upsell code so the UI
+	 * can never be scripted around meaningfully.
+	 */
+	private function require_premium_theme() {
+		if ( ! class_exists( 'WPZOOM' ) ) {
+			wp_send_json_error(
+				array(
+					'code'    => 'premium_required',
+					'message' => esc_html__( 'Adding and regenerating single pages is included with Inspiro Premium.', 'inspiro-starter-sites' ),
+				)
+			);
+		}
+
+		// Premium perk = ACTIVE license, consistent with the generation
+		// limits (premium_license() also requires the premium theme).
+		if ( '' === AiProxyClient::premium_license() ) {
+			wp_send_json_error(
+				array(
+					'code'    => 'license_required',
+					'message' => esc_html__( 'Activate your Inspiro Premium license to add or regenerate pages.', 'inspiro-starter-sites' ),
+				)
+			);
+		}
+	}
+
+	/**
+	 * Generate ONE additional page for the active demo.
+	 */
+	public function ajax_add_ai_page() {
+		Helpers::verify_ajax_call();
+		$this->require_premium_theme();
+
+		$demo = $this->latest_demo();
+		if ( ! $demo ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'No AI demo found on this site.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$title   = isset( $_POST['title'] ) ? sanitize_text_field( wp_unslash( $_POST['title'] ) ) : '';
+		$details = isset( $_POST['details'] ) ? sanitize_textarea_field( wp_unslash( $_POST['details'] ) ) : '';
+
+		if ( '' === $title || mb_strlen( $title ) > 80 ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'Please enter a page title (up to 80 characters).', 'inspiro-starter-sites' ) ) );
+		}
+
+		$slug = sanitize_title( $title );
+		if ( '' === $slug ) {
+			$slug = 'page';
+		}
+
+		$page = array(
+			'title' => $title,
+			'slug'  => $slug,
+			'brief' => '' !== $details
+				? mb_substr( $details, 0, 500 )
+				/* translators: %s: page title */
+				: sprintf( __( 'A "%s" page that fits this site naturally.', 'inspiro-starter-sites' ), $title ),
+		);
+
+		$this->generate_single_page( $demo['plan_id'], $demo['record'], $page, 0 );
+	}
+
+	/**
+	 * Rebuild ONE existing page of the active demo, optionally steered by the
+	 * user's feedback.
+	 */
+	public function ajax_regenerate_ai_page() {
+		Helpers::verify_ajax_call();
+		$this->require_premium_theme();
+
+		$demo = $this->latest_demo();
+		if ( ! $demo ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'No AI demo found on this site.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$page_id  = isset( $_POST['page_id'] ) ? (int) $_POST['page_id'] : 0;
+		$feedback = isset( $_POST['feedback'] ) ? sanitize_textarea_field( wp_unslash( $_POST['feedback'] ) ) : '';
+
+		$post = $page_id ? get_post( $page_id ) : null;
+		if ( ! $post
+			|| 'page' !== $post->post_type
+			|| get_post_meta( $page_id, self::GENERATED_META_KEY, true ) !== $demo['plan_id'] ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'That page does not belong to the current AI demo.', 'inspiro-starter-sites' ) ) );
+		}
+
+		// The blog page is a plain container for the posts page — there is no
+		// designed layout to regenerate.
+		if ( (int) get_option( 'page_for_posts' ) === $page_id ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'The Blog page displays your latest posts and has no AI design to regenerate.', 'inspiro-starter-sites' ) ) );
+		}
+
+		// 'replace' rebuilds the whole page; 'append' keeps the current layout
+		// and adds new sections below it.
+		$mode   = isset( $_POST['mode'] ) && 'append' === $_POST['mode'] ? 'append' : 'replace';
+		$append = 'append' === $mode;
+
+		if ( $append ) {
+			// In append mode the feedback IS the brief — it says what to add.
+			if ( '' === $feedback ) {
+				wp_send_json_error( array( 'message' => esc_html__( 'Describe the section(s) you want to add to this page.', 'inspiro-starter-sites' ) ) );
+			}
+			$brief = mb_substr( $feedback, 0, 500 );
+		} else {
+			$brief = sprintf(
+				/* translators: %s: page title */
+				__( 'Redesign the "%s" page of this site with a fresh take — same purpose, different layout and imagery.', 'inspiro-starter-sites' ),
+				$post->post_title
+			);
+			if ( '' !== $feedback ) {
+				$brief .= ' ' . sprintf(
+					/* translators: %s: user feedback */
+					__( 'The user asked for this revision: %s', 'inspiro-starter-sites' ),
+					mb_substr( $feedback, 0, 400 )
+				);
+			}
+		}
+
+		$page = array(
+			'title' => $post->post_title,
+			'slug'  => $post->post_name,
+			'brief' => $brief,
+		);
+
+		$this->generate_single_page( $demo['plan_id'], $demo['record'], $page, $page_id, $append );
+	}
+
+	/**
+	 * The shared single-page pipeline: one demo-page Claude call against the
+	 * stored demo context, image resolution with the demo's existing photos
+	 * as the de-dup list and reuse pool, block conversion, then insert (new
+	 * page + menu item) or content replace (regenerate). Streams keep-alive
+	 * bytes and never returns.
+	 *
+	 * @param string $plan_id          Active demo ID.
+	 * @param array  $record           Stored demo record.
+	 * @param array  $page             [ title, slug, brief ].
+	 * @param int    $existing_page_id Page to replace, 0 to add a new one.
+	 * @param bool   $append           With an existing page: keep its content
+	 *                                 and add the new sections below it.
+	 */
+	private function generate_single_page( $plan_id, array $record, array $page, $existing_page_id = 0, $append = false ) {
+		if ( function_exists( 'set_time_limit' ) ) {
+			@set_time_limit( 180 ); // phpcs:ignore
+		}
+
+		$record = $this->split_font_css( $plan_id, $record );
+
+		if ( empty( $record['css'] ) ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'The demo stylesheet could not be found.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$stream = new StreamingResponse();
+		$stream->begin();
+
+		// The site's page list: existing demo pages plus, for additions, the
+		// new page — the AI uses it for internal links.
+		$page_ids   = isset( $record['pages'] ) ? array_map( 'intval', (array) $record['pages'] ) : array();
+		$pages_list = array();
+		$page_links = array();
+		foreach ( $page_ids as $pid ) {
+			$p = get_post( $pid );
+			if ( ! $p ) {
+				continue;
+			}
+			$pages_list[]                  = array(
+				'slug'  => $p->post_name,
+				'title' => $p->post_title,
+			);
+			$page_links[ $p->post_name ] = ( (int) get_option( 'page_on_front' ) === $pid ) ? home_url( '/' ) : get_permalink( $pid );
+		}
+		if ( ! $existing_page_id ) {
+			$pages_list[]                  = array(
+				'slug'  => $page['slug'],
+				'title' => $page['title'],
+			);
+			$page_links[ $page['slug'] ] = home_url( '/' . $page['slug'] . '/' );
+		}
+
+		$html = $this->proxy->claude_task(
+			'demo-page',
+			array(
+				'description'      => isset( $record['description'] ) ? $record['description'] : '',
+				'site_title'       => isset( $record['site_title'] ) ? $record['site_title'] : '',
+				'tagline'          => isset( $record['tagline'] ) ? $record['tagline'] : '',
+				'language'         => isset( $record['language'] ) ? $record['language'] : '',
+				'css'              => $record['css'],
+				'page'             => $page,
+				'pages'            => $pages_list,
+				'portfolio_needed' => post_type_exists( 'portfolio_item' ) && ! empty( $record['portfolio'] ),
+				'posts_feed'       => ! empty( $record['posts'] ),
+				'has_contact_form' => post_type_exists( 'wpzf-form' ),
+				// Sections-only output (no hero, no h1) that continues the page.
+				'append'           => $append && $existing_page_id ? 1 : 0,
+			),
+			array( $stream, 'tick' )
+		);
+
+		if ( is_wp_error( $html ) ) {
+			$stream->finish_error(
+				array(
+					'message' => $html->get_error_message(),
+					'detail'  => $html->get_error_code(),
+				)
+			);
+		}
+
+		$html = preg_replace( '/^```(?:html)?\s*|\s*```$/s', '', trim( $html ) );
+
+		// Append hygiene, independent of the prompt version: appended sections
+		// continue an existing page, so a page-level <h1> becomes an <h2>
+		// (there is already one h1 on the page).
+		if ( $append && $existing_page_id ) {
+			$html = preg_replace( '/<h1(\s[^>]*)?>/i', '<h2$1>', $html );
+			$html = preg_replace( '/<\/h1>/i', '</h2>', $html );
+		}
+
+		// De-dup list + reuse pool from the demo's existing attachments (the
+		// Pexels ID is stamped on each at sideload time).
+		$used_photo_ids = array();
+		$image_pool     = array();
+		$attachments    = get_posts(
+			array(
+				'post_type'      => 'attachment',
+				'post_status'    => 'any',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'meta_key'       => self::GENERATED_META_KEY, // phpcs:ignore WordPress.DB.SlowDBQuery
+				'meta_value'     => $plan_id, // phpcs:ignore WordPress.DB.SlowDBQuery
+			)
+		);
+		foreach ( $attachments as $att_id ) {
+			$photo_id = (int) get_post_meta( $att_id, '_iss_pexels_photo_id', true );
+			$att_url  = wp_get_attachment_image_url( $att_id, 'full' );
+			if ( $photo_id ) {
+				$used_photo_ids[] = $photo_id;
+			}
+			if ( $att_url ) {
+				$image_pool[] = array(
+					'id'       => (int) $att_id,
+					'url'      => $att_url,
+					'photo_id' => $photo_id,
+				);
+			}
+		}
+
+		// Per-operation download budget: single pages need only a handful of
+		// fresh photos; overflow reuses the demo's existing imagery. The
+		// counter option matches the orphan-sweep pattern (…_imgs).
+		$op_id        = $plan_id . 'op' . substr( md5( uniqid( '', true ) ), 0, 6 );
+		$max_images   = max( 2, (int) apply_filters( 'inspiro_starter_sites/ai_max_images_single_page', 6 ) );
+		$generator    = $this;
+		$site_title   = isset( $record['site_title'] ) ? $record['site_title'] : '';
+		$reuse_cursor = 0;
+		$last_reused  = 0;
+		$resolver     = function ( $query, $orientation ) use ( $generator, &$used_photo_ids, &$image_pool, &$reuse_cursor, &$last_reused, $max_images, $op_id, $plan_id, $site_title, $stream ) {
+			if ( $generator->reserve_image_download( $op_id ) > $max_images ) {
+				if ( ! $image_pool ) {
+					return null;
+				}
+				$image = $image_pool[ $reuse_cursor % count( $image_pool ) ];
+				$reuse_cursor++;
+				if ( count( $image_pool ) > 1 && (int) $image['id'] === $last_reused ) {
+					$image = $image_pool[ $reuse_cursor % count( $image_pool ) ];
+					$reuse_cursor++;
+				}
+				$last_reused = (int) $image['id'];
+				return $image;
+			}
+
+			$images = $generator->resolve_images( $query, 1, $used_photo_ids, $site_title, $plan_id, array( $stream, 'tick' ), $orientation );
+			if ( ! $images ) {
+				return null;
+			}
+			$used_photo_ids[] = $images[0]['photo_id'];
+			$image_pool[]     = $images[0];
+			$last_reused      = (int) $images[0]['id'];
+			$stream->tick();
+			return $images[0];
+		};
+
+		$brand     = isset( $record['brand'] ) && is_array( $record['brand'] ) ? $record['brand'] : array();
+		$converter = new HtmlToBlocks( $page_links, $resolver, $brand );
+		$content   = $converter->convert( $html, $page['slug'] );
+
+		delete_option( self::PLAN_TRANSIENT_PREFIX . $op_id . '_imgs' );
+
+		if ( '' === $content ) {
+			$stream->finish_error( array( 'message' => esc_html__( 'The AI returned an unusable page design. Please try again.', 'inspiro-starter-sites' ) ) );
+		}
+
+		if ( $existing_page_id ) {
+			if ( $append ) {
+				// Keep the current layout; the new per-section wrappers slot
+				// in below it as ordinary sibling blocks.
+				$current = (string) get_post_field( 'post_content', $existing_page_id, 'raw' );
+				$content = rtrim( $current ) . "\n\n" . $content;
+			}
+
+			$result = wp_update_post(
+				wp_slash(
+					array(
+						'ID'           => $existing_page_id,
+						'post_content' => $content,
+					)
+				),
+				true
+			);
+			if ( is_wp_error( $result ) ) {
+				$stream->finish_error( array( 'message' => $result->get_error_message() ) );
+			}
+			$page_id = $existing_page_id;
+		} else {
+			$page_id = wp_insert_post(
+				wp_slash(
+					array(
+						'post_type'    => 'page',
+						'post_status'  => 'publish',
+						'post_title'   => $page['title'],
+						'post_name'    => $page['slug'],
+						'post_content' => $content,
+						'menu_order'   => count( $page_ids ),
+						'meta_input'   => array(
+							self::GENERATED_META_KEY => $plan_id,
+							'_wp_page_template'      => 'page-templates/full-width-no-title.php',
+						),
+					)
+				),
+				true
+			);
+			if ( is_wp_error( $page_id ) ) {
+				$stream->finish_error( array( 'message' => $page_id->get_error_message() ) );
+			}
+
+			// Into the demo's menu and its record, so delete/replace flows
+			// keep covering the new page.
+			$menu_id = isset( $record['menu_id'] ) ? (int) $record['menu_id'] : 0;
+			if ( $menu_id && wp_get_nav_menu_object( $menu_id ) ) {
+				wp_update_nav_menu_item(
+					$menu_id,
+					0,
+					array(
+						'menu-item-object-id' => (int) $page_id,
+						'menu-item-object'    => 'page',
+						'menu-item-type'      => 'post_type',
+						'menu-item-status'    => 'publish',
+						'menu-item-title'     => $page['title'],
+					)
+				);
+			}
+
+			$demos = get_option( self::DEMOS_OPTION, array() );
+			if ( isset( $demos[ $plan_id ] ) ) {
+				$demos[ $plan_id ]['pages'][] = (int) $page_id;
+				update_option( self::DEMOS_OPTION, $demos, false );
+			}
+		}
+
+		$stream->finish_success(
+			array(
+				'page_id'  => (int) $page_id,
+				'title'    => get_the_title( $page_id ),
+				'view_url' => get_permalink( $page_id ),
+				'edit_url' => get_edit_post_link( $page_id, 'raw' ),
+			)
+		);
+	}
+
+	/* ---------------------------------------------------------------------
 	 * AJAX: generate the site plan
 	 * ------------------------------------------------------------------ */
 
@@ -736,7 +1704,9 @@ class AiDemoGenerator {
 			wp_send_json_error(
 				array(
 					'code'    => 'quota_exhausted',
-					'message' => esc_html__( 'You have used all your free AI generations for this site.', 'inspiro-starter-sites' ),
+					'message' => ! empty( $quota['licensed'] )
+						? esc_html__( 'You have used all the AI generations included with your license.', 'inspiro-starter-sites' )
+						: esc_html__( 'You have used all your free AI generations for this site.', 'inspiro-starter-sites' ),
 				)
 			);
 		}
@@ -864,6 +1834,12 @@ class AiDemoGenerator {
 			$whitelist = $this->font_whitelist();
 			$specs     = array();
 			foreach ( array_unique( array_values( $plan['fonts'] ) ) as $family ) {
+				// Families the theme can load itself are handed to its
+				// typography options in finalize() — no need to duplicate
+				// ~25KB of @font-face rules inside the demo stylesheet.
+				if ( $this->theme_knows_font( $family ) ) {
+					continue;
+				}
 				if ( isset( $whitelist[ $family ] ) ) {
 					$specs[] = 'family=' . $whitelist[ $family ];
 				}
@@ -904,6 +1880,7 @@ class AiDemoGenerator {
 		Helpers::delete_default_posts();
 		if ( $replace ) {
 			$this->delete_previous_ai_demos( $plan_id );
+			$this->delete_classic_demo();
 		}
 		$stream->tick();
 
@@ -1720,16 +2697,26 @@ class AiDemoGenerator {
 				'inspiro_starter_sites_ai_prev_colors',
 				array(
 					// Lite mods.
-					'colorscheme'     => get_theme_mod( 'colorscheme', false ),
-					'color_palette'   => get_theme_mod( 'color_palette', false ),
-					'colorscheme_hex' => get_theme_mod( 'colorscheme_hex', false ),
+					'colorscheme'          => get_theme_mod( 'colorscheme', false ),
+					'color_palette'        => get_theme_mod( 'color_palette', false ),
+					'colorscheme_hex'      => get_theme_mod( 'colorscheme_hex', false ),
 					// Premium (WPZOOM framework) mods.
-					'color-palettes'  => get_theme_mod( 'color-palettes', false ),
-					'color-accent'    => get_theme_mod( 'color-accent', false ),
+					'color-palettes'       => get_theme_mod( 'color-palettes', false ),
+					'color-accent'         => get_theme_mod( 'color-accent', false ),
+					// Typography (same mod names in both themes).
+					'body-font-family'     => get_theme_mod( 'body-font-family', false ),
+					'headings-font-family' => get_theme_mod( 'headings-font-family', false ),
 				),
 				false
 			);
 		}
+
+		// Hand the demo's fonts to the THEME's typography options instead of
+		// only shipping @font-face rules inside the demo stylesheet: the theme
+		// then loads them locally (GDPR-safe, cached as a real stylesheet),
+		// applies them site-wide — header, footer, blog — and the user can
+		// change them under Appearance → Customize → Typography.
+		$this->apply_demo_fonts( $state['plan'] );
 
 		$picked     = isset( $state['palette'] ) ? (string) $state['palette'] : '';
 		$accent     = isset( $state['plan']['brand']['accent'] ) ? sanitize_hex_color( $state['plan']['brand']['accent'] ) : '';
@@ -1771,7 +2758,14 @@ class AiDemoGenerator {
 				'page_count'    => count( $created_pages ),
 				'premium'       => class_exists( 'WPZOOM' ),
 			),
-			'css'         => trim( ( ! empty( $state['plan']['font_css'] ) ? $state['plan']['font_css'] . "\n" : '' ) . ( isset( $state['plan']['css'] ) ? $state['plan']['css'] : '' ) ),
+			// Context for post-finalize page operations (add / regenerate).
+			'tagline'     => isset( $state['plan']['tagline'] ) ? $state['plan']['tagline'] : '',
+			'language'    => isset( $state['plan']['language'] ) ? $state['plan']['language'] : '',
+			'brand'       => isset( $state['plan']['brand'] ) ? $state['plan']['brand'] : array(),
+			// Kept apart so the CSS editor can round-trip the design rules
+			// without re-sanitizing (and mangling) the font-file URLs.
+			'css'         => isset( $state['plan']['css'] ) ? trim( $state['plan']['css'] ) : '',
+			'font_css'    => ! empty( $state['plan']['font_css'] ) ? trim( $state['plan']['font_css'] ) : '',
 			'pages'       => array_values( $created_pages ),
 			'posts'       => isset( $state['created_posts'] ) ? array_values( $state['created_posts'] ) : array(),
 			'menu_id'     => $menu_id && ! is_wp_error( $menu_id ) ? (int) $menu_id : 0,
@@ -1792,8 +2786,11 @@ class AiDemoGenerator {
 
 		$stream->finish_success(
 			array(
-				'view_url'  => home_url( '/' ),
-				'pages_url' => admin_url( 'edit.php?post_type=page' ),
+				'view_url'   => home_url( '/' ),
+				'pages_url'  => admin_url( 'edit.php?post_type=page' ),
+				// So the regenerate picker is populated even if the modal is
+				// never closed between generation and page tools.
+				'demo_pages' => $this->demo_pages_for_picker(),
 			)
 		);
 	}
@@ -2139,10 +3136,10 @@ class AiDemoGenerator {
 				update_option( 'page_on_front', 0 );
 			}
 
-			// Restore the customizer colors from before the first AI demo.
+			// Restore the customizer colors and fonts from before the first AI demo.
 			$prev_colors = get_option( 'inspiro_starter_sites_ai_prev_colors' );
 			if ( is_array( $prev_colors ) ) {
-				foreach ( array( 'colorscheme', 'color_palette', 'colorscheme_hex', 'color-palettes', 'color-accent' ) as $mod ) {
+				foreach ( array( 'colorscheme', 'color_palette', 'colorscheme_hex', 'color-palettes', 'color-accent', 'body-font-family', 'headings-font-family' ) as $mod ) {
 					if ( array_key_exists( $mod, $prev_colors ) && false !== $prev_colors[ $mod ] ) {
 						set_theme_mod( $mod, $prev_colors[ $mod ] );
 					} else {
@@ -2262,6 +3259,11 @@ class AiDemoGenerator {
 		if ( $plan_id ) {
 			update_post_meta( $attachment_id, self::GENERATED_META_KEY, $plan_id );
 		}
+
+		// The source photo ID makes the attachment re-fetchable and lets
+		// post-finalize operations (add/regenerate page, future export)
+		// rebuild the de-duplication list and reuse pool.
+		update_post_meta( $attachment_id, '_iss_pexels_photo_id', (int) $photo['id'] );
 
 		return array(
 			'id'       => (int) $attachment_id,
@@ -2473,7 +3475,7 @@ class AiDemoGenerator {
 	 * @param string $css
 	 * @return string
 	 */
-	private function sanitize_css( $css ) {
+	private function sanitize_css( $css, $with_bridge = true ) {
 		$css = (string) $css;
 		$css = str_replace( array( '<', '\\' ), '', $css );
 		$css = preg_replace( '/@import[^;]*;?/i', '', $css );
@@ -2483,6 +3485,12 @@ class AiDemoGenerator {
 		// Must actually be scoped to the demo wrapper.
 		if ( false === strpos( $css, '.iss-ai-demo' ) ) {
 			return '';
+		}
+
+		// Editing an existing stylesheet: it already carries the bridge rules
+		// below, so adding them again would duplicate them on every save.
+		if ( ! $with_bridge ) {
+			return $css;
 		}
 
 		// Prepended BEFORE the AI CSS at matched (0,1,0) specificity: the
@@ -2545,7 +3553,12 @@ class AiDemoGenerator {
 
 		$demos = get_option( self::DEMOS_OPTION, array() );
 		if ( is_array( $demos ) && ! empty( $demos[ $plan_id ]['css'] ) ) {
-			return $this->scale_css_for_theme( $demos[ $plan_id ]['css'] );
+			// @font-face rules are stored apart from the editable design CSS
+			// (older records keep both in 'css' — harmless, they just render
+			// as one block).
+			$fonts = ! empty( $demos[ $plan_id ]['font_css'] ) ? $demos[ $plan_id ]['font_css'] . "\n" : '';
+
+			return $this->scale_css_for_theme( $fonts . $demos[ $plan_id ]['css'] );
 		}
 
 		$state = $this->get_plan_state( $plan_id );

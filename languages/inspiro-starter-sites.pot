@@ -1,13 +1,15 @@
+# Copyright (C) 2026 WPZOOM
+# This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Inspiro Starter Sites 1.1.0\n"
+"Project-Id-Version: Inspiro Starter Sites 1.2.3\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/inspiro-starter-sites\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-05-29T20:34:50+00:00\n"
+"POT-Creation-Date: 2026-08-15T09:19:34+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: inspiro-starter-sites\n"
@@ -43,11 +45,11 @@ msgstr ""
 
 #: classes/class-inspiro-starter-sites-admin-menu.php:51
 #: classes/class-inspiro-starter-sites-admin-menu.php:52
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:936
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:937
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:986
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:987
 #: components/importer/views/importer-page.php:61
 #: components/importer/views/inspiro/importer-page.php:97
-#: components/importer/views/inspiro/importer-page.php:211
+#: components/importer/views/inspiro/importer-page.php:241
 msgid "Import Demo"
 msgstr ""
 
@@ -71,71 +73,1076 @@ msgstr ""
 msgid "Premium Starter Sites"
 msgstr ""
 
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:455
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:504
 msgid "Business"
 msgstr ""
 
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:456
-msgid "Architecture"
-msgstr ""
-
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:457
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:505
 #: components/importer/inc/InspiroStarterSitesImporter.php:292
 msgid "Portfolio"
 msgstr ""
 
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:458
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:506
 msgid "Creative"
 msgstr ""
 
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:459
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:507
+msgid "Legal / Lawyer"
+msgstr ""
+
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:508
 #: components/importer/views/inspiro/importer-page.php:146
 msgid "WooCommerce"
 msgstr ""
 
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:460
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:509
 #: components/importer/inc/InspiroStarterSitesImporter.php:297
 msgid "Video"
 msgstr ""
 
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:461
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:510
 msgid "Photography"
 msgstr ""
 
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:462
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:511
 msgid "Food & Restaurant"
 msgstr ""
 
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:463
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:512
 msgid "Health"
 msgstr ""
 
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:464
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:513
 msgid "Sport"
 msgstr ""
 
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:465
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:514
 msgid "Non-profit"
 msgstr ""
 
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:466
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:515
 msgid "Education"
 msgstr ""
 
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:467
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:516
 msgid "Construction"
 msgstr ""
 
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:468
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:517
 msgid "Real Estate & Architecture"
 msgstr ""
 
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:469
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:518
 msgid "Magazine"
 msgstr ""
 
-#: components/importer/class-inspiro-starter-sites-importer-setup.php:470
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:519
+msgid "Architecture"
+msgstr ""
+
+#: components/importer/class-inspiro-starter-sites-importer-setup.php:520
 msgid "Automotive"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:120
+msgid "Manage or delete your generated demo"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:122
+msgid "AI demo:"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:123
+#: components/importer/inc/Ai/AiDemoGenerator.php:476
+msgid "active"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:127
+msgid "AI Demo Generator"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:128
+#: components/importer/inc/Ai/AiDemoGenerator.php:344
+msgid "Beta"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:130
+msgid "What website do you need?"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:131
+msgid "Describe it — AI designs and builds a complete demo with pages, photos, menu and colors in about two minutes."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:134
+#: components/importer/inc/Ai/AiDemoGenerator.php:346
+msgid "e.g. A website for a small coffee roastery in Portland that sells beans online and hosts tasting events…"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:137
+#: components/importer/inc/Ai/AiDemoGenerator.php:347
+msgid "Need inspiration? View ideas"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:140
+#: components/importer/inc/Ai/AiDemoGenerator.php:378
+msgid "Generate demo"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:146
+msgid "Free generations included"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:147
+msgid "Ready in about 2 minutes"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:148
+msgid "100% editable blocks"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:285
+msgid "Home"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:286
+msgid "About"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:287
+msgid "Services"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:288
+#: components/importer/inc/Ai/AiDemoGenerator.php:2767
+msgid "Contact"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:293
+msgid "Photography portfolio"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:294
+msgid "A portfolio site for a wedding photographer based in Lisbon, with a moody, elegant style."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:298
+msgid "Video production studio"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:299
+msgid "A site for a video production studio in Berlin creating brand films and commercials, with a bold showreel-first design."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:303
+msgid "Wedding videographer"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:304
+msgid "A cinematic portfolio for a wedding videographer filming elopements across Tuscany."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:308
+msgid "Creative agency"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:309
+msgid "A portfolio site for a small design studio crafting brand identities for tech startups."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:313
+msgid "Business consulting"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:314
+msgid "A professional site for a consulting firm helping mid-size companies modernize their operations."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:318
+msgid "Restaurant"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:319
+msgid "A website for a small family-run Italian restaurant with a seasonal menu and cozy atmosphere."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:323
+msgid "Yoga studio"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:324
+msgid "A yoga studio site offering morning classes, workshops, and private sessions."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:328
+msgid "Architecture firm"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:329
+msgid "A site for an architecture firm specializing in sustainable residential design."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:333
+msgid "Fitness coach"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:334
+msgid "A personal site for a fitness coach offering online training programs."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:338
+msgid "Travel agency"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:339
+msgid "A website for a boutique travel agency organizing hiking tours in the Alps."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:343
+msgid "Generate a demo with AI"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:345
+msgid "Describe the website you need and AI will design and build a few pages for you in about a minute."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:348
+msgid "Hide ideas"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:349
+msgid "Design style"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:350
+msgid "Color palette"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:351
+msgid "Typography"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:352
+msgid "Let AI decide"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:353
+msgid "Describe your website"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:354
+msgid "Describe & style"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:355
+msgid "Tell the AI about the website and pick a look"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:356
+msgid "AI builds your demo"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:357
+msgid "Design, copy, photos and pages — about a minute per page"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:358
+msgid "Review & edit"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:359
+msgid "Open your new site or fine-tune pages in the editor"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:360
+msgid "Site design, copy & structure"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:361
+msgid "Portfolio plugin & sample projects"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:362
+msgid "Contact form (WPZOOM Forms)"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:363
+msgid "Menu, footer & homepage setup"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:364
+msgid "Continue"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:365
+msgid "Enhance with AI"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:366
+msgid "Enhancing…"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:367
+msgid "Undo"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:368
+msgid "Suggesting pages…"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:369
+msgid "Review your pages"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:370
+msgid "Suggested for your website. Rename, remove, or add your own (up to 5) — nothing is generated until you continue."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:371
+msgid "Add a page, e.g. Pricing…"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:372
+msgid "Add"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:373
+msgid "Remove page"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:374
+msgid "Keep at least one page."
+msgstr ""
+
+#. translators: %s: maximum number of pages
+#: components/importer/inc/Ai/AiDemoGenerator.php:376
+#, php-format
+msgid "Maximum %s pages."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:377
+msgid "Build these pages"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:379
+msgid "Generating…"
+msgstr ""
+
+#. translators: %1$s: used, %2$s: limit
+#: components/importer/inc/Ai/AiDemoGenerator.php:380
+#, php-format
+msgid "%1$s of %2$s free generations used"
+msgstr ""
+
+#. translators: %1$s: used, %2$s: limit
+#: components/importer/inc/Ai/AiDemoGenerator.php:381
+#: components/importer/inc/Ai/AiDemoGenerator.php:1608
+msgid "You have used all your free AI generations for this site."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:382
+msgid "Checking available generations…"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:383
+msgid "Please describe your website in a bit more detail (at least a short sentence)."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:384
+msgid "You already have an AI-generated demo"
+msgstr ""
+
+#. translators: %1$s: previous demo name, %2$s: number of pages
+#: components/importer/inc/Ai/AiDemoGenerator.php:386
+#, php-format
+msgid "Generating a new demo will permanently delete the %2$s page(s) from “%1$s” — including any changes you made to them."
+msgstr ""
+
+#. translators: %s: number of pages
+#: components/importer/inc/Ai/AiDemoGenerator.php:388
+#, php-format
+msgid "Generating a new demo will permanently delete the %s previously generated AI page(s) — including any changes you made to them."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:389
+msgid "Delete the previous demo when generating the new one"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:390
+msgid "Uncheck to keep the old content — it will remain published alongside the new demo."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:391
+msgid "You already have an imported demo"
+msgstr ""
+
+#. translators: %s: imported demo name
+#: components/importer/inc/Ai/AiDemoGenerator.php:393
+#, php-format
+msgid "The previously imported “%s” demo was detected. Generating an AI demo will permanently delete its content (pages, posts, images, menus) — including any changes you made."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:394
+msgid "A previously imported starter site was detected. Generating an AI demo will permanently delete its content (pages, posts, images, menus) — including any changes you made."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:395
+msgid "Delete demo now"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:396
+msgid "Permanently delete all AI-generated pages, their images, the demo menu and footer widgets? Content that existed before the AI demo is not affected. This cannot be undone."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:397
+msgid "Deleting…"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:399
+msgid "View & edit CSS"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:400
+msgid "Demo stylesheet"
+msgstr ""
+
+#. translators: %s: demo site title
+#: components/importer/inc/Ai/AiDemoGenerator.php:402
+#, php-format
+msgid "This stylesheet gives “%s” its design. It only applies to the AI-generated pages, so changes here never affect the rest of your site. Every rule must stay scoped to .iss-ai-demo."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:403
+msgid "Save stylesheet"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:404
+msgid "Saving…"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:405
+#: components/importer/inc/InspiroStarterSitesImporter.php:318
+msgid "Back"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:406
+msgid "Add AI page"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:407
+#: components/importer/inc/Ai/AiDemoGenerator.php:414
+msgid "Regenerate a page"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:408
+msgid "Add a page with AI"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:409
+msgid "The new page is designed with your demo's existing style and added to the menu."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:410
+msgid "Page title"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:411
+msgid "e.g. Pricing"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:412
+msgid "What should be on it? (optional)"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:413
+msgid "Generate page"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:415
+msgid "A fresh take on the page — same purpose, new layout and imagery. The current design is replaced."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:416
+msgid "Which page?"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:417
+msgid "What would you like different? (optional)"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:418
+msgid "Regenerate page"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:419
+msgid "How?"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:420
+msgid "Replace the page"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:421
+msgid "A fresh design replaces the current layout."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:422
+msgid "Add to the page"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:423
+msgid "Keep the current layout and add new sections below it."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:424
+msgid "Your current layout stays. Describe what to add, and AI designs new sections in your demo's style, added at the bottom of the page."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:425
+msgid "What should be added?"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:426
+msgid "e.g. A section with our opening hours and a map, and a short FAQ"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:427
+msgid "Add to page"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:428
+msgid "Designing the page — this takes about half a minute…"
+msgstr ""
+
+#. translators: %s: page title
+#: components/importer/inc/Ai/AiDemoGenerator.php:430
+#, php-format
+msgid "“%s” is ready."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:431
+msgid "View page"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:432
+msgid "Edit page"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:433
+msgid "Included with Inspiro Premium"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:434
+msgid "Adding and regenerating single pages is included with Inspiro Premium — along with 50+ starter sites and more AI generations."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:435
+msgid "Upgrade to Inspiro Premium →"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:436
+msgid "These AI page tools are included with an active Inspiro Premium license."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:437
+msgid "Activate your license →"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:438
+msgid "Designing your site structure and writing the copy…"
+msgstr ""
+
+#. translators: %1$s: current page number, %2$s: total pages, %3$s: page title
+#: components/importer/inc/Ai/AiDemoGenerator.php:440
+#, php-format
+msgid "Creating page %1$s of %2$s: %3$s"
+msgstr ""
+
+#. translators: %1$s: pages completed, %2$s: total pages
+#: components/importer/inc/Ai/AiDemoGenerator.php:442
+#, php-format
+msgid "Designing your pages — %1$s of %2$s ready…"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:443
+msgid "Setting up navigation and homepage…"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:444
+msgid "This usually takes about a minute. Please keep this tab open."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:445
+msgid "Your demo is ready!"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:446
+msgid "The AI created the following pages, set up the menu, and assigned your new homepage."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:447
+msgid "View site"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:448
+msgid "Edit pages"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:449
+msgid "Something went wrong"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:450
+msgid "The AI service could not complete the request. Please try again in a moment."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:451
+msgid "Try again"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:452
+#: components/importer/inc/InspiroStarterSitesImporter.php:324
+msgid "Close"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:453
+msgid "One of the pages could not be created, continuing with the rest…"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:454
+msgid "Activate free AI generations"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:455
+msgid "Enter your email to connect this site to the WPZOOM AI service and unlock your free demo generations."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:456
+msgid "you@example.com"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:457
+msgid "Send me occasional WPZOOM news, tips and special offers"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:458
+msgid "Privacy Policy"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:459
+msgid "Connect & start"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:460
+msgid "Connecting…"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:461
+#: components/importer/inc/Ai/AiDemoGenerator.php:837
+msgid "Please enter a valid email address."
+msgstr ""
+
+#. translators: %s: connected email address
+#: components/importer/inc/Ai/AiDemoGenerator.php:463
+#, php-format
+msgid "Connected as %s"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:464
+msgid "Check your inbox"
+msgstr ""
+
+#. translators: %s: email address the code was sent to
+#: components/importer/inc/Ai/AiDemoGenerator.php:466
+#, php-format
+msgid "We sent a 6-digit code to %s. Enter it below to activate your free generations."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:467
+msgid "6-digit code"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:468
+msgid "Verify & start"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:469
+msgid "Verifying…"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:470
+#: components/importer/inc/Ai/AiDemoGenerator.php:892
+msgid "Please enter the 6-digit code from the email."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:471
+msgid "Resend code"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:472
+msgid "A new code is on its way."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:473
+msgid "Use a different email"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:474
+msgid "Disconnect"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:475
+msgid "Disconnect this site from the WPZOOM AI service? Your free generations stay linked to your email, so you can reconnect anytime."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:477
+msgid "Want to generate more? Inspiro Premium includes extra AI generations — plus all premium features, starter sites and priority support."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:478
+msgid "Upgrade to Inspiro Premium"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:479
+msgid "Activate your Inspiro Premium license to unlock extra AI generations."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:480
+msgid "Activate your license"
+msgstr ""
+
+#. translators: %s: AI demo site title
+#: components/importer/inc/Ai/AiDemoGenerator.php:560
+#, php-format
+msgid "You have an AI-generated demo: “%s”"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:561
+msgid "You have an AI-generated demo"
+msgstr ""
+
+#. translators: %d: number of AI-generated pages
+#: components/importer/inc/Ai/AiDemoGenerator.php:569
+#, php-format
+msgid "Importing a starter site below will NOT remove your AI-generated demo — its %d page(s), menu and homepage setting would remain and collide with the imported demo. We recommend deleting the AI demo first."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:576
+msgid "Delete AI Demo"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:579
+#: components/starter-content-notice.php:100
+msgid "Keep It & Continue"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:605
+#: components/importer/inc/Ai/AiDemoGenerator.php:611
+msgid "Something went wrong. Please try again."
+msgstr ""
+
+#. translators: %1$d: pages deleted, %2$d: media files deleted
+#: components/importer/inc/Ai/AiDemoGenerator.php:926
+#, php-format
+msgid "AI demo removed: %1$d page(s) and %2$d media file(s) deleted, menu and footer widgets cleaned up."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:947
+#: components/importer/inc/Ai/AiDemoGenerator.php:1121
+#: components/importer/inc/Ai/AiDemoGenerator.php:1240
+#: components/importer/inc/Ai/AiDemoGenerator.php:1277
+msgid "No AI demo found on this site."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:1134
+msgid "The stylesheet must contain at least one .iss-ai-demo rule, so it only affects your generated pages."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:1147
+msgid "Stylesheet saved."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:1214
+msgid "Adding and regenerating single pages is included with Inspiro Premium."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:1225
+msgid "Activate your Inspiro Premium license to add or regenerate pages."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:1247
+msgid "Please enter a page title (up to 80 characters)."
+msgstr ""
+
+#. translators: %s: page title
+#: components/importer/inc/Ai/AiDemoGenerator.php:1261
+#, php-format
+msgid "A \"%s\" page that fits this site naturally."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:1287
+msgid "That page does not belong to the current AI demo."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:1293
+msgid "The Blog page displays your latest posts and has no AI design to regenerate."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:1304
+msgid "Describe the section(s) you want to add to this page."
+msgstr ""
+
+#. translators: %s: page title
+#: components/importer/inc/Ai/AiDemoGenerator.php:1310
+#, php-format
+msgid "Redesign the \"%s\" page of this site with a fresh take — same purpose, different layout and imagery."
+msgstr ""
+
+#. translators: %s: user feedback
+#: components/importer/inc/Ai/AiDemoGenerator.php:1316
+#, php-format
+msgid "The user asked for this revision: %s"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:1353
+msgid "The demo stylesheet could not be found."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:1484
+#: components/importer/inc/Ai/AiDemoGenerator.php:2096
+msgid "The AI returned an unusable page design. Please try again."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:1579
+#: components/importer/inc/Ai/AiDemoGenerator.php:1851
+msgid "Please describe your website in a bit more detail."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:1595
+msgid "Please connect with your email first."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:1599
+msgid "The AI service is currently unreachable. Please try again later."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:1607
+msgid "You have used all the AI generations included with your license."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:1628
+msgid "Something went wrong during generation. Your free generation was not used — please try again."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:1810
+msgid "Type a few words about the website first."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:1818
+#: components/importer/inc/Ai/AiDemoGenerator.php:1829
+msgid "Could not enhance the description right now."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:1867
+#: components/importer/inc/Ai/AiDemoGenerator.php:1876
+msgid "Could not suggest pages right now."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:1949
+msgid "This generation session has expired. Please start again."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:2220
+msgid "Welcome to our new website"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:2224
+msgid "Behind the scenes"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:2228
+msgid "News and updates"
+msgstr ""
+
+#. translators: %s: generated demo site title
+#: components/importer/inc/Ai/AiDemoGenerator.php:2336
+#, php-format
+msgid "Placeholder image — %s"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:2403
+msgid "This generation session has expired."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:2431
+msgid "No pages were created."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:2488
+#: components/importer/inc/Ai/AiDemoGenerator.php:2957
+msgid "AI Demo Menu"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3135
+#: components/importer/inc/Ai/AiDemoGenerator.php:3259
+msgid "The AI returned an unusable site plan. Please try again."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3212
+msgid "The AI returned an unusable site design. Please try again."
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3308
+msgid "AI Demo"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3520
+msgid "Modern Sans"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3523
+msgid "Geometric"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3526
+msgid "Expressive"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3529
+msgid "Serif Accent"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3532
+msgid "Classic Serif"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3545
+msgid "Minimal"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3548
+msgid "Editorial"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3551
+msgid "Big Type"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3554
+msgid "Luxury"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3557
+msgid "Corporate"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3560
+msgid "Playful"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3563
+msgid "Retro"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3566
+msgid "Dark"
+msgstr ""
+
+#. translators: %s: theme palette name
+#: components/importer/inc/Ai/AiDemoGenerator.php:3624
+#, php-format
+msgid "Theme: %s (current)"
+msgstr ""
+
+#. translators: %s: theme palette name
+#: components/importer/inc/Ai/AiDemoGenerator.php:3626
+#, php-format
+msgid "Theme: %s"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3638
+msgid "Electric Blue"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3642
+msgid "Acid Lime"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3646
+msgid "Coral Pop"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3650
+msgid "Magenta"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3654
+msgid "Violet"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3658
+msgid "Sunshine"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3662
+msgid "Warm earth"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3666
+msgid "Ocean"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3670
+msgid "Forest"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3674
+msgid "Berry"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3678
+msgid "Monochrome"
+msgstr ""
+
+#: components/importer/inc/Ai/AiDemoGenerator.php:3682
+msgid "Pastel"
+msgstr ""
+
+#: components/importer/inc/Ai/AiProxyClient.php:120
+#: components/importer/inc/Ai/AiProxyClient.php:200
+msgid "The AI returned a malformed response. Please try again."
+msgstr ""
+
+#: components/importer/inc/Ai/AiProxyClient.php:273
+msgid "The AI response was cut off. Please try a shorter description."
+msgstr ""
+
+#: components/importer/inc/Ai/AiProxyClient.php:286
+msgid "The AI returned an empty response. Please try again."
+msgstr ""
+
+#: components/importer/inc/Ai/AiProxyClient.php:504
+msgid "The AI service returned an unexpected response. Please try again."
+msgstr ""
+
+#: components/importer/inc/Ai/AiProxyClient.php:596
+msgid "Connect with your email to use free AI generations."
+msgstr ""
+
+#: components/importer/inc/Ai/BlockComposer.php:491
+msgid "Email"
+msgstr ""
+
+#: components/importer/inc/Ai/BlockComposer.php:493
+msgid "Phone"
+msgstr ""
+
+#: components/importer/inc/Ai/BlockComposer.php:495
+msgid "Address"
+msgstr ""
+
+#: components/importer/inc/Ai/HtmlToBlocks.php:507
+msgid "Fresh posts are coming soon — check back shortly."
 msgstr ""
 
 #: components/importer/inc/CustomizerImporter.php:37
@@ -270,7 +1277,7 @@ msgstr ""
 
 #: components/importer/inc/InspiroStarterSitesImporter.php:304
 #: components/importer/views/inspiro/importer-page.php:136
-#: components/importer/views/inspiro/importer-page.php:168
+#: components/importer/views/inspiro/importer-page.php:198
 msgid "Elementor"
 msgstr ""
 
@@ -320,12 +1327,8 @@ msgid "Optional — you can send your feedback without it. Add your email only i
 msgstr ""
 
 #: components/importer/inc/InspiroStarterSitesImporter.php:317
-#: components/importer/views/inspiro/importer-page.php:375
+#: components/importer/views/inspiro/importer-page.php:427
 msgid "Suggest a new demo"
-msgstr ""
-
-#: components/importer/inc/InspiroStarterSitesImporter.php:318
-msgid "Back"
 msgstr ""
 
 #: components/importer/inc/InspiroStarterSitesImporter.php:319
@@ -346,10 +1349,6 @@ msgstr ""
 
 #: components/importer/inc/InspiroStarterSitesImporter.php:323
 msgid "Your feedback helps us decide which starter sites to build next."
-msgstr ""
-
-#: components/importer/inc/InspiroStarterSitesImporter.php:324
-msgid "Close"
 msgstr ""
 
 #: components/importer/inc/InspiroStarterSitesImporter.php:328
@@ -464,23 +1463,23 @@ msgstr ""
 msgid "for more information."
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:973
+#: components/importer/inc/InspiroStarterSitesImporter.php:935
 msgid "Demo data has been deleted successfully."
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:994
+#: components/importer/inc/InspiroStarterSitesImporter.php:1005
 msgid "Invalid feedback payload."
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:1028
+#: components/importer/inc/InspiroStarterSitesImporter.php:1039
 msgid "Feedback received."
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:1348
+#: components/importer/inc/InspiroStarterSitesImporter.php:1359
 msgid "Customize Theme"
 msgstr ""
 
-#: components/importer/inc/InspiroStarterSitesImporter.php:1354
+#: components/importer/inc/InspiroStarterSitesImporter.php:1365
 msgid "View Site"
 msgstr ""
 
@@ -544,7 +1543,9 @@ msgstr ""
 #: components/importer/inc/WidgetImporter.php:276
 #: components/importer/views/importer-page.php:68
 #: components/importer/views/inspiro/importer-page.php:104
-#: components/importer/views/inspiro/importer-page.php:218
+#: components/importer/views/inspiro/importer-page.php:248
+#: components/importer/views/inspiro/importer-page.php:268
+#: components/importer/views/inspiro/importer-page.php:383
 msgid "Imported"
 msgstr ""
 
@@ -825,9 +1826,18 @@ msgstr ""
 msgid "Importing animation"
 msgstr ""
 
+#: components/importer/views/importer-page.php:42
+msgid "https://www.wpzoom.com/themes/inspiro/starter-sites/?utm_source=wpadmin&utm_medium=demos-starter-sites&utm_campaign=starter-sites-plugin"
+msgstr ""
+
+#: components/importer/views/importer-page.php:44
+#: components/importer/views/inspiro/importer-page.php:181
+msgid "View Premium Starter Sites &rarr;"
+msgstr ""
+
 #: components/importer/views/importer-page.php:85
-#: components/importer/views/inspiro/importer-page.php:243
-#: components/importer/views/inspiro/importer-page.php:339
+#: components/importer/views/inspiro/importer-page.php:270
+#: components/importer/views/inspiro/importer-page.php:385
 #: components/importer/views/inspiro/premium-demos.php:28
 #: components/importer/views/premium-demos.php:28
 msgid "View Demo"
@@ -835,76 +1845,72 @@ msgstr ""
 
 #: components/importer/views/importer-page.php:97
 #: components/importer/views/inspiro/importer-page.php:114
-#: components/importer/views/inspiro/importer-page.php:284
+#: components/importer/views/inspiro/importer-page.php:319
 msgid "Delete imported demo content"
 msgstr ""
 
 #: components/importer/views/inspiro/importer-page.php:135
-#: components/importer/views/inspiro/importer-page.php:162
+#: components/importer/views/inspiro/importer-page.php:192
 msgid "Block Editor"
 msgstr ""
 
-#: components/importer/views/inspiro/importer-page.php:152
+#: components/importer/views/inspiro/importer-page.php:179
 msgid "Free Starter Sites"
 msgstr ""
 
-#: components/importer/views/inspiro/importer-page.php:153
-msgid "Import any of these starter sites directly into Inspiro Lite."
-msgstr ""
-
-#: components/importer/views/inspiro/importer-page.php:155
+#: components/importer/views/inspiro/importer-page.php:185
 msgid "Filter starter sites by editor"
 msgstr ""
 
-#: components/importer/views/inspiro/importer-page.php:157
+#: components/importer/views/inspiro/importer-page.php:187
 msgid "All Themes"
 msgstr ""
 
-#: components/importer/views/inspiro/importer-page.php:174
+#: components/importer/views/inspiro/importer-page.php:204
 msgid "Filter starter sites by category"
 msgstr ""
 
-#: components/importer/views/inspiro/importer-page.php:177
+#: components/importer/views/inspiro/importer-page.php:207
 msgid "All categories"
 msgstr ""
 
-#: components/importer/views/inspiro/importer-page.php:238
-#: components/importer/views/inspiro/importer-page.php:336
+#: components/importer/views/inspiro/importer-page.php:275
+#: components/importer/views/inspiro/importer-page.php:390
 msgid "Free"
 msgstr ""
 
-#: components/importer/views/inspiro/importer-page.php:240
-#: components/importer/views/inspiro/importer-page.php:337
+#: components/importer/views/inspiro/importer-page.php:277
+#: components/importer/views/inspiro/importer-page.php:391
 msgid "New"
 msgstr ""
 
-#: components/importer/views/inspiro/importer-page.php:267
+#: components/importer/views/inspiro/importer-page.php:302
 msgid "Available for"
 msgstr ""
 
-#: components/importer/views/inspiro/importer-page.php:343
+#: components/importer/views/inspiro/importer-page.php:395
 msgid "Choose page builder"
 msgstr ""
 
-#: components/importer/views/inspiro/importer-page.php:376
+#: components/importer/views/inspiro/importer-page.php:428
 msgid "Tell us what you would like us to build next"
 msgstr ""
 
 #. translators: %d: number of premium demos
-#: components/importer/views/inspiro/importer-page.php:391
+#: components/importer/views/inspiro/importer-page.php:443
 #, php-format
 msgid "Premium Starter Sites (%d)"
 msgstr ""
 
-#: components/importer/views/inspiro/importer-page.php:406
+#: components/importer/views/inspiro/importer-page.php:465
 msgid "Premium"
 msgstr ""
 
-#: components/importer/views/inspiro/importer-page.php:413
+#: components/importer/views/inspiro/importer-page.php:467
 msgid "Unlock in Premium"
 msgstr ""
 
-#: components/importer/views/inspiro/importer-page.php:414
+#: components/importer/views/inspiro/importer-page.php:468
 msgid "Preview"
 msgstr ""
 
@@ -925,58 +1931,54 @@ msgstr ""
 msgid "Get %s Today &rarr;"
 msgstr ""
 
-#: components/starter-content-notice.php:60
+#: components/starter-content-notice.php:68
 msgid "Default Starter Content Detected"
 msgstr ""
 
-#: components/starter-content-notice.php:63
+#: components/starter-content-notice.php:71
 msgid "We detected that you have the default WordPress starter content installed (Homepage, About, Contact pages and widgets). Before importing a demo, we recommend removing this content to avoid conflicts and duplicate pages."
 msgstr ""
 
-#: components/starter-content-notice.php:70
+#: components/starter-content-notice.php:78
 msgid "⚠️ Important:"
 msgstr ""
 
-#: components/starter-content-notice.php:72
+#: components/starter-content-notice.php:80
 msgid "These pages will be permanently deleted even if you have modified their content. If you have made changes to any of these pages, please back them up before proceeding."
 msgstr ""
 
-#: components/starter-content-notice.php:79
+#: components/starter-content-notice.php:87
 msgid "What will be deleted:"
 msgstr ""
 
-#: components/starter-content-notice.php:82
+#: components/starter-content-notice.php:90
 msgid "Pages: Homepage, About, Contact, Blog"
 msgstr ""
 
-#: components/starter-content-notice.php:83
+#: components/starter-content-notice.php:91
 msgid "Menu: Main Menu"
 msgstr ""
 
-#: components/starter-content-notice.php:84
+#: components/starter-content-notice.php:92
 msgid "Widgets from sidebar and footer areas"
 msgstr ""
 
-#: components/starter-content-notice.php:85
+#: components/starter-content-notice.php:93
 msgid "Front page settings will be reset"
 msgstr ""
 
-#: components/starter-content-notice.php:89
+#: components/starter-content-notice.php:97
 msgid "Delete Starter Content"
 msgstr ""
 
-#: components/starter-content-notice.php:92
-msgid "Keep It & Continue"
-msgstr ""
-
-#: components/starter-content-notice.php:130
+#: components/starter-content-notice.php:143
 msgid "Deleting starter content..."
 msgstr ""
 
-#: components/starter-content-notice.php:131
+#: components/starter-content-notice.php:144
 msgid "Starter content deleted successfully!"
 msgstr ""
 
-#: components/starter-content-notice.php:132
+#: components/starter-content-notice.php:145
 msgid "Error deleting starter content. Please try again."
 msgstr ""

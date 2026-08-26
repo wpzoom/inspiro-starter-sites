@@ -777,13 +777,14 @@ body.iss-ai-open {
   text-overflow: ellipsis;
 }
 
-.inspiro-starter-sites-ai-hero__existing-dot {
+.inspiro-starter-sites-ai-hero__existing-gear {
   flex: 0 0 auto;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #59d9a6;
-  box-shadow: 0 0 0 3px rgba(89, 217, 166, 0.18);
+  color: #59d9a6;
+  transition: transform 0.25s ease;
+}
+
+.inspiro-starter-sites-ai-hero__existing:hover .inspiro-starter-sites-ai-hero__existing-gear {
+  transform: rotate(45deg);
 }
 
 .inspiro-starter-sites-ai-hero__kicker {
@@ -1026,6 +1027,232 @@ body.iss-ai-open {
 
 .iss-ai-delete-link:hover {
   color: #8a2424;
+}
+
+/* Actions inside the replace notice, as small buttons. */
+.iss-ai-replace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.iss-ai-mini-btn {
+  padding: 6px 13px;
+  border: 1px solid #c3c4c7;
+  border-radius: 4px;
+  background: #fff;
+  color: #2c3338;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.iss-ai-mini-btn:hover,
+.iss-ai-mini-btn:focus {
+  border-color: #3858e9;
+  color: #3858e9;
+}
+
+.iss-ai-mini-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.iss-ai-mini-btn--danger:hover,
+.iss-ai-mini-btn--danger:focus {
+  border-color: #b32d2e;
+  background: #fcf0f1;
+  color: #b32d2e;
+}
+
+/* Demo stylesheet editor */
+.iss-ai-css-intro {
+  margin: 0 0 12px;
+  color: #50575e;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.iss-ai-css-editor {
+  width: 100%;
+  min-height: 340px;
+  padding: 12px 14px;
+  border: 1px solid #dcdcde;
+  border-radius: 8px;
+  background: #1d2327;
+  color: #e6e8eb;
+  font-family: Menlo, Consolas, monaco, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  resize: vertical;
+  white-space: pre;
+  tab-size: 2;
+}
+
+.iss-ai-css-editor:focus {
+  border-color: #3858e9;
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 1px #3858e9;
+}
+
+/* CodeMirror (wp_enqueue_code_editor) replaces the textarea with its own
+   element — give it the same frame and height as the plain fallback. */
+.iss-ai-step-css .CodeMirror {
+  height: 340px;
+  border: 1px solid #dcdcde;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.iss-ai-step-css .CodeMirror-focused {
+  border-color: #3858e9;
+  box-shadow: 0 0 0 1px #3858e9;
+}
+
+/* WP prints lint errors in a panel below the editor. */
+.iss-ai-step-css .CodeMirror-lint-tooltip {
+  z-index: 100010;
+}
+
+.iss-ai-css-result {
+  margin: 12px 0 0;
+  padding: 9px 12px;
+  border-radius: 6px;
+  background: #edfaef;
+  color: #0a5c36;
+  font-size: 13px;
+}
+
+.iss-ai-css-result.is-error {
+  background: #fcf0f1;
+  color: #8a2424;
+}
+
+/* The hidden attribute must always win — author rules like
+   .iss-ai-pt-working{display:flex} and wp-admin's .button{display:inline-block}
+   otherwise override the UA's [hidden]{display:none}. */
+.iss-ai-root [hidden] {
+  display: none !important;
+}
+
+/* Locked (Lite) state for premium-only actions. */
+.iss-ai-mini-btn.is-locked {
+  border-style: dashed;
+  color: #787c82;
+}
+
+.iss-ai-mini-btn.is-locked:hover,
+.iss-ai-mini-btn.is-locked:focus {
+  border-color: #8c8f94;
+  background: #f6f7f7;
+  color: #50575e;
+}
+
+.iss-ai-premium-upsell {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #f0f3ff;
+  color: #2c3338;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.iss-ai-premium-upsell a {
+  font-weight: 600;
+  color: #3858e9;
+}
+
+/* Regenerate: replace vs append choice */
+.iss-ai-mode-choice {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.iss-ai-mode-option {
+  display: block;
+  padding: 11px 13px;
+  border: 1.5px solid #dcdcde;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.iss-ai-mode-option:hover {
+  border-color: #a7aaad;
+}
+
+.iss-ai-mode-option.is-active {
+  border-color: #1d1d1f;
+  background: #fafafa;
+}
+
+.iss-ai-mode-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.iss-ai-mode-option strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 13px;
+  color: #1d1d1f;
+}
+
+.iss-ai-mode-option span {
+  display: block;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #646970;
+}
+
+@media (max-width: 600px) {
+  .iss-ai-mode-choice {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Add / regenerate page step */
+.iss-ai-input {
+  display: block;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 9px 12px;
+  border: 1px solid #dcdcde;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.iss-ai-input:focus {
+  border-color: #3858e9;
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 1px #3858e9;
+}
+
+select.iss-ai-input {
+  max-width: 100%;
+}
+
+.iss-ai-pt-working {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 10px;
+  color: #50575e;
+  font-size: 13px;
+}
+
+.iss-ai-pt-working .spinner {
+  float: none;
+  margin: 0;
 }
 
 /* Connect step (email registration) */
