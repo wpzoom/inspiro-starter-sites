@@ -1380,8 +1380,6 @@ body.iss-ai-open {
 
 /* Success step */
 .iss-ai-step-success {
-	max-width: 480px;
-	margin: 0 auto;
 	text-align: center;
 	padding: 48px 0 12px;
 }
@@ -1395,6 +1393,13 @@ body.iss-ai-open {
 .iss-ai-step-success p {
 	color: #6b7280;
 	font-size: 14px;
+}
+
+/* Only the celebratory header keeps the narrow measure. */
+.iss-ai-step-success > h3,
+.iss-ai-step-success > p {
+	max-width: 480px;
+	margin-inline: auto;
 }
 
 .iss-ai-success-check {
@@ -2095,58 +2100,72 @@ body.iss-ai-open {
 }
 
 
-/* Post-generation feedback survey */
+/* Post-generation feedback survey.
+
+   The survey spans the whole body width while the celebratory part of the
+   step (check, title, page pills) stays in its narrow centered column — so
+   the two read as separate things rather than one very long card. */
 .iss-ai-feedback {
 	position: relative;
-	margin: 28px auto 0;
-	padding: 20px;
+	margin-top: 32px;
+	padding: 22px 24px 20px;
 	border: 1px solid #eceef1;
-	border-radius: 12px;
-	background: #fafbfc;
+	border-radius: 10px;
+	background: #ffffff;
 	text-align: start;
 }
 
 .iss-ai-feedback h4 {
-	margin: 0 0 4px;
+	margin: 0 0 3px;
 	font-size: 14px;
-	font-weight: 700;
+	font-weight: 600;
 	color: #1d1d1f;
 }
 
 .iss-ai-step-success .iss-ai-feedback__hint {
-	margin: 0 0 16px;
+	margin: 0 0 20px;
 	font-size: 12px;
 	color: #6b7280;
 }
 
 .iss-ai-feedback__dismiss {
 	position: absolute;
-	top: 8px;
-	inset-inline-end: 8px;
-	width: 24px;
-	height: 24px;
+	top: 14px;
+	inset-inline-end: 14px;
+	width: 26px;
+	height: 26px;
 	padding: 0;
 	border: 0;
-	border-radius: 50%;
+	border-radius: 6px;
 	background: transparent;
-	color: #6b7280;
+	color: #9ca3af;
 	font-size: 18px;
 	line-height: 1;
 	cursor: pointer;
 }
 
 .iss-ai-feedback__dismiss:hover {
-	background: #eceef1;
+	background: #f3f4f6;
 	color: #1d1d1f;
 }
 
-.iss-ai-feedback__field {
-	margin-bottom: 14px;
+/* Row 1 sizes to its content (a rating and three chips); row 2 splits the
+   width evenly between the two free-text answers. */
+.iss-ai-feedback__row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px 40px;
+	margin-bottom: 18px;
+}
+
+.iss-ai-feedback__row--split .iss-ai-feedback__field {
+	flex: 1 1 260px;
+	min-width: 0;
 }
 
 .iss-ai-feedback__label {
 	display: block;
-	margin-bottom: 7px;
+	margin-bottom: 8px;
 	font-size: 13px;
 	font-weight: 500;
 	color: #1d1d1f;
@@ -2179,14 +2198,14 @@ body.iss-ai-open {
 .iss-ai-feedback__choices {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 8px;
+	gap: 6px;
 }
 
 .iss-ai-feedback__choice {
-	border: 1.5px solid #e4e4e7;
+	border: 1px solid #e4e4e7;
 	border-radius: 999px;
 	background: #ffffff;
-	padding: 7px 14px;
+	padding: 6px 13px;
 	font-size: 13px;
 	color: #1d1d1f;
 	cursor: pointer;
@@ -2206,9 +2225,9 @@ body.iss-ai-open {
 .iss-ai-feedback__text {
 	display: block;
 	width: 100%;
-	margin-bottom: 10px;
+	margin: 0;
 	padding: 9px 11px;
-	border: 1.5px solid #e4e4e7;
+	border: 1px solid #e4e4e7;
 	border-radius: 8px;
 	background: #ffffff;
 	font-size: 13px;
@@ -2225,8 +2244,7 @@ body.iss-ai-open {
 .iss-ai-feedback__actions {
 	display: flex;
 	align-items: center;
-	gap: 12px;
-	margin-top: 4px;
+	gap: 14px;
 }
 
 .iss-ai-feedback__skip {

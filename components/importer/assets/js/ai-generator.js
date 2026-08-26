@@ -551,19 +551,29 @@ jQuery( function ( $ ) {
 								'<h4>' + esc( t.feedback_title || '' ) + '</h4>' +
 								'<p class="iss-ai-feedback__hint">' + esc( t.feedback_hint || '' ) + '</p>' +
 								'<div class="iss-ai-feedback__form js-iss-ai-feedback-form">' +
-									'<div class="iss-ai-feedback__field">' +
-										'<span class="iss-ai-feedback__label">' + esc( t.feedback_rating || '' ) + '</span>' +
-										'<div class="iss-ai-stars js-iss-ai-stars">' + feedbackStars() + '</div>' +
+									// The two one-click questions share a row; the
+									// panel is full width, so stacking them would
+									// leave most of it empty.
+									'<div class="iss-ai-feedback__row">' +
+										'<div class="iss-ai-feedback__field">' +
+											'<span class="iss-ai-feedback__label">' + esc( t.feedback_rating || '' ) + '</span>' +
+											'<div class="iss-ai-stars js-iss-ai-stars">' + feedbackStars() + '</div>' +
+										'</div>' +
+										'<div class="iss-ai-feedback__field">' +
+											'<span class="iss-ai-feedback__label">' + esc( t.feedback_keep || '' ) + '</span>' +
+											'<div class="iss-ai-feedback__choices">' + feedbackChoices() + '</div>' +
+										'</div>' +
 									'</div>' +
-									'<div class="iss-ai-feedback__field">' +
-										'<span class="iss-ai-feedback__label">' + esc( t.feedback_keep || '' ) + '</span>' +
-										'<div class="iss-ai-feedback__choices">' + feedbackChoices() + '</div>' +
+									'<div class="iss-ai-feedback__row iss-ai-feedback__row--split">' +
+										'<div class="iss-ai-feedback__field">' +
+											'<span class="iss-ai-feedback__label">' + esc( t.feedback_missing || '' ) + '</span>' +
+											'<textarea class="iss-ai-feedback__text js-iss-ai-feedback-missing" rows="2" placeholder="' + esc( t.feedback_missing_ph || '' ) + '"></textarea>' +
+										'</div>' +
+										'<div class="iss-ai-feedback__field">' +
+											'<span class="iss-ai-feedback__label">' + esc( t.feedback_comment || '' ) + '</span>' +
+											'<textarea class="iss-ai-feedback__text js-iss-ai-feedback-comment" rows="2" placeholder="' + esc( t.feedback_comment_ph || '' ) + '"></textarea>' +
+										'</div>' +
 									'</div>' +
-									'<div class="iss-ai-feedback__field">' +
-										'<span class="iss-ai-feedback__label">' + esc( t.feedback_missing || '' ) + '</span>' +
-										'<textarea class="iss-ai-feedback__text js-iss-ai-feedback-missing" rows="2" placeholder="' + esc( t.feedback_missing_ph || '' ) + '"></textarea>' +
-									'</div>' +
-									'<textarea class="iss-ai-feedback__text js-iss-ai-feedback-comment" rows="2" placeholder="' + esc( t.feedback_comment_ph || '' ) + '"></textarea>' +
 									'<div class="iss-ai-feedback__actions">' +
 										'<button type="button" class="button button-primary js-iss-ai-feedback-send" disabled>' + esc( t.feedback_send || '' ) + '</button>' +
 										'<button type="button" class="button-link iss-ai-feedback__skip js-iss-ai-feedback-skip">' + esc( t.feedback_skip || '' ) + '</button>' +
