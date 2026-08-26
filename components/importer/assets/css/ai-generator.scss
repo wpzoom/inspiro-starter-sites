@@ -2095,6 +2095,158 @@ body.iss-ai-open {
 }
 
 
+/* Post-generation feedback survey */
+.iss-ai-feedback {
+	position: relative;
+	margin: 28px auto 0;
+	padding: 20px;
+	border: 1px solid #eceef1;
+	border-radius: 12px;
+	background: #fafbfc;
+	text-align: start;
+}
+
+.iss-ai-feedback h4 {
+	margin: 0 0 4px;
+	font-size: 14px;
+	font-weight: 700;
+	color: #1d1d1f;
+}
+
+.iss-ai-step-success .iss-ai-feedback__hint {
+	margin: 0 0 16px;
+	font-size: 12px;
+	color: #6b7280;
+}
+
+.iss-ai-feedback__dismiss {
+	position: absolute;
+	top: 8px;
+	inset-inline-end: 8px;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: #6b7280;
+	font-size: 18px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.iss-ai-feedback__dismiss:hover {
+	background: #eceef1;
+	color: #1d1d1f;
+}
+
+.iss-ai-feedback__field {
+	margin-bottom: 14px;
+}
+
+.iss-ai-feedback__label {
+	display: block;
+	margin-bottom: 7px;
+	font-size: 13px;
+	font-weight: 500;
+	color: #1d1d1f;
+}
+
+.iss-ai-stars {
+	display: flex;
+	gap: 2px;
+}
+
+.iss-ai-star {
+	padding: 0 2px;
+	border: 0;
+	background: transparent;
+	color: #d4d7dd;
+	font-size: 22px;
+	line-height: 1;
+	cursor: pointer;
+	transition: color 0.12s ease, transform 0.12s ease;
+}
+
+.iss-ai-star:hover {
+	transform: scale(1.12);
+}
+
+.iss-ai-star.is-on {
+	color: #f0b429;
+}
+
+.iss-ai-feedback__choices {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.iss-ai-feedback__choice {
+	border: 1.5px solid #e4e4e7;
+	border-radius: 999px;
+	background: #ffffff;
+	padding: 7px 14px;
+	font-size: 13px;
+	color: #1d1d1f;
+	cursor: pointer;
+	transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.iss-ai-feedback__choice:hover {
+	border-color: #c7ccd4;
+}
+
+.iss-ai-feedback__choice.is-active {
+	border-color: #1d1d1f;
+	background: #1d1d1f;
+	color: #ffffff;
+}
+
+.iss-ai-feedback__text {
+	display: block;
+	width: 100%;
+	margin-bottom: 10px;
+	padding: 9px 11px;
+	border: 1.5px solid #e4e4e7;
+	border-radius: 8px;
+	background: #ffffff;
+	font-size: 13px;
+	line-height: 1.5;
+	resize: vertical;
+}
+
+.iss-ai-feedback__text:focus {
+	border-color: #1d1d1f;
+	outline: 0;
+	box-shadow: none;
+}
+
+.iss-ai-feedback__actions {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-top: 4px;
+}
+
+.iss-ai-feedback__skip {
+	color: #6b7280;
+	font-size: 13px;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.iss-ai-feedback__skip:hover {
+	color: #1d1d1f;
+}
+
+.iss-ai-step-success .iss-ai-feedback__thanks {
+	margin: 0;
+	font-size: 13px;
+	font-weight: 500;
+	color: #0a5c36;
+}
+
 /* Responsive */
 @media (max-width: 900px) {
 	.iss-ai-overlay {

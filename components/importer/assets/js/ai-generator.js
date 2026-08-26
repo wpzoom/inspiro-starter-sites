@@ -26,6 +26,10 @@ jQuery( function ( $ ) {
 	var connected = false; // Email registration with the WPZOOM AI server.
 	var planState = null; // { plan_id, pages: [...] }
 
+	// Post-generation survey answers (reset for every run).
+	var feedbackRating = 0;
+	var feedbackKept   = '';
+
 	function esc( s ) {
 		return $( '<div>' ).text( s == null ? '' : String( s ) ).html();
 	}
@@ -66,6 +70,34 @@ jQuery( function ( $ ) {
 			parts.push( $.trim( xhr.responseText ).slice( 0, 300 ) );
 		}
 		return parts.join( ' — ' );
+	}
+
+	/* -----------------------------------------------------------------
+	 * Feedback survey
+	 * -------------------------------------------------------------- */
+
+	function feedbackStars() {
+		var out = '';
+		for ( var i = 1; i <= 5; i++ ) {
+			out += '<button type="button" class="iss-ai-star js-iss-ai-star" data-value="' + i + '" ' +
+				'aria-label="' + esc( sprintf( t.feedback_star || '%s', i ) ) + '">&#9733;</button>';
+		}
+		return out;
+	}
+
+	function feedbackChoices() {
+		var choices = [
+			[ 'kept', t.feedback_kept ],
+			[ 'undecided', t.feedback_undecided ],
+			[ 'discarded', t.feedback_discarded ]
+		];
+		var out = '';
+
+		for ( var i = 0; i < choices.length; i++ ) {
+			out += '<button type="button" class="iss-ai-feedback__choice js-iss-ai-keep-choice" ' +
+				'data-value="' + choices[ i ][ 0 ] + '">' + esc( choices[ i ][ 1 ] || '' ) + '</button>';
+		}
+		return out;
 	}
 
 	/* -----------------------------------------------------------------
@@ -510,6 +542,34 @@ jQuery( function ( $ ) {
 							'<div class="iss-ai-actions">' +
 								'<a href="' + esc( config.site_url || '#' ) + '" target="_blank" rel="noopener" class="button button-primary js-iss-ai-view-site">' + esc( t.view_site || '' ) + '</a>' +
 								'<a href="' + esc( config.pages_url || '#' ) + '" class="button">' + esc( t.edit_pages || '' ) + '</a>' +
+							'</div>' +
+
+							// Survey. Every answer is optional — Send stays
+							// disabled until at least one of them is given.
+							'<div class="iss-ai-feedback js-iss-ai-feedback">' +
+								'<button type="button" class="iss-ai-feedback__dismiss js-iss-ai-feedback-skip" aria-label="' + esc( t.feedback_close || '' ) + '">&times;</button>' +
+								'<h4>' + esc( t.feedback_title || '' ) + '</h4>' +
+								'<p class="iss-ai-feedback__hint">' + esc( t.feedback_hint || '' ) + '</p>' +
+								'<div class="iss-ai-feedback__form js-iss-ai-feedback-form">' +
+									'<div class="iss-ai-feedback__field">' +
+										'<span class="iss-ai-feedback__label">' + esc( t.feedback_rating || '' ) + '</span>' +
+										'<div class="iss-ai-stars js-iss-ai-stars">' + feedbackStars() + '</div>' +
+									'</div>' +
+									'<div class="iss-ai-feedback__field">' +
+										'<span class="iss-ai-feedback__label">' + esc( t.feedback_keep || '' ) + '</span>' +
+										'<div class="iss-ai-feedback__choices">' + feedbackChoices() + '</div>' +
+									'</div>' +
+									'<div class="iss-ai-feedback__field">' +
+										'<span class="iss-ai-feedback__label">' + esc( t.feedback_missing || '' ) + '</span>' +
+										'<textarea class="iss-ai-feedback__text js-iss-ai-feedback-missing" rows="2" placeholder="' + esc( t.feedback_missing_ph || '' ) + '"></textarea>' +
+									'</div>' +
+									'<textarea class="iss-ai-feedback__text js-iss-ai-feedback-comment" rows="2" placeholder="' + esc( t.feedback_comment_ph || '' ) + '"></textarea>' +
+									'<div class="iss-ai-feedback__actions">' +
+										'<button type="button" class="button button-primary js-iss-ai-feedback-send" disabled>' + esc( t.feedback_send || '' ) + '</button>' +
+										'<button type="button" class="button-link iss-ai-feedback__skip js-iss-ai-feedback-skip">' + esc( t.feedback_skip || '' ) + '</button>' +
+									'</div>' +
+								'</div>' +
+								'<p class="iss-ai-feedback__thanks js-iss-ai-feedback-thanks" hidden>' + esc( t.feedback_thanks || '' ) + '</p>' +
 							'</div>' +
 						'</div>' +
 
@@ -1150,6 +1210,7 @@ jQuery( function ( $ ) {
 				}
 
 				setProgress( '', 1 );
+				resetFeedback();
 				showStep( 'success' );
 				renderHeroExisting( { site_title: planState.site_title || '', page_count: ( planState.pages || [] ).length } );
 			} )
@@ -1158,6 +1219,89 @@ jQuery( function ( $ ) {
 				failWith( responseMessage( response ), xhrDetail( xhr, textStatus ) );
 			} );
 	}
+
+	/* -----------------------------------------------------------------
+	 * Feedback survey events
+	 * -------------------------------------------------------------- */
+
+	// A second run in the same modal session gets a blank survey about the
+	// demo it just produced, not the leftovers of the previous one.
+	function resetFeedback() {
+		var $panel = $root.find( '.js-iss-ai-feedback' ).show();
+
+		feedbackRating = 0;
+		feedbackKept   = '';
+
+		$panel.find( '.js-iss-ai-star' ).removeClass( 'is-on' );
+		$panel.find( '.js-iss-ai-keep-choice' ).removeClass( 'is-active' );
+		$panel.find( '.iss-ai-feedback__text' ).val( '' );
+		$panel.find( '.js-iss-ai-feedback-thanks' ).attr( 'hidden', 'hidden' );
+		$panel.find( '.js-iss-ai-feedback-form' ).show();
+		$panel.find( '.js-iss-ai-feedback-send' ).prop( 'disabled', true ).text( t.feedback_send || '' );
+	}
+
+	function syncFeedbackSend() {
+		var $panel  = $root.find( '.js-iss-ai-feedback' );
+		var answered = feedbackRating > 0 ||
+			'' !== feedbackKept ||
+			'' !== $.trim( $panel.find( '.js-iss-ai-feedback-missing' ).val() || '' ) ||
+			'' !== $.trim( $panel.find( '.js-iss-ai-feedback-comment' ).val() || '' );
+
+		$panel.find( '.js-iss-ai-feedback-send' ).prop( 'disabled', ! answered );
+	}
+
+	$root.on( 'click', '.js-iss-ai-star', function () {
+		feedbackRating = parseInt( $( this ).attr( 'data-value' ), 10 ) || 0;
+
+		$root.find( '.js-iss-ai-star' ).each( function () {
+			$( this ).toggleClass( 'is-on', ( parseInt( $( this ).attr( 'data-value' ), 10 ) || 0 ) <= feedbackRating );
+		} );
+		syncFeedbackSend();
+	} );
+
+	$root.on( 'click', '.js-iss-ai-keep-choice', function () {
+		var value = $( this ).attr( 'data-value' );
+
+		// Clicking the active choice again clears it — nothing is required.
+		feedbackKept = ( feedbackKept === value ) ? '' : value;
+
+		$root.find( '.js-iss-ai-keep-choice' ).removeClass( 'is-active' );
+		if ( '' !== feedbackKept ) {
+			$( this ).addClass( 'is-active' );
+		}
+		syncFeedbackSend();
+	} );
+
+	$root.on( 'input', '.iss-ai-feedback__text', syncFeedbackSend );
+
+	$root.on( 'click', '.js-iss-ai-feedback-skip', function () {
+		$root.find( '.js-iss-ai-feedback' ).slideUp( 150 );
+	} );
+
+	$root.on( 'click', '.js-iss-ai-feedback-send', function () {
+		var $button = $( this );
+		var $panel  = $root.find( '.js-iss-ai-feedback' );
+
+		if ( $button.prop( 'disabled' ) || ! planState || ! planState.plan_id ) {
+			return;
+		}
+
+		$button.prop( 'disabled', true ).text( t.feedback_sending || '' );
+
+		ajax( 'inspiro_starter_sites_ai_feedback', {
+			plan_id: planState.plan_id,
+			rating:  feedbackRating,
+			kept:    feedbackKept,
+			missing: $.trim( $panel.find( '.js-iss-ai-feedback-missing' ).val() || '' ),
+			comment: $.trim( $panel.find( '.js-iss-ai-feedback-comment' ).val() || '' )
+		}, 20000 )
+			.always( function () {
+				// The user has already given their answer; a failed round trip
+				// is ours to worry about, not theirs. Thank them either way.
+				$panel.find( '.js-iss-ai-feedback-form' ).slideUp( 150 );
+				$panel.find( '.js-iss-ai-feedback-thanks' ).removeAttr( 'hidden' );
+			} );
+	} );
 
 	/* -----------------------------------------------------------------
 	 * Events

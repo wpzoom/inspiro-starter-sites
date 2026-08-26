@@ -9,6 +9,7 @@
  *   - POST /services/v1/pexels   — Pexels photo search.
  *   - POST /services/v1/ai-quota — server-enforced free-generation quota,
  *     keyed by site URL (action: check | consume | refund).
+ *   - POST /services/v1/ai-feedback — post-generation survey answers.
  *
  * @package Inspiro Starter Sites
  */
@@ -605,6 +606,61 @@ class AiProxyClient {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Send one post-generation survey submission to the proxy, where it is
+	 * stored against the same identity the quota uses (verified license, or
+	 * the email behind the site_key). The server dedupes on
+	 * (plan_id, stage), so a resubmit corrects the previous answer.
+	 *
+	 * @param array $args {
+	 *     @type string $plan_id Generation ID the feedback is about (required).
+	 *     @type string $stage   'post-generate' | 'follow-up'.
+	 *     @type int    $rating  1-5, or 0 when not answered.
+	 *     @type string $kept    'kept' | 'discarded' | 'undecided' | ''.
+	 *     @type string $missing What the demo was missing.
+	 *     @type string $comment Anything else.
+	 *     @type array  $context Run details (industry, pages, art direction…).
+	 * }
+	 * @return true|WP_Error
+	 */
+	public function feedback( array $args ) {
+		$response = wp_remote_post(
+			$this->endpoint( 'ai-feedback' ),
+			array(
+				'headers' => array( 'Content-Type' => 'application/json' ),
+				'body'    => wp_json_encode(
+					array(
+						'feature'     => self::FEATURE,
+						'site_key'    => (string) get_option( self::SITE_KEY_OPTION, '' ),
+						'license_key' => self::premium_license(),
+						'plan_id'     => isset( $args['plan_id'] ) ? (string) $args['plan_id'] : '',
+						'stage'       => isset( $args['stage'] ) ? (string) $args['stage'] : 'post-generate',
+						'rating'      => isset( $args['rating'] ) ? (int) $args['rating'] : 0,
+						'kept'        => isset( $args['kept'] ) ? (string) $args['kept'] : '',
+						'missing'     => isset( $args['missing'] ) ? (string) $args['missing'] : '',
+						'comment'     => isset( $args['comment'] ) ? (string) $args['comment'] : '',
+						'context'     => isset( $args['context'] ) && is_array( $args['context'] ) ? $args['context'] : array(),
+					)
+				),
+				'timeout' => 15,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return new WP_Error( 'ai_feedback_unreachable', $response->get_error_message() );
+		}
+
+		$code = (int) wp_remote_retrieve_response_code( $response );
+		$data = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( $code < 200 || $code >= 300 || ! is_array( $data ) || empty( $data['success'] ) ) {
+			$msg = ( is_array( $data ) && isset( $data['message'] ) ) ? $data['message'] : ( 'HTTP ' . $code );
+			return new WP_Error( 'ai_feedback_error', $msg );
+		}
+
+		return true;
 	}
 
 	/**

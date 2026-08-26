@@ -74,6 +74,7 @@ class AiDemoGenerator {
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_build_page', array( $this, 'ajax_build_page' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_finalize', array( $this, 'ajax_finalize' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_delete', array( $this, 'ajax_delete' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_feedback', array( $this, 'ajax_feedback' ) );
 	}
 
 	/**
@@ -401,6 +402,23 @@ class AiDemoGenerator {
 					'success_text'     => __( 'The AI created the following pages, set up the menu, and assigned your new homepage.', 'inspiro-starter-sites' ),
 					'view_site'        => __( 'View site', 'inspiro-starter-sites' ),
 					'edit_pages'       => __( 'Edit pages', 'inspiro-starter-sites' ),
+					'feedback_title'   => __( 'How did the AI do?', 'inspiro-starter-sites' ),
+					'feedback_hint'    => __( 'A few quick answers go straight to the team building this feature.', 'inspiro-starter-sites' ),
+					'feedback_rating'  => __( 'How happy are you with the result?', 'inspiro-starter-sites' ),
+					/* translators: %s: number of stars */
+					'feedback_star'    => __( '%s out of 5', 'inspiro-starter-sites' ),
+					'feedback_keep'    => __( 'Will you keep this design?', 'inspiro-starter-sites' ),
+					'feedback_kept'    => __( 'Keeping it', 'inspiro-starter-sites' ),
+					'feedback_undecided' => __( 'Not sure yet', 'inspiro-starter-sites' ),
+					'feedback_discarded' => __( 'Starting over', 'inspiro-starter-sites' ),
+					'feedback_missing' => __( 'What was missing or not quite right?', 'inspiro-starter-sites' ),
+					'feedback_missing_ph' => __( 'e.g. no pricing section, the photos did not match my business…', 'inspiro-starter-sites' ),
+					'feedback_comment_ph' => __( 'Anything else you would like us to know? (optional)', 'inspiro-starter-sites' ),
+					'feedback_send'    => __( 'Send feedback', 'inspiro-starter-sites' ),
+					'feedback_sending' => __( 'Sending…', 'inspiro-starter-sites' ),
+					'feedback_thanks'  => __( 'Thank you — this really helps us improve it.', 'inspiro-starter-sites' ),
+					'feedback_skip'    => __( 'No thanks', 'inspiro-starter-sites' ),
+					'feedback_close'   => __( 'Dismiss feedback', 'inspiro-starter-sites' ),
 					'error_title'      => __( 'Something went wrong', 'inspiro-starter-sites' ),
 					'error_generic'    => __( 'The AI service could not complete the request. Please try again in a moment.', 'inspiro-starter-sites' ),
 					'try_again'        => __( 'Try again', 'inspiro-starter-sites' ),
@@ -621,6 +639,58 @@ class AiDemoGenerator {
 				),
 			)
 		);
+	}
+
+	/* ---------------------------------------------------------------------
+	 * AJAX: post-generation feedback survey
+	 * ------------------------------------------------------------------ */
+
+	/**
+	 * Forward one survey submission to the WPZOOM AI server. The run's
+	 * context (description, art direction, page count…) is attached here
+	 * from the local demo record rather than trusted from the browser.
+	 *
+	 * Failures are reported as success to the UI on purpose: the user has
+	 * already given us their answer, and there is nothing they can do about
+	 * a proxy hiccup — an error card in place of "thank you" would only make
+	 * the survey look broken.
+	 */
+	public function ajax_feedback() {
+		Helpers::verify_ajax_call();
+
+		$plan_id = isset( $_POST['plan_id'] ) ? sanitize_key( wp_unslash( $_POST['plan_id'] ) ) : '';
+		if ( '' === $plan_id ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'Missing generation reference.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$demos = get_option( self::DEMOS_OPTION, array() );
+		$demo  = ( is_array( $demos ) && isset( $demos[ $plan_id ] ) ) ? $demos[ $plan_id ] : array();
+
+		$context = isset( $demo['context'] ) && is_array( $demo['context'] ) ? $demo['context'] : array();
+		// The typed description is the single most useful column when reading
+		// answers — it says what the user was actually trying to build.
+		$context['industry'] = isset( $demo['description'] ) ? substr( (string) $demo['description'], 0, 500 ) : '';
+
+		$result = $this->proxy->feedback(
+			array(
+				'plan_id' => $plan_id,
+				'stage'   => 'post-generate',
+				'rating'  => isset( $_POST['rating'] ) ? (int) $_POST['rating'] : 0,
+				'kept'    => isset( $_POST['kept'] ) ? sanitize_key( wp_unslash( $_POST['kept'] ) ) : '',
+				'missing' => isset( $_POST['missing'] ) ? sanitize_textarea_field( wp_unslash( $_POST['missing'] ) ) : '',
+				'comment' => isset( $_POST['comment'] ) ? sanitize_textarea_field( wp_unslash( $_POST['comment'] ) ) : '',
+				'context' => $context,
+			)
+		);
+
+		// Remember locally that this demo was surveyed, so a later follow-up
+		// prompt can skip the people who already answered.
+		if ( ! is_wp_error( $result ) && isset( $demos[ $plan_id ] ) ) {
+			$demos[ $plan_id ]['feedback_at'] = current_time( 'mysql' );
+			update_option( self::DEMOS_OPTION, $demos, false );
+		}
+
+		wp_send_json_success( array( 'sent' => ! is_wp_error( $result ) ) );
 	}
 
 	/* ---------------------------------------------------------------------
@@ -1690,6 +1760,16 @@ class AiDemoGenerator {
 		$demos[ $plan_id ] = array(
 			'site_title'  => $state['plan']['site_title'],
 			'description' => $state['description'],
+			// What the run was built from. Kept on the record (the plan
+			// transient is deleted a few lines below) so a later feedback
+			// submission can be read against the demo it is about.
+			'context'     => array(
+				'design_level'  => isset( $state['design_level'] ) ? $state['design_level'] : '',
+				'palette'       => isset( $state['palette'] ) ? $state['palette'] : '',
+				'art_direction' => isset( $state['plan']['art_direction'] ) ? $state['plan']['art_direction'] : '',
+				'page_count'    => count( $created_pages ),
+				'premium'       => class_exists( 'WPZOOM' ),
+			),
 			'css'         => trim( ( ! empty( $state['plan']['font_css'] ) ? $state['plan']['font_css'] . "\n" : '' ) . ( isset( $state['plan']['css'] ) ? $state['plan']['css'] : '' ) ),
 			'pages'       => array_values( $created_pages ),
 			'posts'       => isset( $state['created_posts'] ) ? array_values( $state['created_posts'] ) : array(),
