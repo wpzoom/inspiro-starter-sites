@@ -1403,14 +1403,19 @@ body.iss-ai-open {
 }
 
 .iss-ai-success-check {
+	display: flex;
+	align-items: center;
+	justify-content: center;
 	width: 56px;
 	height: 56px;
-	line-height: 56px;
 	margin: 0 auto 14px;
 	border-radius: 50%;
 	background: #e8f8ef;
 	color: #0a5c36;
-	font-size: 28px;
+
+	svg {
+		display: block;
+	}
 }
 
 .iss-ai-page-list {

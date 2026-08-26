@@ -535,7 +535,11 @@ jQuery( function ( $ ) {
 
 						// Step: success.
 						'<div class="iss-ai-step iss-ai-step-success" data-step="success">' +
-							'<div class="iss-ai-success-check" aria-hidden="true">&#10003;</div>' +
+							'<div class="iss-ai-success-check" aria-hidden="true">' +
+								'<svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+									'<path d="M5 12.5L9.5 17L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+								'</svg>' +
+							'</div>' +
 							'<h3 class="js-iss-ai-success-title">' + esc( t.success_title || '' ) + '</h3>' +
 							'<p>' + esc( t.success_text || '' ) + '</p>' +
 							'<ul class="iss-ai-page-list js-iss-ai-page-list"></ul>' +
