@@ -97,6 +97,29 @@ class AiDemoGenerator {
 	}
 
 	/**
+	 * Whether the active theme is Inspiro PREMIUM specifically. The WPZOOM
+	 * framework class alone is not enough — it exists in every classic WPZOOM
+	 * premium theme, and the AI generator is built for Inspiro's markup and
+	 * theme mods only.
+	 *
+	 * @return bool
+	 */
+	public static function is_premium_inspiro() {
+		if ( ! class_exists( 'WPZOOM' ) ) {
+			return false;
+		}
+
+		// Parent theme, so an Inspiro child theme still qualifies.
+		$template = get_template();
+		if ( 'inspiro' === $template ) {
+			return true;
+		}
+
+		// Renamed theme directory: fall back to the declared theme name.
+		return 'inspiro premium' === strtolower( trim( (string) wp_get_theme( $template )->get( 'Name' ) ) );
+	}
+
+	/**
 	 * Whether $hook is the premium theme's WPZOOM dashboard page — where the
 	 * premium framework renders its own demo importer. The AI hero injects
 	 * itself there so premium users keep the generator without any theme
@@ -106,7 +129,7 @@ class AiDemoGenerator {
 	 * @return bool
 	 */
 	private function is_premium_dashboard( $hook ) {
-		return class_exists( 'WPZOOM' ) && false !== strpos( (string) $hook, 'wpzoom_license' );
+		return self::is_premium_inspiro() && false !== strpos( (string) $hook, 'wpzoom_license' );
 	}
 
 	/**
@@ -254,7 +277,7 @@ class AiDemoGenerator {
 				'upgrade_url' => 'https://www.wpzoom.com/themes/inspiro-lite/upgrade/?utm_source=wpadmin&utm_medium=ai-demo&utm_campaign=ai-quota-upsell',
 				// Premium theme without an activated license: the exhausted-
 				// quota card asks to activate instead of upselling.
-				'is_premium_theme' => class_exists( 'WPZOOM' ),
+				'is_premium_theme' => self::is_premium_inspiro(),
 				// Premium page tools also require an ACTIVE license.
 				'has_license'      => '' !== AiProxyClient::premium_license(),
 				// Pages of the active demo, for the regenerate picker (the
@@ -1300,7 +1323,7 @@ class AiDemoGenerator {
 	 * can never be scripted around meaningfully.
 	 */
 	private function require_premium_theme() {
-		if ( ! class_exists( 'WPZOOM' ) ) {
+		if ( ! self::is_premium_inspiro() ) {
 			wp_send_json_error(
 				array(
 					'code'    => 'premium_required',
@@ -1794,7 +1817,7 @@ class AiDemoGenerator {
 				'use_theme_var'  => $palette && ! empty( $palette_options[ $palette ]['theme_var'] ),
 				// The theme's LIVE accent variable differs per theme: Lite
 				// exposes --inspiro-primary-color, Premium --color-accent.
-				'theme_css_var'  => class_exists( 'WPZOOM' ) ? '--color-accent' : '--inspiro-primary-color',
+				'theme_css_var'  => self::is_premium_inspiro() ? '--color-accent' : '--inspiro-primary-color',
 				'pages'          => $approved_pages,
 				'font_families'  => array_keys( $this->font_whitelist() ),
 				'design_level'   => $design_level,
@@ -2720,7 +2743,7 @@ class AiDemoGenerator {
 
 		$picked     = isset( $state['palette'] ) ? (string) $state['palette'] : '';
 		$accent     = isset( $state['plan']['brand']['accent'] ) ? sanitize_hex_color( $state['plan']['brand']['accent'] ) : '';
-		$is_premium = class_exists( 'WPZOOM' );
+		$is_premium = self::is_premium_inspiro();
 
 		if ( 0 === strpos( $picked, 'theme-' ) ) {
 			// A theme palette was picked: make it the site's active palette.
@@ -3579,7 +3602,7 @@ class AiDemoGenerator {
 	 * @return string
 	 */
 	private function scale_css_for_theme( $css ) {
-		if ( ! class_exists( 'WPZOOM' ) ) {
+		if ( ! self::is_premium_inspiro() ) {
 			return $css;
 		}
 
