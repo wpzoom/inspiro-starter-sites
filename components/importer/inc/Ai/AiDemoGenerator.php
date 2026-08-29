@@ -120,6 +120,24 @@ class AiDemoGenerator {
 	}
 
 	/**
+	 * Whether the WPZOOM Portfolio grid block can actually be rendered.
+	 *
+	 * The registered block — not post_type_exists( 'portfolio_item' ) — is the
+	 * real test: the Inspiro Premium theme registers the portfolio CPT and
+	 * taxonomy itself, so the post type exists on every premium site whether
+	 * or not the plugin is installed. Gating on the CPT made the generator
+	 * report the plugin as already active, skip installing it, tell the AI to
+	 * place <div data-block='portfolio'></div>, and then silently drop that
+	 * grid in HtmlToBlocks — leaving a work page with an intro and a CTA and
+	 * nothing between them.
+	 *
+	 * @return bool
+	 */
+	private static function portfolio_grid_available() {
+		return \WP_Block_Type_Registry::get_instance()->is_registered( 'wpzoom-blocks/portfolio' );
+	}
+
+	/**
 	 * Whether $hook is the premium theme's WPZOOM dashboard page — where the
 	 * premium framework renders its own demo importer. The AI hero injects
 	 * itself there so premium users keep the generator without any theme
@@ -1506,7 +1524,7 @@ class AiDemoGenerator {
 				'css'              => $record['css'],
 				'page'             => $page,
 				'pages'            => $pages_list,
-				'portfolio_needed' => post_type_exists( 'portfolio_item' ) && ! empty( $record['portfolio'] ),
+				'portfolio_needed' => ! empty( $record['portfolio'] ) && self::portfolio_grid_available(),
 				'posts_feed'       => ! empty( $record['posts'] ),
 				'has_contact_form' => post_type_exists( 'wpzf-form' ),
 				// Sections-only output (no hero, no h1) that continues the page.
@@ -1939,7 +1957,7 @@ class AiDemoGenerator {
 				'remaining'  => isset( $quota['remaining'] ) ? (int) $quota['remaining'] : null,
 				'portfolio'  => array(
 					'needed'        => ! empty( $plan['portfolio']['needed'] ) && ! empty( $plan['portfolio']['items'] ),
-					'plugin_active' => post_type_exists( 'portfolio_item' ),
+					'plugin_active' => self::portfolio_grid_available(),
 				),
 				'forms'      => array(
 					'needed'        => ! empty( $plan['contact_form_needed'] ),
@@ -2176,7 +2194,9 @@ class AiDemoGenerator {
 					},
 					$state['plan']['pages']
 				),
-				'portfolio_needed' => ! empty( $state['plan']['portfolio']['needed'] ) && ! empty( $state['plan']['portfolio']['items'] ),
+				// Checked at build time, like the contact form below: the
+				// WPZOOM Portfolio plugin installs right before this step.
+				'portfolio_needed' => ! empty( $state['plan']['portfolio']['needed'] ) && ! empty( $state['plan']['portfolio']['items'] ) && self::portfolio_grid_available(),
 				// The site has blog/news posts → pages may embed the native
 				// recent-posts Query Loop instead of faking article lists.
 				'posts_feed'       => ! empty( $state['plan']['blog']['needed'] ),
@@ -2791,6 +2811,9 @@ class AiDemoGenerator {
 			'font_css'    => ! empty( $state['plan']['font_css'] ) ? trim( $state['plan']['font_css'] ) : '',
 			'pages'       => array_values( $created_pages ),
 			'posts'       => isset( $state['created_posts'] ) ? array_values( $state['created_posts'] ) : array(),
+			// Whether this demo shows its work through the portfolio grid, so
+			// a page regenerated later keeps the grid instead of losing it.
+			'portfolio'   => ! empty( $state['plan']['portfolio']['needed'] ) && ! empty( $state['plan']['portfolio']['items'] ),
 			'menu_id'     => $menu_id && ! is_wp_error( $menu_id ) ? (int) $menu_id : 0,
 			'widgets'     => $footer_widget_ids,
 			'created_at'  => current_time( 'mysql' ),
@@ -2830,7 +2853,7 @@ class AiDemoGenerator {
 	private function create_portfolio_items( array &$state, $plan_id, StreamingResponse $stream ) {
 		$portfolio = isset( $state['plan']['portfolio'] ) ? $state['plan']['portfolio'] : array();
 
-		if ( empty( $portfolio['needed'] ) || empty( $portfolio['items'] ) || ! post_type_exists( 'portfolio_item' ) ) {
+		if ( empty( $portfolio['needed'] ) || empty( $portfolio['items'] ) || ! post_type_exists( 'portfolio_item' ) || ! self::portfolio_grid_available() ) {
 			return;
 		}
 
