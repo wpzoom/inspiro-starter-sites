@@ -5,7 +5,7 @@ Author URI:			https://www.wpzoom.com/
 Requires at least: 	6.5
 Tested up to: 		7.1
 Requires PHP: 		7.4  
-Stable tag: 		1.2.5
+Stable tag: 		1.2.6
 License: 			GPLv2 or later  
 License URI: 		https://www.gnu.org/licenses/gpl-2.0.html
 Tags: 				starter sites, templates, demo importer, elementor, gutenberg
@@ -139,6 +139,9 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 4. Demo Imported message
 
 == Changelog ==
+
+= 1.2.6 =
+* Minor improvements
 
 = 1.2.5 =
 * Minor improvements
