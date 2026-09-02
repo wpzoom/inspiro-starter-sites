@@ -3849,6 +3849,19 @@ class AiDemoGenerator {
 				),
 			),
 
+			'quiet-minimal' => array(
+				'label'   => __( 'Quiet minimal', 'inspiro-starter-sites' ),
+				'hint'    => __( 'Mostly whitespace on pure white: a small left-aligned headline, one inset photograph, and ruled two-column lists instead of cards. No buttons, no tinted sections.', 'inspiro-starter-sites' ),
+				'styles'  => array( 'minimal', 'corporate', 'luxury', 'editorial' ),
+				'preview' => array(
+					'hero'   => 'type',
+					'body'   => 'ruled',
+					'radius' => '0px',
+					'tone'   => 'light',
+					'accent' => '#1d1d1f',
+				),
+			),
+
 			'stacked-editorial' => array(
 				'label'   => __( 'Stacked editorial', 'inspiro-starter-sites' ),
 				'hint'    => __( 'A centred masthead with a wide photograph directly beneath it, then unhurried media-and-text rows. Reads like a long-form article.', 'inspiro-starter-sites' ),
