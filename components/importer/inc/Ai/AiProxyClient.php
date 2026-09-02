@@ -85,7 +85,10 @@ class AiProxyClient {
 		return add_query_arg(
 			array(
 				'token'    => rawurlencode( self::token() ),
-				'site_url' => rawurlencode( get_site_url() ),
+				// home_url(), not get_site_url(): the theme activates its
+				// license with home_url(), and the proxy verifies the license
+				// against the URL it receives here.
+				'site_url' => rawurlencode( home_url() ),
 				'plugin'   => 'inspiro-starter-sites-ai',
 			),
 			self::base_url() . '/' . $service
@@ -210,11 +213,16 @@ class AiProxyClient {
 	}
 
 	/**
-	 * json_decode with a repair pass: models occasionally emit CSS escape
-	 * sequences (e.g. content:'\00B7') inside JSON string values — invalid
-	 * JSON escapes that fail a strict parse. Doubling any backslash that
-	 * doesn't start a valid JSON escape makes the document parseable again
-	 * (the stray backslash is then stripped by the CSS sanitizer anyway).
+	 * json_decode with repair passes. The plan/page prompts forbid double
+	 * quotes and backslashes inside the CSS/HTML string values, but models
+	 * still slip: CSS escape sequences (content:'\00B7'), unescaped inner
+	 * quotes (font-family:"Playfair Display"), raw newlines inside a string.
+	 * Each is an invalid-JSON break that a strict parse rejects outright.
+	 *
+	 * Pass 1: strict. Pass 2: double any backslash that doesn't start a
+	 * valid JSON escape. Pass 3: walk the document string-by-string and fix
+	 * inner quotes / control characters / stray escapes structurally. The
+	 * stray characters are stripped by the CSS/HTML sanitizers afterwards.
 	 *
 	 * @param string $text Candidate JSON.
 	 * @return array|null
@@ -224,6 +232,7 @@ class AiProxyClient {
 		if ( is_array( $decoded ) ) {
 			return $decoded;
 		}
+		$strict_error = json_last_error_msg();
 
 		$repaired = preg_replace_callback(
 			'/\\\\(?!["\\\\\/bfnrtu])/',
@@ -239,8 +248,163 @@ class AiProxyClient {
 			return $decoded;
 		}
 
-		error_log( '[inspiro-starter-sites AI] JSON parse failed. First 300 chars: ' . substr( $text, 0, 300 ) ); // phpcs:ignore
+		$decoded = json_decode( self::repair_json_strings( $text ), true );
+		if ( is_array( $decoded ) ) {
+			error_log( '[inspiro-starter-sites AI] JSON repaired: unescaped quotes/control characters inside string values fixed (' . $strict_error . ').' ); // phpcs:ignore
+			return $decoded;
+		}
+
+		error_log( // phpcs:ignore
+			'[inspiro-starter-sites AI] JSON parse failed (' . $strict_error . '; ' . strlen( $text ) . ' bytes). First 300 chars: '
+			. substr( $text, 0, 300 ) . ' … Last 300 chars: ' . substr( $text, -300 )
+		);
+		self::dump_debug_text( 'parse-failure', $text );
+
 		return null;
+	}
+
+	/**
+	 * Structural repair of a JSON document whose STRING VALUES contain
+	 * characters the model should have escaped. Walks the text tracking
+	 * whether we are inside a string and rewrites, inside strings only:
+	 *   - a backslash not starting a valid JSON escape → doubled;
+	 *   - a raw control character → \n / \r / \t (others dropped);
+	 *   - a double quote that cannot be the closing quote → escaped.
+	 *
+	 * "Cannot be closing" is decided by look-ahead: a real closing quote is
+	 * followed (after whitespace) by one of , } ] : AND that separator is
+	 * itself followed by something valid JSON allows there (a value start
+	 * after , or :, a , } ] or EOF after } or ]). Everything else — e.g.
+	 * `font-family:"Georgia", serif` or `content:"→"}.next{` — is an inner
+	 * quote. Public static so it can be unit-tested without WordPress.
+	 *
+	 * @param string $text Candidate JSON.
+	 * @return string
+	 */
+	public static function repair_json_strings( $text ) {
+		$len    = strlen( $text );
+		$out    = '';
+		$in_str = false;
+
+		for ( $i = 0; $i < $len; $i++ ) {
+			$ch = $text[ $i ];
+
+			if ( ! $in_str ) {
+				if ( '"' === $ch ) {
+					$in_str = true;
+				}
+				$out .= $ch;
+				continue;
+			}
+
+			if ( '\\' === $ch ) {
+				$next = ( $i + 1 < $len ) ? $text[ $i + 1 ] : '';
+				if ( '' !== $next && false !== strpos( '"\\/bfnrt', $next ) ) {
+					$out .= $ch . $next;
+					$i++;
+					continue;
+				}
+				if ( 'u' === $next && ctype_xdigit( substr( $text, $i + 2, 4 ) ) && 4 === strlen( substr( $text, $i + 2, 4 ) ) ) {
+					$out .= substr( $text, $i, 6 );
+					$i   += 5;
+					continue;
+				}
+				$out .= '\\\\';
+				continue;
+			}
+
+			if ( '"' === $ch ) {
+				if ( self::is_closing_quote( $text, $i + 1, $len ) ) {
+					$in_str = false;
+					$out   .= $ch;
+				} else {
+					$out .= '\\"';
+				}
+				continue;
+			}
+
+			$ord = ord( $ch );
+			if ( $ord < 0x20 ) {
+				if ( "\n" === $ch ) {
+					$out .= '\\n';
+				} elseif ( "\r" === $ch ) {
+					$out .= '\\r';
+				} elseif ( "\t" === $ch ) {
+					$out .= '\\t';
+				}
+				continue;
+			}
+
+			$out .= $ch;
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Whether the quote just before $pos can be a string's closing quote —
+	 * see repair_json_strings().
+	 *
+	 * @param string $text Document.
+	 * @param int    $pos  Offset right after the quote.
+	 * @param int    $len  strlen( $text ).
+	 * @return bool
+	 */
+	private static function is_closing_quote( $text, $pos, $len ) {
+		$next_non_ws = static function ( $from ) use ( $text, $len ) {
+			for ( $j = $from; $j < $len; $j++ ) {
+				if ( false === strpos( " \t\r\n", $text[ $j ] ) ) {
+					return array( $text[ $j ], $j );
+				}
+			}
+			return array( '', $len );
+		};
+
+		list( $sep, $sep_pos ) = $next_non_ws( $pos );
+
+		if ( '' === $sep ) {
+			return true; // EOF: the document ends here (possibly truncated).
+		}
+
+		list( $after ) = $next_non_ws( $sep_pos + 1 );
+
+		if ( ',' === $sep || ':' === $sep ) {
+			// Next must start a value (or a key after a comma inside an object).
+			return '' !== $after && false !== strpos( '"-0123456789{[tfn', $after );
+		}
+		if ( '}' === $sep || ']' === $sep ) {
+			return '' === $after || false !== strpos( ',}]', $after );
+		}
+
+		return false;
+	}
+
+	/**
+	 * Write an AI response that could not be processed to
+	 * uploads/inspiro-starter-sites-ai-debug/ so it can be inspected after
+	 * the fact. Only when WP_DEBUG is on — the files hold full generations.
+	 *
+	 * @param string $label Short label used in the filename.
+	 * @param string $text  Content.
+	 */
+	private static function dump_debug_text( $label, $text ) {
+		if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
+			return;
+		}
+		$upload = wp_upload_dir();
+		if ( ! empty( $upload['error'] ) ) {
+			return;
+		}
+		$dir = trailingslashit( $upload['basedir'] ) . 'inspiro-starter-sites-ai-debug';
+		if ( ! wp_mkdir_p( $dir ) ) {
+			return;
+		}
+		if ( ! file_exists( $dir . '/index.php' ) ) {
+			file_put_contents( $dir . '/index.php', "<?php\n// Silence is golden.\n" ); // phpcs:ignore
+		}
+		$file = $dir . '/' . sanitize_key( $label ) . '-' . gmdate( 'Ymd-His' ) . '.txt';
+		file_put_contents( $file, $text ); // phpcs:ignore
+		error_log( '[inspiro-starter-sites AI] Full response saved to ' . $file ); // phpcs:ignore
 	}
 
 	/**
@@ -585,6 +749,11 @@ class AiProxyClient {
 						// server-side; invalid ones silently fall back to
 						// the free registration identity.
 						'license_key' => self::premium_license(),
+						// Body copy of the URL the license was activated with,
+						// so the server verifies (and caches) the license
+						// against the same site as the task requests.
+						'site_url'    => home_url(),
+						'plugin'      => 'inspiro-starter-sites-ai',
 					)
 				),
 				'timeout' => 15,
@@ -604,6 +773,22 @@ class AiProxyClient {
 			}
 			$msg = ( is_array( $data ) && isset( $data['message'] ) ) ? $data['message'] : ( 'HTTP ' . $code );
 			return new WP_Error( 'ai_quota_error', $msg );
+		}
+
+		// A verified license skips the emailed code: the server registers
+		// the site with the purchaser email itself and hands the site_key
+		// back here. Store it like a /ai-verify result so the site is a
+		// normally connected one from now on.
+		if ( ! empty( $data['registration']['site_key'] ) ) {
+			$site_key = sanitize_text_field( (string) $data['registration']['site_key'] );
+			$email    = sanitize_email( (string) ( isset( $data['registration']['email'] ) ? $data['registration']['email'] : '' ) );
+
+			if ( $site_key !== (string) get_option( self::SITE_KEY_OPTION, '' ) ) {
+				update_option( self::SITE_KEY_OPTION, $site_key, false );
+			}
+			if ( '' !== $email && $email !== $this->connected_email() ) {
+				update_option( self::EMAIL_OPTION, $email, false );
+			}
 		}
 
 		return $data;

@@ -574,8 +574,10 @@ class AiDemoGenerator {
 
 		// Free generations require an email registration with the WPZOOM AI
 		// server first — without one, tell the UI to show the connect step
-		// instead of quota numbers.
-		if ( ! $this->proxy->is_connected() ) {
+		// instead of quota numbers. An ACTIVE Inspiro Premium license is the
+		// exception: the server accepts it as the identity (and registers
+		// the site with the purchaser email itself), so ask it directly.
+		if ( ! $this->proxy->is_connected() && '' === AiProxyClient::premium_license() ) {
 			wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'demo_pages' => $this->demo_pages_for_picker() ) ) );
 		}
 
@@ -583,8 +585,9 @@ class AiDemoGenerator {
 
 		if ( is_wp_error( $quota ) ) {
 			if ( 'ai_registration_required' === $quota->get_error_code() ) {
-				// The server no longer recognizes our key (e.g. wiped data) —
-				// forget it so the user can re-connect.
+				// The server no longer recognizes our key (e.g. wiped data),
+				// or the license did not verify — forget the key so the user
+				// can (re)connect with an email.
 				$this->proxy->disconnect();
 				wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'demo_pages' => $this->demo_pages_for_picker() ) ) );
 			}
