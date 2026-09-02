@@ -739,6 +739,70 @@ body.iss-ai-open {
   text-align: center;
 }
 
+/* Collapse/expand toggle — only on the premium theme's dashboard, where the
+   hero sits above the theme's own demo list (.is-collapsible). Collapsed, the
+   hero shrinks to its kicker + title, which also re-open it on click. */
+.inspiro-starter-sites-ai-hero__toggle {
+	position: absolute;
+	top: 16px;
+	inset-inline-end: 16px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	border: 1px solid rgba(255, 255, 255, 0.14);
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.06);
+	color: #c0c4cc;
+	cursor: pointer;
+	transition: background 0.12s ease, color 0.12s ease;
+}
+
+.inspiro-starter-sites-ai-hero__toggle:hover {
+	background: rgba(255, 255, 255, 0.12);
+	color: #ffffff;
+}
+
+.inspiro-starter-sites-ai-hero__toggle:focus-visible {
+	outline: 2px solid #59d9a6;
+	outline-offset: 2px;
+}
+
+.inspiro-starter-sites-ai-hero__toggle svg {
+	transition: transform 0.2s ease;
+}
+
+.inspiro-starter-sites-ai-hero.is-collapsible .inspiro-starter-sites-ai-hero__existing {
+	inset-inline-end: 58px;
+}
+
+.inspiro-starter-sites-ai-hero.is-collapsed {
+	padding: 18px 40px 16px;
+}
+
+.inspiro-starter-sites-ai-hero.is-collapsed .inspiro-starter-sites-ai-hero__toggle svg {
+	transform: rotate(180deg);
+}
+
+.inspiro-starter-sites-ai-hero.is-collapsed .inspiro-starter-sites-ai-hero__kicker {
+	margin: 0 0 6px;
+	cursor: pointer;
+}
+
+.inspiro-starter-sites-ai-hero.is-collapsed .inspiro-starter-sites-ai-hero__title {
+	margin: 0;
+	font-size: 18px;
+	cursor: pointer;
+}
+
+.inspiro-starter-sites-ai-hero.is-collapsed .inspiro-starter-sites-ai-hero__sub,
+.inspiro-starter-sites-ai-hero.is-collapsed .inspiro-starter-sites-ai-hero__prompt,
+.inspiro-starter-sites-ai-hero.is-collapsed .inspiro-starter-sites-ai-hero__badges {
+	display: none;
+}
+
 /* "AI demo active" status chip — opens the modal to manage/delete. */
 .inspiro-starter-sites-ai-hero__existing {
   position: absolute;

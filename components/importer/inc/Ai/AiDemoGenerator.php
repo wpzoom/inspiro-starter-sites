@@ -155,10 +155,18 @@ class AiDemoGenerator {
 	 * chip). Rendered inline on the plugin's importer page and injected into
 	 * the premium theme's demo-importer tab.
 	 */
-	public function render_hero() {
+	public function render_hero( $collapsible = false ) {
 		$previous = $this->previous_demo_info();
 		?>
-		<div class="inspiro-starter-sites-ai-hero">
+		<div class="inspiro-starter-sites-ai-hero<?php echo $collapsible ? ' is-collapsible' : ''; ?>">
+			<?php if ( $collapsible ) : ?>
+				<button type="button" class="inspiro-starter-sites-ai-hero__toggle js-iss-ai-hero-toggle" aria-expanded="true"
+					aria-label="<?php esc_attr_e( 'Collapse the AI demo generator', 'inspiro-starter-sites' ); ?>"
+					data-label-collapse="<?php esc_attr_e( 'Collapse the AI demo generator', 'inspiro-starter-sites' ); ?>"
+					data-label-expand="<?php esc_attr_e( 'Expand the AI demo generator', 'inspiro-starter-sites' ); ?>">
+					<svg aria-hidden="true" width="14" height="14" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M5 12.5l5-5 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+				</button>
+			<?php endif; ?>
 			<button type="button" class="inspiro-starter-sites-ai-hero__existing js-iss-ai-hero-existing js-inspiro-starter-sites-ai-generate"<?php echo $previous ? '' : ' hidden'; ?> title="<?php esc_attr_e( 'Manage or delete your generated demo', 'inspiro-starter-sites' ); ?>">
 				<svg class="inspiro-starter-sites-ai-hero__existing-gear" aria-hidden="true" width="13" height="13" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M18 12h-2.18c-.17.7-.44 1.35-.81 1.93l1.54 1.54-2.1 2.1-1.54-1.54c-.58.36-1.23.63-1.93.81V19H8v-2.18c-.7-.18-1.35-.45-1.93-.81l-1.54 1.54-2.12-2.12 1.54-1.54c-.36-.58-.63-1.23-.81-1.93H1V9.03h2.17c.16-.7.44-1.35.8-1.94L2.43 5.55l2.1-2.1 1.54 1.54c.58-.37 1.24-.64 1.93-.81V2h3v2.18c.68.17 1.32.44 1.9.8l1.56-1.53 2.12 2.12-1.54 1.54c.36.59.64 1.24.82 1.94H18V12zm-8.5 1.5c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3z" fill="currentColor"/></svg>
 				<?php esc_html_e( 'AI demo:', 'inspiro-starter-sites' ); ?>
@@ -197,6 +205,11 @@ class AiDemoGenerator {
 	 * On the premium theme's dashboard: print the hero (hidden) + the modal
 	 * root, then move the hero into the top of the framework's demo-importer
 	 * tab. Pure plugin-side — no premium theme changes required.
+	 *
+	 * Here the hero sits above the theme's own demo list, so it is
+	 * collapsible; the choice is remembered per browser (localStorage) and
+	 * applied before the hero is revealed, so a collapsed hero never flashes
+	 * open on load.
 	 */
 	public function premium_dashboard_hero() {
 		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
@@ -206,7 +219,7 @@ class AiDemoGenerator {
 		?>
 		<div class="iss-ai-root js-iss-ai-root" hidden></div>
 		<div class="js-iss-ai-premium-hero" hidden>
-			<?php $this->render_hero(); ?>
+			<?php $this->render_hero( true ); ?>
 			<?php $this->render_import_over_ai_notice(); ?>
 		</div>
 		<script>
@@ -216,6 +229,13 @@ class AiDemoGenerator {
 			if ( ! $tab.length || ! $hero.length ) {
 				return;
 			}
+			try {
+				if ( '1' === window.localStorage.getItem( 'inspiroStarterSitesAiHeroCollapsed' ) ) {
+					var $panel = $hero.find( '.inspiro-starter-sites-ai-hero' ).addClass( 'is-collapsed' );
+					var $btn   = $panel.find( '.js-iss-ai-hero-toggle' );
+					$btn.attr( 'aria-expanded', 'false' ).attr( 'aria-label', $btn.data( 'labelExpand' ) || '' );
+				}
+			} catch ( e ) {}
 			var $header = $tab.find( '.wpz-onboard_header' ).first();
 			if ( $header.length ) {
 				$hero.insertAfter( $header );

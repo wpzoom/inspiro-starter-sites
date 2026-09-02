@@ -1426,6 +1426,29 @@ jQuery( function ( $ ) {
 
 	// Hero "View ideas": open the modal (with any typed text carried over)
 	// and expand its ideas panel right away.
+	// Collapse/expand the hero on the premium theme's dashboard, where it
+	// sits above the theme's own demo list. Remembered per browser.
+	function setHeroCollapsed( $hero, collapsed ) {
+		var $btn = $hero.find( '.js-iss-ai-hero-toggle' );
+		$hero.toggleClass( 'is-collapsed', collapsed );
+		$btn.attr( 'aria-expanded', collapsed ? 'false' : 'true' )
+			.attr( 'aria-label', $btn.data( collapsed ? 'labelExpand' : 'labelCollapse' ) || '' );
+		try {
+			window.localStorage.setItem( 'inspiroStarterSitesAiHeroCollapsed', collapsed ? '1' : '0' );
+		} catch ( e ) {}
+	}
+
+	$( document ).on( 'click', '.js-iss-ai-hero-toggle', function ( e ) {
+		e.preventDefault();
+		var $hero = $( this ).closest( '.inspiro-starter-sites-ai-hero' );
+		setHeroCollapsed( $hero, ! $hero.hasClass( 'is-collapsed' ) );
+	} );
+
+	// A collapsed hero is just a title bar — clicking it re-opens it too.
+	$( document ).on( 'click', '.inspiro-starter-sites-ai-hero.is-collapsed .inspiro-starter-sites-ai-hero__title, .inspiro-starter-sites-ai-hero.is-collapsed .inspiro-starter-sites-ai-hero__kicker', function () {
+		setHeroCollapsed( $( this ).closest( '.inspiro-starter-sites-ai-hero' ), false );
+	} );
+
 	$( document ).on( 'click', '.js-iss-ai-hero-ideas', function ( e ) {
 		e.preventDefault();
 		$( '.js-inspiro-starter-sites-ai-generate' ).first().trigger( 'click' );
