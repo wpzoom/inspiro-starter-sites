@@ -100,6 +100,9 @@ class ThemeOptions {
 		if ( '' !== self::icon_placeholder() ) {
 			$caps[] = 'icon_block';
 		}
+		if ( self::supports_html() ) {
+			$caps[] = 'html_block';
+		}
 
 		return $caps;
 	}
@@ -113,6 +116,17 @@ class ThemeOptions {
 	 */
 	public static function supports_block_css() {
 		return function_exists( 'wp_render_custom_css_support_styles' ) && current_user_can( 'edit_css' );
+	}
+
+	/**
+	 * Custom HTML snippets and map embeds: saving a <style> or an <iframe>
+	 * in post content requires unfiltered_html — without it WordPress strips
+	 * them, so the AI isn't offered them.
+	 *
+	 * @return bool
+	 */
+	public static function supports_html() {
+		return current_user_can( 'unfiltered_html' );
 	}
 
 	/**

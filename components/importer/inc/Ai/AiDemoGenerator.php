@@ -1655,6 +1655,7 @@ class AiDemoGenerator {
 				'under_header' => $transparent,
 				'icon'         => ThemeOptions::icon_placeholder(),
 				'css'          => $record['css'],
+				'html'         => ThemeOptions::supports_html(),
 			)
 		);
 		$content     = $converter->convert( $html, $page['slug'] );
@@ -2341,6 +2342,7 @@ class AiDemoGenerator {
 				// The page is built against the plan's stylesheet: the
 				// converter reads it for grids, contrast and alignment.
 				'css'          => $state['plan']['css'],
+				'html'         => ThemeOptions::supports_html(),
 			)
 		);
 		$content     = $converter->convert( $html, $page['slug'] );

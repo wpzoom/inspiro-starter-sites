@@ -33,6 +33,9 @@
  *                              → grid spans and flex sizing of that child
  *   data-block='icon', <svg>   → core/icon showing the placeholder icon (the
  *                                AI places icons; the user picks the glyphs)
+ *   data-block='html'          → core/html: a sanitized, self-contained snippet
+ *                                (e.g. a marquee) with its own scoped <style>
+ *   data-block='map'           → core/html: a map embed built from an address
  *
  * With the demo stylesheet available (options.css) the converter also reads
  * what that stylesheet computes (see CssCascade): CSS grids become native
@@ -80,7 +83,9 @@ class HtmlToBlocks {
 	 * under_header — the page's header floats over its first section;
 	 * icon         — the icon name every icon block shows ('' = no core/icon
 	 *                block on this site: icons are dropped);
-	 * css          — the demo stylesheet ('' = convert the HTML as written).
+	 * css          — the demo stylesheet ('' = convert the HTML as written);
+	 * html         — Custom HTML snippets and map embeds are allowed (needs
+	 *                unfiltered_html, or WordPress strips them on save).
 	 *
 	 * @var array
 	 */
@@ -121,7 +126,7 @@ class HtmlToBlocks {
 	 * @param array    $page_links     slug => URL map.
 	 * @param callable $image_resolver fn( string $query, string $orientation ): ?array
 	 * @param array    $brand          [ 'accent' => hex, 'accent_text' => hex, 'radius' => css length ]
-	 * @param array    $options        [ 'block_css' => bool, 'under_header' => bool, 'icon' => string, 'css' => string ]
+	 * @param array    $options        [ 'block_css' => bool, 'under_header' => bool, 'icon' => string, 'css' => string, 'html' => bool ]
 	 */
 	public function __construct( array $page_links, callable $image_resolver, array $brand = array(), array $options = array() ) {
 		$this->page_links     = $page_links;
@@ -141,6 +146,7 @@ class HtmlToBlocks {
 				'under_header' => false,
 				'icon'         => '',
 				'css'          => '',
+				'html'         => false,
 			)
 		);
 	}
@@ -319,7 +325,7 @@ class HtmlToBlocks {
 
 			$flush_buttons();
 
-			if ( $top_level && in_array( $node->nodeName, array( 'div', 'aside' ), true ) ) {
+			if ( $top_level && in_array( $node->nodeName, array( 'div', 'aside' ), true ) && '' === trim( $node->getAttribute( 'data-block' ) ) ) {
 				$block = $this->group_block( $node, true );
 			} else {
 				$block = $this->convert_element( $node );
@@ -342,9 +348,14 @@ class HtmlToBlocks {
 	 * @return string
 	 */
 	private function convert_element( $el ) {
-		// Icons may be written on any element (<div>, <span>, <i>).
-		if ( 'icon' === trim( $el->getAttribute( 'data-block' ) ) ) {
-			return $this->icon_block( $el );
+		// Icons, snippets and maps may be written on any element.
+		switch ( trim( $el->getAttribute( 'data-block' ) ) ) {
+			case 'icon':
+				return $this->icon_block( $el );
+			case 'html':
+				return $this->snippet_block( $el );
+			case 'map':
+				return $this->map_block( $el );
 		}
 
 		switch ( $el->nodeName ) {
@@ -1085,7 +1096,9 @@ class HtmlToBlocks {
 			if ( XML_ELEMENT_NODE !== $child->nodeType ) {
 				continue;
 			}
-			$inner = ( 'div' === $child->nodeName || 'aside' === $child->nodeName )
+			// A special element (map, contact form, gallery…) as a column keeps
+			// its block; a plain div is the column's content group.
+			$inner = ( ( 'div' === $child->nodeName || 'aside' === $child->nodeName ) && '' === trim( $child->getAttribute( 'data-block' ) ) )
 				? $this->group_block( $child, false )
 				: $this->convert_element( $child );
 
@@ -1377,11 +1390,241 @@ class HtmlToBlocks {
 	}
 
 	private function html_block( $el ) {
-		$html = $el->ownerDocument->saveHTML( $el );
-		if ( '' === trim( $html ) ) {
+		// Internal links first: kses strips the unknown "page:" scheme.
+		$html = trim( $this->kses_snippet( $this->resolve_page_hrefs( $el->ownerDocument->saveHTML( $el ) ) ) );
+		if ( '' === $html ) {
 			return '';
 		}
 		return sprintf( "<!-- wp:html -->\n%s\n<!-- /wp:html -->", $html );
+	}
+
+	/**
+	 * <div data-block='html'> → a Custom HTML block for the rare element no
+	 * native block expresses (a scrolling marquee, an animated strip). The
+	 * markup is reduced to an allowlist (no scripts, iframes, forms or event
+	 * handlers), its <style> is scoped to the demo and to ai- classes, and
+	 * its <img data-query> photos resolve to real media like any image.
+	 *
+	 * @param \DOMElement $el
+	 * @return string '' when snippets are not allowed or nothing is left.
+	 */
+	private function snippet_block( $el ) {
+		if ( empty( $this->options['html'] ) ) {
+			return '';
+		}
+
+		// Styles are handled apart: kses would print their text as content.
+		$css = '';
+		foreach ( iterator_to_array( $el->getElementsByTagName( 'style' ) ) as $style ) {
+			$css .= $this->snippet_css( $style->textContent );
+			$style->parentNode->removeChild( $style );
+		}
+
+		foreach ( iterator_to_array( $el->getElementsByTagName( 'img' ) ) as $img ) {
+			$query       = trim( $img->getAttribute( 'data-query' ) );
+			$orientation = trim( $img->getAttribute( 'data-orientation' ) );
+			$image       = '' !== $query ? call_user_func( $this->image_resolver, $query, $orientation ? $orientation : 'landscape' ) : null;
+			if ( ! $image ) {
+				$img->parentNode->removeChild( $img );
+				continue;
+			}
+			$img->setAttribute( 'src', $image['url'] );
+			$img->setAttribute( 'loading', 'lazy' );
+		}
+
+		$html = '';
+		foreach ( $el->childNodes as $child ) {
+			$html .= $el->ownerDocument->saveHTML( $child );
+		}
+		$html = trim( $this->kses_snippet( $this->resolve_page_hrefs( $html ) ) );
+
+		if ( '' === $html ) {
+			return '';
+		}
+
+		return sprintf(
+			"<!-- wp:html -->\n%s<div class=\"%s\">%s</div>\n<!-- /wp:html -->",
+			'' !== $css ? '<style>' . $css . '</style>' : '',
+			esc_attr( trim( 'iss-ai-html ' . $this->classes( $el ) ) ),
+			$html
+		);
+	}
+
+	/**
+	 * <div data-block='map' data-address='…'> → a Custom HTML block with a
+	 * map of that address. The AI never writes the iframe: it is built here
+	 * from the address alone (Google Maps' keyless embed by default; the
+	 * inspiro_starter_sites/ai_map_embed_url filter swaps the provider).
+	 *
+	 * @param \DOMElement $el
+	 * @return string
+	 */
+	private function map_block( $el ) {
+		if ( empty( $this->options['html'] ) ) {
+			return '';
+		}
+
+		$address = mb_substr( trim( preg_replace( '/\s+/', ' ', wp_strip_all_tags( $el->getAttribute( 'data-address' ) ) ) ), 0, 200 );
+		if ( '' === $address ) {
+			return '';
+		}
+
+		$zoom = (int) $el->getAttribute( 'data-zoom' );
+		$zoom = ( $zoom >= 3 && $zoom <= 20 ) ? $zoom : 14;
+
+		$height = 420;
+		if ( preg_match( '/^(\d{3})(?:px)?$/', trim( $el->getAttribute( 'data-height' ) ), $m ) && (int) $m[1] >= 200 && (int) $m[1] <= 800 ) {
+			$height = (int) $m[1];
+		}
+
+		$url = 'https://maps.google.com/maps?q=' . rawurlencode( $address ) . '&z=' . $zoom . '&output=embed';
+		$url = (string) apply_filters( 'inspiro_starter_sites/ai_map_embed_url', $url, $address, $zoom );
+
+		return sprintf(
+			"<!-- wp:html -->\n<div class=\"%s\"><iframe src=\"%s\" title=\"%s\" width=\"100%%\" height=\"%d\" style=\"border:0;display:block;width:100%%\" loading=\"lazy\" referrerpolicy=\"no-referrer-when-downgrade\" allowfullscreen></iframe></div>\n<!-- /wp:html -->",
+			esc_attr( trim( 'iss-ai-map ' . $this->classes( $el ) ) ),
+			esc_url( $url ),
+			/* translators: %s: address shown on the map */
+			esc_attr( sprintf( __( 'Map of %s', 'inspiro-starter-sites' ), $address ) ),
+			$height
+		);
+	}
+
+	/**
+	 * Custom HTML allowlist: structure, text, tables, links, images and
+	 * inline SVG — with classes, ARIA and (safecss-filtered) inline styles.
+	 * No scripts, iframes, forms, media players or data-/event attributes.
+	 *
+	 * @param string $html
+	 * @return string
+	 */
+	private function kses_snippet( $html ) {
+		$global = array(
+			'class'       => true,
+			'style'       => true,
+			'title'       => true,
+			'role'        => true,
+			'aria-hidden' => true,
+			'aria-label'  => true,
+		);
+
+		$tags = array();
+		foreach ( array( 'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'strong', 'em', 'b', 'i', 'small', 'br', 'hr', 'mark', 'sup', 'sub', 'time', 'figure', 'figcaption', 'blockquote', 'cite', 'details', 'summary', 'table', 'caption', 'thead', 'tbody', 'tr', 'th', 'td' ) as $tag ) {
+			$tags[ $tag ] = $global;
+		}
+		$tags['a']   = $global + array( 'href' => true );
+		$tags['img'] = $global + array(
+			'src'     => true,
+			'alt'     => true,
+			'width'   => true,
+			'height'  => true,
+			'loading' => true,
+		);
+
+		$svg = $global;
+		foreach ( array( 'viewbox', 'xmlns', 'fill', 'fill-rule', 'clip-rule', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'width', 'height', 'd', 'cx', 'cy', 'r', 'rx', 'ry', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 'points', 'transform', 'opacity' ) as $attr ) {
+			$svg[ $attr ] = true;
+		}
+		foreach ( array( 'svg', 'g', 'path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon' ) as $tag ) {
+			$tags[ $tag ] = $svg;
+		}
+
+		return wp_kses( $html, $tags, array( 'http', 'https', 'mailto', 'tel' ) );
+	}
+
+	/**
+	 * A snippet's own stylesheet, made safe and local: @import and any
+	 * declaration with url(), expression() or similar are dropped (the rest
+	 * of the stylesheet stays); every rule scoped to the demo pages and to selectors that
+	 * name an ai- class, so a snippet can never restyle the rest of the page;
+	 * @media/@supports kept, @keyframes kept as-is, other at-rules dropped;
+	 * position:fixed demoted to absolute.
+	 *
+	 * @param string $css
+	 * @return string '' when nothing safe is left or braces don't balance.
+	 */
+	private function snippet_css( $css ) {
+		$css = str_replace( array( '<', '\\' ), '', (string) $css );
+		$css = preg_replace( '#/\*.*?\*/#s', '', $css );
+		$css = preg_replace( '/@import[^;{}]*;?/i', '', $css );
+		$css = preg_replace( '/[^;{}]*(?:url\s*\(|expression\s*\(|javascript:|behavior\s*:|-moz-binding)[^;{}]*;?/i', '', $css );
+		$css = preg_replace( '/position\s*:\s*fixed/i', 'position:absolute', $css );
+
+		$scoped = $this->scope_css( $css );
+		return null === $scoped ? '' : $scoped;
+	}
+
+	/**
+	 * @param string $css
+	 * @return string|null Scoped rules, or null when braces don't balance.
+	 */
+	private function scope_css( $css ) {
+		$out = '';
+		$pos = 0;
+		$len = strlen( $css );
+
+		while ( $pos < $len ) {
+			$open = strpos( $css, '{', $pos );
+			if ( false === $open ) {
+				break;
+			}
+
+			$depth = 1;
+			$i     = $open + 1;
+			while ( $i < $len && $depth > 0 ) {
+				if ( '{' === $css[ $i ] ) {
+					$depth++;
+				} elseif ( '}' === $css[ $i ] ) {
+					$depth--;
+				}
+				$i++;
+			}
+			if ( $depth > 0 ) {
+				return null;
+			}
+
+			$prelude = trim( substr( $css, $pos, $open - $pos ), " \t\n\r;" );
+			$body    = substr( $css, $open + 1, $i - $open - 2 );
+			$pos     = $i;
+
+			if ( '' === $prelude ) {
+				continue;
+			}
+
+			if ( '@' === $prelude[0] ) {
+				if ( preg_match( '/^@(?:-webkit-)?keyframes\s+[\w-]+$/i', $prelude ) ) {
+					$out .= $prelude . '{' . $body . '}';
+				} elseif ( preg_match( '/^@(?:media|supports)\b/i', $prelude ) ) {
+					$inner = $this->scope_css( $body );
+					if ( null === $inner ) {
+						return null;
+					}
+					if ( '' !== $inner ) {
+						$out .= $prelude . '{' . $inner . '}';
+					}
+				}
+				continue;
+			}
+
+			// Nested rules aren't supported; emptied rules aren't worth keeping.
+			if ( false !== strpos( $body, '{' ) || '' === trim( $body, " 	
+;" ) ) {
+				continue;
+			}
+
+			$selectors = array();
+			foreach ( explode( ',', $prelude ) as $selector ) {
+				$selector = trim( preg_replace( '/^\.iss-ai-demo(?![\w-])\s*/', '', trim( $selector ) ) );
+				if ( '' !== $selector && preg_match( '/\.ai-[\w-]+/', $selector ) ) {
+					$selectors[] = '.iss-ai-demo ' . $selector;
+				}
+			}
+			if ( $selectors ) {
+				$out .= implode( ',', $selectors ) . '{' . $body . '}';
+			}
+		}
+
+		return $out;
 	}
 
 	/* ---------------------------------------------------------------------
@@ -1396,6 +1639,11 @@ class HtmlToBlocks {
 
 		foreach ( array( 'script', 'iframe', 'object', 'embed', 'form', 'link', 'meta', 'base', 'style' ) as $tag ) {
 			foreach ( iterator_to_array( $doc->getElementsByTagName( $tag ) ) as $node ) {
+				// A Custom HTML snippet keeps its own <style>; snippet_block()
+				// sanitizes and scopes it.
+				if ( 'style' === $tag && ! empty( $this->options['html'] ) && $xpath->query( 'ancestor::*[@data-block="html"]', $node )->length ) {
+					continue;
+				}
 				$node->parentNode->removeChild( $node );
 			}
 		}
@@ -1440,12 +1688,22 @@ class HtmlToBlocks {
 		);
 
 		// Resolve internal #page: links that survived inside inline markup.
+		return $this->resolve_page_hrefs( trim( $html ) );
+	}
+
+	/**
+	 * Resolve internal href="#page:slug" links inside an HTML string.
+	 *
+	 * @param string $html
+	 * @return string
+	 */
+	private function resolve_page_hrefs( $html ) {
 		return preg_replace_callback(
 			'/href="#page:([a-z0-9-]+)"/',
 			function ( $m ) {
 				return 'href="' . esc_url( $this->resolve_href( '#page:' . $m[1] ) ) . '"';
 			},
-			trim( $html )
+			$html
 		);
 	}
 
