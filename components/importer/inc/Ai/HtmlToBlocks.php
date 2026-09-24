@@ -34,6 +34,11 @@
  *   data-block='icon', <svg>   → core/icon showing the placeholder icon (the
  *                                AI places icons; the user picks the glyphs)
  *
+ * With the demo stylesheet available (options.css) the converter also reads
+ * what that stylesheet computes (see CssCascade): CSS grids become native
+ * grid groups, text that would fail contrast gets a native colour, and
+ * buttons and icons follow the text alignment of their container.
+ *
  * The visual design ships as a per-demo stylesheet (see AiDemoGenerator);
  * the blocks stay native and editable.
  *
@@ -74,11 +79,35 @@ class HtmlToBlocks {
 	 *                and the edit_css capability, or core strips it on save);
 	 * under_header — the page's header floats over its first section;
 	 * icon         — the icon name every icon block shows ('' = no core/icon
-	 *                block on this site: icons are dropped).
+	 *                block on this site: icons are dropped);
+	 * css          — the demo stylesheet ('' = convert the HTML as written).
 	 *
 	 * @var array
 	 */
 	private $options = array();
+
+	/**
+	 * The demo stylesheet's cascade for the page being converted.
+	 *
+	 * @var CssCascade|null
+	 */
+	private $cascade = null;
+
+	/**
+	 * Grid containers lifted from the stylesheet into native grids: object
+	 * id => [ 'count' => columns (0 = auto), 'spans' => per-track spans ].
+	 *
+	 * @var array
+	 */
+	private $lifted = array();
+
+	/**
+	 * Classes of those containers — their CSS grid rules are dropped when the
+	 * page's stylesheet is printed (AiDemoGenerator::get_demo_css_for_post()).
+	 *
+	 * @var string[]
+	 */
+	private $lifted_classes = array();
 
 	/**
 	 * Whether the last converted page opens with a photo cover — the only
@@ -92,7 +121,7 @@ class HtmlToBlocks {
 	 * @param array    $page_links     slug => URL map.
 	 * @param callable $image_resolver fn( string $query, string $orientation ): ?array
 	 * @param array    $brand          [ 'accent' => hex, 'accent_text' => hex, 'radius' => css length ]
-	 * @param array    $options        [ 'block_css' => bool, 'under_header' => bool, 'icon' => string ]
+	 * @param array    $options        [ 'block_css' => bool, 'under_header' => bool, 'icon' => string, 'css' => string ]
 	 */
 	public function __construct( array $page_links, callable $image_resolver, array $brand = array(), array $options = array() ) {
 		$this->page_links     = $page_links;
@@ -111,8 +140,19 @@ class HtmlToBlocks {
 				'block_css'    => false,
 				'under_header' => false,
 				'icon'         => '',
+				'css'          => '',
 			)
 		);
+	}
+
+	/**
+	 * Classes of the grid containers the last conversion lifted from the
+	 * stylesheet into native grid groups.
+	 *
+	 * @return string[]
+	 */
+	public function lifted_classes() {
+		return $this->lifted_classes;
 	}
 
 	/**
@@ -156,6 +196,12 @@ class HtmlToBlocks {
 		if ( ! $body ) {
 			return '';
 		}
+
+		$this->lifted         = array();
+		$this->lifted_classes = array();
+		$this->cascade        = '' !== trim( (string) $this->options['css'] )
+			? new CssCascade( $this->options['css'], array( 'iss-ai-demo', 'iss-ai-demo--' . sanitize_html_class( $page_slug ) ) )
+			: null;
 
 		// If the AI wrapped the whole page in a single demo div, unwrap it —
 		// its children are the top-level sections.
@@ -434,15 +480,21 @@ class HtmlToBlocks {
 			return $this->convert_children( $el, true );
 		}
 
+		// data-layout: a native grid / row / stack (layout CSS is generated
+		// by WordPress at render time, nothing goes into the saved markup).
+		// Otherwise a CSS grid from the stylesheet is lifted into a native
+		// one. Decided before the children convert: their spans depend on it.
+		$layout = $this->group_layout( $el );
+		if ( ! $layout ) {
+			$layout = $this->lift_grid( $el );
+		}
+
 		$inner = $this->convert_children( $el );
 		if ( '' === trim( $inner ) ) {
 			return '';
 		}
 
-		// data-layout: a native grid / row / stack (layout CSS is generated
-		// by WordPress at render time, nothing goes into the saved markup).
-		$layout = $this->group_layout( $el );
-		$attrs  = array( 'layout' => $layout ? $layout['layout'] : array( 'type' => 'default' ) );
+		$attrs = array( 'layout' => $layout ? $layout['layout'] : array( 'type' => 'default' ) );
 		if ( $layout && '' !== $layout['gap'] ) {
 			$attrs['style'] = array( 'spacing' => array( 'blockGap' => $layout['gap'] ) );
 		}
@@ -529,11 +581,19 @@ class HtmlToBlocks {
 		$attrs  = $this->with_element_styles( $attrs, $el );
 		$class .= $this->css_class( $attrs );
 
+		// Headings up to h3 are large text (WCAG 3:1).
+		$fix = $this->contrast_fix( $el, $level <= 3 );
+		if ( '' !== $fix ) {
+			$attrs['style']['color']['text'] = $fix;
+			$class                          .= ' has-text-color';
+		}
+
 		return sprintf(
-			"<!-- wp:heading%s -->\n<h%d class=\"%s\">%s</h%d>\n<!-- /wp:heading -->",
+			"<!-- wp:heading%s -->\n<h%d class=\"%s\"%s>%s</h%d>\n<!-- /wp:heading -->",
 			$attrs ? ' ' . serialize_block_attributes( $attrs ) : '',
 			$level,
 			esc_attr( $class ),
+			'' !== $fix ? ' style="color:' . esc_attr( $fix ) . '"' : '',
 			$this->inline_html( $el ),
 			$level
 		);
@@ -543,15 +603,25 @@ class HtmlToBlocks {
 		$classes = $force_classes ? $force_classes : $this->classes( $el );
 		$attrs   = $this->with_element_styles( $classes ? array( 'className' => $classes ) : array(), $el );
 		$class   = trim( $classes . $this->css_class( $attrs ) );
-		$attrs   = $attrs ? ' ' . serialize_block_attributes( $attrs ) : '';
-		$class   = $class ? ' class="' . esc_attr( $class ) . '"' : '';
 		$inner   = $this->inline_html( $el );
 
 		if ( '' === trim( wp_strip_all_tags( $inner ) ) ) {
 			return '';
 		}
 
-		return sprintf( "<!-- wp:paragraph%s -->\n<p%s>%s</p>\n<!-- /wp:paragraph -->", $attrs, $class, $inner );
+		$fix = $this->contrast_fix( $el );
+		if ( '' !== $fix ) {
+			$attrs['style']['color']['text'] = $fix;
+			$class                           = trim( $class . ' has-text-color' );
+		}
+
+		return sprintf(
+			"<!-- wp:paragraph%s -->\n<p%s%s>%s</p>\n<!-- /wp:paragraph -->",
+			$attrs ? ' ' . serialize_block_attributes( $attrs ) : '',
+			$class ? ' class="' . esc_attr( $class ) . '"' : '',
+			'' !== $fix ? ' style="color:' . esc_attr( $fix ) . '"' : '',
+			$inner
+		);
 	}
 
 	/**
@@ -655,7 +725,11 @@ class HtmlToBlocks {
 		}
 
 		$align = strtolower( trim( $el->getAttribute( 'data-align' ) ) );
-		if ( in_array( $align, array( 'left', 'center', 'right' ), true ) ) {
+		if ( ! in_array( $align, array( 'left', 'center', 'right' ), true ) ) {
+			// No explicit alignment: follow the text around it.
+			$align = $this->context_alignment( $el );
+		}
+		if ( '' !== $align ) {
 			$attrs['align'] = $align;
 		}
 
@@ -913,21 +987,26 @@ class HtmlToBlocks {
 		$query = trim( $bg->getAttribute( 'data-query' ) );
 		$image = $query ? call_user_func( $this->image_resolver, $query, trim( $bg->getAttribute( 'data-orientation' ) ) ? trim( $bg->getAttribute( 'data-orientation' ) ) : 'landscape' ) : null;
 
-		// Remove the background image before converting the inner content.
-		$el->removeChild( $bg );
-
-		if ( ! $image ) {
-			return $this->group_block( $el, $full );
-		}
-
-		$inner = $this->convert_children( $el );
-
 		$dim = (int) $bg->getAttribute( 'data-dim' );
 		$dim = ( $dim >= 0 && $dim <= 90 ) ? (int) ( round( $dim / 10 ) * 10 ) : 40;
 
 		// A brand-colored overlay (duotone wash) instead of black.
 		$overlay = sanitize_hex_color( trim( $bg->getAttribute( 'data-overlay' ) ) );
 		$overlay = $overlay ? $overlay : '#000000';
+
+		// Remove the background image before converting the inner content —
+		// leaving a note of what the content sits on for the cascade.
+		$el->removeChild( $bg );
+
+		if ( ! $image ) {
+			return $this->group_block( $el, $full );
+		}
+
+		$el->setAttribute( 'data-iss-cover', '1' );
+		$el->setAttribute( 'data-iss-cover-dim', (string) $dim );
+		$el->setAttribute( 'data-iss-cover-overlay', $overlay );
+
+		$inner = $this->convert_children( $el );
 
 		$classes = $this->classes( $el );
 		$attrs   = array(
@@ -1102,6 +1181,25 @@ class HtmlToBlocks {
 		$text   = $this->brand['accent_text'];
 		$radius = $this->brand['radius'];
 
+		// The container the buttons sit in: its text alignment and surface.
+		$context = $anchors[0]->parentNode instanceof \DOMElement ? $anchors[0]->parentNode : null;
+		$justify = $context ? $this->context_alignment( $anchors[0] ) : '';
+		$surface = ( $context && $this->cascade ) ? $this->cascade->background( $context ) : null;
+
+		// Brand buttons must stay visible on the surface: a filled accent
+		// button on an accent-coloured tile swaps to its light variant, an
+		// outline button whose accent label would vanish takes a readable ink.
+		$outline_ink = $accent;
+		if ( $surface ) {
+			$accent_rgba = CssCascade::parse_color( $accent );
+			if ( $accent_rgba && CssCascade::contrast( $accent_rgba, $surface ) < 1.6 ) {
+				list( $accent, $text ) = array( $text, $accent );
+			}
+			if ( $accent_rgba && CssCascade::contrast( $accent_rgba, $surface ) < 3 ) {
+				$outline_ink = $this->readable_on( $surface );
+			}
+		}
+
 		$buttons = array();
 
 		foreach ( $anchors as $a ) {
@@ -1114,14 +1212,14 @@ class HtmlToBlocks {
 					'className' => 'is-style-outline',
 					'style'     => array(
 						'border' => array( 'radius' => $radius ),
-						'color'  => array( 'text' => $accent ),
+						'color'  => array( 'text' => $outline_ink ),
 					),
 				);
 				$buttons[] = sprintf(
 					"<!-- wp:button %s -->\n<div class=\"wp-block-button is-style-outline\"><a class=\"wp-block-button__link has-text-color wp-element-button\" style=\"border-radius:%s;color:%s\" href=\"%s\">%s</a></div>\n<!-- /wp:button -->",
 					wp_json_encode( $attrs ),
 					esc_attr( $radius ),
-					esc_attr( $accent ),
+					esc_attr( $outline_ink ),
 					$href,
 					$label
 				);
@@ -1147,8 +1245,12 @@ class HtmlToBlocks {
 			}
 		}
 
+		// Centred or right-aligned text around the buttons: justify the row
+		// the same way (a Buttons block is a flex row — text-align does not
+		// move it). The classes are rendered by WordPress, not saved.
 		return sprintf(
-			"<!-- wp:buttons -->\n<div class=\"wp-block-buttons\">%s</div>\n<!-- /wp:buttons -->",
+			"<!-- wp:buttons%s -->\n<div class=\"wp-block-buttons\">%s</div>\n<!-- /wp:buttons -->",
+			'' !== $justify ? ' ' . serialize_block_attributes( array( 'layout' => array( 'type' => 'flex', 'justifyContent' => $justify ) ) ) : '',
 			implode( "\n\n", $buttons )
 		);
 	}
@@ -1167,16 +1269,30 @@ class HtmlToBlocks {
 			return '';
 		}
 
-		$tag   = $ordered ? 'ol' : 'ul';
+		$tag       = $ordered ? 'ol' : 'ul';
 		$attrs     = $this->with_element_styles( $ordered ? array( 'ordered' => true ) : array(), $el );
 		$css_class = $this->css_class( $attrs );
-		$attrs     = $attrs ? ' ' . serialize_block_attributes( $attrs ) : '';
+
+		// Items share one colour: check the first one.
+		$first = null;
+		foreach ( $el->childNodes as $child ) {
+			if ( $child instanceof \DOMElement && 'li' === $child->nodeName ) {
+				$first = $child;
+				break;
+			}
+		}
+		$fix = $first ? $this->contrast_fix( $first ) : '';
+		if ( '' !== $fix ) {
+			$attrs['style']['color']['text'] = $fix;
+			$css_class                      .= ' has-text-color';
+		}
 
 		return sprintf(
-			"<!-- wp:list%s -->\n<%s class=\"wp-block-list%s\">%s</%s>\n<!-- /wp:list -->",
-			$attrs,
+			"<!-- wp:list%s -->\n<%s class=\"wp-block-list%s\"%s>%s</%s>\n<!-- /wp:list -->",
+			$attrs ? ' ' . serialize_block_attributes( $attrs ) : '',
 			$tag,
 			$css_class,
+			'' !== $fix ? ' style="color:' . esc_attr( $fix ) . '"' : '',
 			"\n" . implode( "\n\n", $items ) . "\n",
 			$tag
 		);
@@ -1190,14 +1306,14 @@ class HtmlToBlocks {
 			if ( XML_ELEMENT_NODE !== $child->nodeType ) {
 				$text = trim( $child->textContent );
 				if ( '' !== $text ) {
-					$paras[] = sprintf( "<!-- wp:paragraph -->\n<p>%s</p>\n<!-- /wp:paragraph -->", esc_html( $text ) );
+					$paras[] = $this->quote_paragraph( esc_html( $text ), $this->contrast_fix( $el ) );
 				}
 				continue;
 			}
 			if ( 'cite' === $child->nodeName || 'footer' === $child->nodeName ) {
 				$cite = sprintf( '<cite>%s</cite>', $this->inline_html( $child ) );
 			} elseif ( 'p' === $child->nodeName ) {
-				$paras[] = sprintf( "<!-- wp:paragraph -->\n<p>%s</p>\n<!-- /wp:paragraph -->", $this->inline_html( $child ) );
+				$paras[] = $this->quote_paragraph( $this->inline_html( $child ), $this->contrast_fix( $child ) );
 			}
 		}
 
@@ -1213,6 +1329,27 @@ class HtmlToBlocks {
 			$this->css_class( $attrs ),
 			implode( "\n\n", $paras ),
 			$cite
+		);
+	}
+
+	/**
+	 * A paragraph inside a quote, with a native colour when its text would
+	 * fail contrast (quote paragraphs pick up the stylesheet's generic p
+	 * colour even when the quote itself was restyled for a dark tile).
+	 *
+	 * @param string $inner Inline HTML.
+	 * @param string $fix   Text colour or ''.
+	 * @return string
+	 */
+	private function quote_paragraph( $inner, $fix ) {
+		if ( '' === $fix ) {
+			return sprintf( "<!-- wp:paragraph -->\n<p>%s</p>\n<!-- /wp:paragraph -->", $inner );
+		}
+		return sprintf(
+			"<!-- wp:paragraph %s -->\n<p class=\"has-text-color\" style=\"color:%s\">%s</p>\n<!-- /wp:paragraph -->",
+			serialize_block_attributes( array( 'style' => array( 'color' => array( 'text' => $fix ) ) ) ),
+			esc_attr( $fix ),
+			$inner
 		);
 	}
 
@@ -1365,7 +1502,7 @@ class HtmlToBlocks {
 			$layout  = array(
 				'type'               => 'grid',
 				'columnCount'        => max( 1, min( 6, $columns ? $columns : 3 ) ),
-				'minimumColumnWidth' => '' !== $minimum ? $minimum : '12rem',
+				'minimumColumnWidth' => '' !== $minimum ? $minimum : '200px',
 			);
 		} else {
 			$vertical = 'stack' === $type;
@@ -1409,6 +1546,30 @@ class HtmlToBlocks {
 
 		$column_span = (int) $el->getAttribute( 'data-col-span' );
 		$row_span    = (int) $el->getAttribute( 'data-row-span' );
+		// In a grid lifted from the stylesheet, the stylesheet's placement
+		// (grid-column / grid-row, or an uneven track list like 2fr 1fr)
+		// becomes the native span. A figure's image stands in for the figure.
+		$cell   = ( 'img' === $el->nodeName && $el->parentNode instanceof \DOMElement && 'figure' === $el->parentNode->nodeName ) ? $el->parentNode : $el;
+		$parent = $cell->parentNode;
+		if ( $this->cascade && $parent instanceof \DOMElement && isset( $this->lifted[ $this->cascade->key( $parent ) ] ) ) {
+			$grid = $this->lifted[ $this->cascade->key( $parent ) ];
+			if ( $column_span < 2 ) {
+				$column_span = $this->grid_span( $this->cascade->value( $cell, 'grid-column' ), $this->cascade->value( $cell, 'grid-column-end' ), $grid['count'] );
+				if ( $column_span < 2 && $grid['spans'] ) {
+					$index = 0;
+					for ( $s = $cell->previousSibling; $s; $s = $s->previousSibling ) {
+						if ( $s instanceof \DOMElement ) {
+							$index++;
+						}
+					}
+					$column_span = $grid['spans'][ $index % count( $grid['spans'] ) ];
+				}
+			}
+			if ( $row_span < 2 ) {
+				$row_span = $this->grid_span( $this->cascade->value( $cell, 'grid-row' ), $this->cascade->value( $cell, 'grid-row-end' ), 0 );
+			}
+		}
+
 		if ( $column_span >= 2 ) {
 			$layout['columnSpan'] = min( 6, $column_span );
 		}
@@ -1430,11 +1591,227 @@ class HtmlToBlocks {
 	}
 
 	/**
+	 * A CSS grid the stylesheet puts on this element, lifted into a native
+	 * grid layout: fixed columns (repeat(3, 1fr), 1fr 1fr 1fr) become Max.
+	 * columns with a minimum width, so the grid reflows on small screens;
+	 * repeat(auto-fill, minmax(X, 1fr)) becomes a Min. column width; whole-
+	 * number fr ratios (2fr 1fr) become a finer grid with spans. Anything
+	 * else (fixed or fractional tracks) stays CSS.
+	 *
+	 * @param \DOMElement $el
+	 * @return array|null [ 'layout' => array, 'gap' => string ] or null.
+	 */
+	private function lift_grid( $el ) {
+		$classes = $this->classes( $el );
+		if ( ! $this->cascade || '' === $classes ) {
+			return null;
+		}
+
+		$display = strtolower( trim( (string) $this->cascade->value( $el, 'display' ) ) );
+		if ( 'grid' !== $display && 'inline-grid' !== $display ) {
+			return null;
+		}
+
+		$tracks = $this->grid_tracks( (string) $this->cascade->value( $el, 'grid-template-columns' ) );
+		if ( ! $tracks ) {
+			return null;
+		}
+
+		$layout = array( 'type' => 'grid' );
+		if ( isset( $tracks['min'] ) ) {
+			$layout['minimumColumnWidth'] = $tracks['min'];
+		} else {
+			$layout['columnCount']        = $tracks['count'];
+			$layout['minimumColumnWidth'] = '200px';
+		}
+
+		// Native block gaps are plain lengths (no clamp()).
+		$gap = '';
+		foreach ( array( 'gap', 'grid-gap', 'column-gap' ) as $prop ) {
+			$value = $this->cascade->value( $el, $prop );
+			if ( null !== $value ) {
+				$parts = preg_split( '/\s+/', trim( $value ) );
+				$gap   = $this->css_length( $parts[0], array( 'px' => array( 0, 128 ), 'rem' => array( 0, 8 ), 'em' => array( 0, 8 ) ) );
+				break;
+			}
+		}
+
+		$this->lifted[ $this->cascade->key( $el ) ] = array(
+			'count' => isset( $layout['columnCount'] ) ? $layout['columnCount'] : 0,
+			'spans' => isset( $tracks['spans'] ) ? $tracks['spans'] : array(),
+		);
+		$this->lifted_classes = array_values( array_unique( array_merge( $this->lifted_classes, explode( ' ', $classes ) ) ) );
+
+		return array(
+			'layout' => $layout,
+			'gap'    => $gap,
+		);
+	}
+
+	/**
+	 * Parse grid-template-columns into a native grid shape.
+	 *
+	 * @param string $value
+	 * @return array|null [ 'count' => int, 'spans' => int[] ] or [ 'min' => length ].
+	 */
+	private function grid_tracks( $value ) {
+		$value = strtolower( trim( $value ) );
+		if ( '' === $value ) {
+			return null;
+		}
+
+		if ( preg_match( '/^repeat\(\s*auto-(?:fill|fit)\s*,\s*minmax\(\s*(?:min\(\s*)?([\d.]+(?:px|rem|em))/', $value, $m ) ) {
+			$min = $this->css_length( $m[1], array( 'px' => array( 64, 640 ), 'rem' => array( 4, 40 ), 'em' => array( 4, 40 ) ) );
+			return '' !== $min ? array( 'min' => $min ) : null;
+		}
+
+		if ( preg_match( '/^repeat\(\s*(\d+)\s*,/', $value, $m ) ) {
+			$count = (int) $m[1];
+			return ( $count >= 2 && $count <= 6 ) ? array( 'count' => $count ) : null;
+		}
+
+		$tracks = preg_split( '/\s+(?![^()]*\))/', $value );
+		$count  = count( $tracks );
+		if ( $count < 2 || $count > 6 ) {
+			return null;
+		}
+		if ( 1 === count( array_unique( $tracks ) ) ) {
+			return array( 'count' => $count );
+		}
+
+		$units = array();
+		foreach ( $tracks as $track ) {
+			if ( ! preg_match( '/^(\d+(?:\.\d+)?)fr$/', $track, $m ) ) {
+				return null;
+			}
+			$units[] = (float) $m[1];
+		}
+
+		$smallest = min( $units );
+		$spans    = array();
+		foreach ( $units as $unit ) {
+			$ratio = $unit / $smallest;
+			if ( abs( $ratio - round( $ratio ) ) > 0.15 ) {
+				return null;
+			}
+			$spans[] = (int) round( $ratio );
+		}
+
+		return array_sum( $spans ) <= 6 ? array( 'count' => array_sum( $spans ), 'spans' => $spans ) : null;
+	}
+
+	/**
+	 * A span from grid-column / grid-row ("span 2", "1 / 3", "2 / span 2",
+	 * "1 / -1" with a known column count).
+	 *
+	 * @param string|null $value Shorthand value.
+	 * @param string|null $end   The -end longhand's value.
+	 * @param int         $count Column count for "/ -1" (0 = unknown).
+	 * @return int 0 when none.
+	 */
+	private function grid_span( $value, $end, $count ) {
+		foreach ( array( $value, $end ) as $v ) {
+			if ( preg_match( '/span\s+(\d+)/', strtolower( (string) $v ), $m ) ) {
+				return (int) $m[1];
+			}
+		}
+
+		if ( preg_match( '/^\s*(\d+)\s*\/\s*(-?\d+)\s*$/', (string) $value, $m ) ) {
+			$start = (int) $m[1];
+			$stop  = (int) $m[2];
+			if ( $stop < 0 ) {
+				$stop = $count ? $count + 2 + $stop : 0;
+			}
+			if ( $start > 0 && $stop > $start ) {
+				return $stop - $start;
+			}
+		}
+
+		return 0;
+	}
+
+	/**
+	 * A native text colour for an element whose text would fail contrast
+	 * (WCAG AA) against the background it really sits on — the stylesheet's
+	 * own colours stay wherever they read. The replacement is the page's ink
+	 * or white, whichever reads better.
+	 *
+	 * @param \DOMElement $el
+	 * @param bool        $large Large text (3:1) instead of body text (4.5:1).
+	 * @return string Hex colour, or '' when readable or unknown.
+	 */
+	private function contrast_fix( $el, $large = false ) {
+		if ( ! $this->cascade ) {
+			return '';
+		}
+
+		$fg = $this->cascade->text_color( $el );
+		$bg = $this->cascade->background( $el );
+		if ( ! $fg || ! $bg || CssCascade::contrast( $fg, $bg ) >= ( $large ? 3 : 4.5 ) ) {
+			return '';
+		}
+
+		return $this->readable_on( $bg, $el );
+	}
+
+	/**
+	 * The page's ink or white — whichever reads better on a background.
+	 *
+	 * @param array            $bg RGBA.
+	 * @param \DOMElement|null $el Any element of the page (for its ink).
+	 * @return string Hex colour.
+	 */
+	private function readable_on( array $bg, $el = null ) {
+		$ink  = '#111111';
+		$body = $el ? $el->ownerDocument->getElementsByTagName( 'body' )->item( 0 ) : null;
+		if ( $body && $this->cascade ) {
+			$root = $this->cascade->text_color( $body );
+			if ( $root && CssCascade::luminance( $root ) < 0.05 ) {
+				$ink = CssCascade::hex( $root );
+			}
+		}
+
+		$white = CssCascade::parse_color( '#ffffff' );
+		$dark  = CssCascade::parse_color( $ink );
+
+		return CssCascade::contrast( $white, $bg ) >= CssCascade::contrast( $dark, $bg ) ? '#ffffff' : $ink;
+	}
+
+	/**
+	 * Horizontal alignment an element should follow from its container:
+	 * 'center' or 'right' where the text around it is centred or right-
+	 * aligned, '' otherwise — and always '' inside native row/stack/grid
+	 * groups, which align their children themselves.
+	 *
+	 * @param \DOMElement $el
+	 * @return string
+	 */
+	private function context_alignment( $el ) {
+		$parent = $el->parentNode;
+		if ( ! $this->cascade || ! $parent instanceof \DOMElement ) {
+			return '';
+		}
+		if ( $this->group_layout( $parent ) || isset( $this->lifted[ $this->cascade->key( $parent ) ] ) ) {
+			return '';
+		}
+
+		$align = strtolower( trim( (string) $this->cascade->computed( $parent, 'text-align' ) ) );
+		if ( 'center' === $align ) {
+			return 'center';
+		}
+		return in_array( $align, array( 'right', 'end' ), true ) ? 'right' : '';
+	}
+
+	/**
 	 * A CSS length within per-unit bounds ("2rem", "240px", "30%"); a bare
-	 * "0" is accepted when 0 is in range.
+	 * "0" is accepted when 0 is in range. rem/em come back as px: every
+	 * length here becomes a native block attribute, which renders against the
+	 * theme's root font size (10px in Inspiro Premium), while the AI writes
+	 * rem for the usual 16px — a 12rem grid column would otherwise shrink to
+	 * 120px and never collapse on phones.
 	 *
 	 * @param string $raw    Attribute value.
-	 * @param array  $bounds Unit => [ min, max ].
+	 * @param array  $bounds Unit => [ min, max ] (checked in the unit given).
 	 * @return string '' when absent/invalid.
 	 */
 	private function css_length( $raw, array $bounds ) {
@@ -1454,7 +1831,11 @@ class HtmlToBlocks {
 
 		$value = (float) $m[1];
 
-		return ( $value >= $bounds[ $m[2] ][0] && $value <= $bounds[ $m[2] ][1] ) ? $m[1] . $m[2] : '';
+		if ( $value < $bounds[ $m[2] ][0] || $value > $bounds[ $m[2] ][1] ) {
+			return '';
+		}
+
+		return in_array( $m[2], array( 'rem', 'em' ), true ) ? round( $value * 16, 2 ) . 'px' : $m[1] . $m[2];
 	}
 
 	/**

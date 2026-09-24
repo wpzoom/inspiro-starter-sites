@@ -24,6 +24,7 @@ class AiDemoGenerator {
 
 	const PLAN_TRANSIENT_PREFIX = 'inspiro_starter_sites_ai_plan_';
 	const GENERATED_META_KEY    = '_inspiro_starter_sites_ai_demo';
+	const NATIVE_GRID_META_KEY  = '_inspiro_starter_sites_ai_native_grids';
 	const DEMOS_OPTION          = 'inspiro_starter_sites_ai_demos';
 
 	const MAX_PAGES             = 6;
@@ -1653,6 +1654,7 @@ class AiDemoGenerator {
 				'block_css'    => ThemeOptions::supports_block_css(),
 				'under_header' => $transparent,
 				'icon'         => ThemeOptions::icon_placeholder(),
+				'css'          => $record['css'],
 			)
 		);
 		$content     = $converter->convert( $html, $page['slug'] );
@@ -1688,6 +1690,11 @@ class AiDemoGenerator {
 			if ( $transparent && ! $converter->opens_with_cover() ) {
 				update_post_meta( $existing_page_id, '_wp_page_template', ThemeOptions::TEMPLATE_SOLID );
 			}
+			$grids = $converter->lifted_classes();
+			if ( $append ) {
+				$grids = array_values( array_unique( array_merge( (array) get_post_meta( $existing_page_id, self::NATIVE_GRID_META_KEY, true ), $grids ) ) );
+			}
+			update_post_meta( $existing_page_id, self::NATIVE_GRID_META_KEY, array_filter( $grids ) );
 			$page_id = $existing_page_id;
 		} else {
 			$page_id = wp_insert_post(
@@ -1700,8 +1707,9 @@ class AiDemoGenerator {
 						'post_content' => $content,
 						'menu_order'   => count( $page_ids ),
 						'meta_input'   => array(
-							self::GENERATED_META_KEY => $plan_id,
-							'_wp_page_template'      => ThemeOptions::page_template( $transparent && $converter->opens_with_cover() ? 'transparent' : 'solid' ),
+							self::GENERATED_META_KEY   => $plan_id,
+							'_wp_page_template'        => ThemeOptions::page_template( $transparent && $converter->opens_with_cover() ? 'transparent' : 'solid' ),
+							self::NATIVE_GRID_META_KEY => $converter->lifted_classes(),
 						),
 					)
 				),
@@ -2330,6 +2338,9 @@ class AiDemoGenerator {
 				'block_css'    => ThemeOptions::supports_block_css(),
 				'under_header' => $transparent,
 				'icon'         => ThemeOptions::icon_placeholder(),
+				// The page is built against the plan's stylesheet: the
+				// converter reads it for grids, contrast and alignment.
+				'css'          => $state['plan']['css'],
 			)
 		);
 		$content     = $converter->convert( $html, $page['slug'] );
@@ -2352,8 +2363,9 @@ class AiDemoGenerator {
 					'post_content' => $content,
 					'menu_order'   => $index,
 					'meta_input'   => array(
-						self::GENERATED_META_KEY => $plan_id,
-						'_wp_page_template'      => $template,
+						self::GENERATED_META_KEY   => $plan_id,
+						'_wp_page_template'        => $template,
+						self::NATIVE_GRID_META_KEY => $converter->lifted_classes(),
 					),
 				)
 			),
@@ -3632,6 +3644,24 @@ class AiDemoGenerator {
 		$css = preg_replace( '/url\s*\(/i', 'noop(', $css );
 		$css = trim( mb_substr( $css, 0, 60000 ) );
 
+		// A column flex with align-items:center is the model's way of saying
+		// "centred content", but it only centres the boxes: lines of text —
+		// and the buttons and icons that follow the text alignment — stay
+		// left. Say it in full where the rule doesn't set text-align itself.
+		$css = preg_replace_callback(
+			'/\{([^{}]*)\}/',
+			static function ( $m ) {
+				$body = $m[1];
+				if ( preg_match( '/flex-direction\s*:\s*column\b/i', $body )
+					&& preg_match( '/align-items\s*:\s*center\b/i', $body )
+					&& ! preg_match( '/text-align\s*:/i', $body ) ) {
+					return '{' . rtrim( trim( $body ), ';' ) . ';text-align:center}';
+				}
+				return $m[0];
+			},
+			$css
+		);
+
 		// Must actually be scoped to the demo wrapper.
 		if ( false === strpos( $css, '.iss-ai-demo' ) ) {
 			return '';
@@ -3714,7 +3744,7 @@ class AiDemoGenerator {
 			// as one block).
 			$fonts = ! empty( $demos[ $plan_id ]['font_css'] ) ? $demos[ $plan_id ]['font_css'] . "\n" : '';
 
-			return $this->scale_css_for_theme( $fonts . $demos[ $plan_id ]['css'] );
+			return $this->scale_css_for_theme( $fonts . $this->without_native_grids( $demos[ $plan_id ]['css'], $post_id ) );
 		}
 
 		$state = $this->get_plan_state( $plan_id );
@@ -3722,7 +3752,23 @@ class AiDemoGenerator {
 			return '';
 		}
 		$font_css = ! empty( $state['plan']['font_css'] ) ? $state['plan']['font_css'] . "\n" : '';
-		return $this->scale_css_for_theme( $font_css . $state['plan']['css'] );
+		return $this->scale_css_for_theme( $font_css . $this->without_native_grids( $state['plan']['css'], $post_id ) );
+	}
+
+	/**
+	 * The stylesheet without the CSS grid rules of containers the converter
+	 * turned into native grid groups on this page: WordPress' responsive
+	 * grid — and the user's edits to it in the editor — is what renders.
+	 * The stored stylesheet is untouched (other pages and the page prompts
+	 * still see the full design).
+	 *
+	 * @param string $css     Demo stylesheet.
+	 * @param int    $post_id Page ID.
+	 * @return string
+	 */
+	private function without_native_grids( $css, $post_id ) {
+		$classes = get_post_meta( $post_id, self::NATIVE_GRID_META_KEY, true );
+		return is_array( $classes ) && $classes ? CssCascade::strip_grid( $css, $classes ) : $css;
 	}
 
 	/**
