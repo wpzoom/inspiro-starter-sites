@@ -97,6 +97,9 @@ class ThemeOptions {
 		if ( self::supports_block_css() ) {
 			$caps[] = 'block_css';
 		}
+		if ( '' !== self::icon_placeholder() ) {
+			$caps[] = 'icon_block';
+		}
 
 		return $caps;
 	}
@@ -110,6 +113,24 @@ class ThemeOptions {
 	 */
 	public static function supports_block_css() {
 		return function_exists( 'wp_render_custom_css_support_styles' ) && current_user_can( 'edit_css' );
+	}
+
+	/**
+	 * The icon every AI-placed icon block shows: one neutral placeholder the
+	 * user swaps for real icons in the editor — the AI decides where icons
+	 * go, never which glyph. '' when the site has no core Icon block
+	 * (WordPress < 7.0) or the filtered icon isn't registered.
+	 *
+	 * @return string Icon name, e.g. 'core/shadow'.
+	 */
+	public static function icon_placeholder() {
+		if ( ! class_exists( 'WP_Icons_Registry' ) || ! \WP_Block_Type_Registry::get_instance()->is_registered( 'core/icon' ) ) {
+			return '';
+		}
+
+		$icon = (string) apply_filters( 'inspiro_starter_sites/ai_icon_placeholder', 'core/shadow' );
+
+		return \WP_Icons_Registry::get_instance()->is_registered( $icon ) ? $icon : '';
 	}
 
 	/**

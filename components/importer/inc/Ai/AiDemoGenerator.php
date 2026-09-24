@@ -1652,6 +1652,7 @@ class AiDemoGenerator {
 			array(
 				'block_css'    => ThemeOptions::supports_block_css(),
 				'under_header' => $transparent,
+				'icon'         => ThemeOptions::icon_placeholder(),
 			)
 		);
 		$content     = $converter->convert( $html, $page['slug'] );
@@ -2328,6 +2329,7 @@ class AiDemoGenerator {
 			array(
 				'block_css'    => ThemeOptions::supports_block_css(),
 				'under_header' => $transparent,
+				'icon'         => ThemeOptions::icon_placeholder(),
 			)
 		);
 		$content     = $converter->convert( $html, $page['slug'] );

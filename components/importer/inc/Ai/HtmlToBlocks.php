@@ -31,6 +31,8 @@
  *                                row or stack; data-gap → block gap
  *   child data-col-span / data-row-span / data-grow / data-basis
  *                              → grid spans and flex sizing of that child
+ *   data-block='icon', <svg>   → core/icon showing the placeholder icon (the
+ *                                AI places icons; the user picks the glyphs)
  *
  * The visual design ships as a per-demo stylesheet (see AiDemoGenerator);
  * the blocks stay native and editable.
@@ -70,7 +72,9 @@ class HtmlToBlocks {
 	/**
 	 * block_css    — emit data-css as per-block custom CSS (needs WP 7.0+
 	 *                and the edit_css capability, or core strips it on save);
-	 * under_header — the page's header floats over its first section.
+	 * under_header — the page's header floats over its first section;
+	 * icon         — the icon name every icon block shows ('' = no core/icon
+	 *                block on this site: icons are dropped).
 	 *
 	 * @var array
 	 */
@@ -88,7 +92,7 @@ class HtmlToBlocks {
 	 * @param array    $page_links     slug => URL map.
 	 * @param callable $image_resolver fn( string $query, string $orientation ): ?array
 	 * @param array    $brand          [ 'accent' => hex, 'accent_text' => hex, 'radius' => css length ]
-	 * @param array    $options        [ 'block_css' => bool, 'under_header' => bool ]
+	 * @param array    $options        [ 'block_css' => bool, 'under_header' => bool, 'icon' => string ]
 	 */
 	public function __construct( array $page_links, callable $image_resolver, array $brand = array(), array $options = array() ) {
 		$this->page_links     = $page_links;
@@ -106,6 +110,7 @@ class HtmlToBlocks {
 			array(
 				'block_css'    => false,
 				'under_header' => false,
+				'icon'         => '',
 			)
 		);
 	}
@@ -291,6 +296,11 @@ class HtmlToBlocks {
 	 * @return string
 	 */
 	private function convert_element( $el ) {
+		// Icons may be written on any element (<div>, <span>, <i>).
+		if ( 'icon' === trim( $el->getAttribute( 'data-block' ) ) ) {
+			return $this->icon_block( $el );
+		}
+
 		switch ( $el->nodeName ) {
 			case 'section':
 			case 'article':
@@ -401,7 +411,12 @@ class HtmlToBlocks {
 				return '';
 
 			default:
-				// svg and anything exotic — passthrough as a custom HTML block.
+				// A hand-drawn <svg> icon becomes the same editable placeholder
+				// icon as data-block='icon' where the site has the Icon block.
+				if ( 'svg' === $el->nodeName && '' !== $this->options['icon'] ) {
+					return $this->icon_block( $el );
+				}
+				// Anything exotic — passthrough as a custom HTML block.
 				return $this->html_block( $el );
 		}
 	}
@@ -576,6 +591,80 @@ class HtmlToBlocks {
 			. '<!-- wp:paragraph --><p>' . esc_html__( 'Fresh posts are coming soon — check back shortly.', 'inspiro-starter-sites' ) . "</p><!-- /wp:paragraph -->\n"
 			. "<!-- /wp:query-no-results --></div>\n"
 			. '<!-- /wp:query -->';
+	}
+
+	/**
+	 * Native icon block (core/icon, WordPress 7.0+). It always shows the
+	 * placeholder icon — the AI decides where icons go and how they look,
+	 * never which glyph; the user swaps each one in the editor. Everything
+	 * is a native attribute: data-size (glyph size), data-color (icon color),
+	 * data-bg + data-radius + data-padding (a tinted badge), data-align.
+	 * Dynamic block: the comment is the whole saved markup, so there is
+	 * nothing for the editor to invalidate.
+	 *
+	 * @param \DOMElement $el
+	 * @return string '' when the site has no icon block.
+	 */
+	private function icon_block( $el ) {
+		if ( '' === $this->options['icon'] ) {
+			return '';
+		}
+
+		$size    = $this->css_length( $el->getAttribute( 'data-size' ), array( 'px' => array( 12, 200 ), 'rem' => array( 0.75, 12 ), 'em' => array( 0.75, 12 ) ) );
+		$size    = '' !== $size ? $size : '40px';
+		$padding = $this->css_length( $el->getAttribute( 'data-padding' ), array( 'px' => array( 0, 80 ), 'rem' => array( 0, 5 ), 'em' => array( 0, 5 ) ) );
+
+		// The block's width includes its padding (core styles the svg with
+		// box-sizing: border-box), while data-size is the glyph itself — a
+		// 28px icon in a 14px-padded badge is a 56px block, not a 0px glyph.
+		$width = $size;
+		if ( '' !== $padding && '0' !== $padding ) {
+			preg_match( '/^([\d.]+)(\D+)$/', $size, $s );
+			preg_match( '/^([\d.]+)(\D+)$/', $padding, $p );
+			$width = $s[2] === $p[2]
+				? ( (float) $s[1] + 2 * (float) $p[1] ) . $s[2]
+				: 'calc(' . $size . ' + ' . $padding . ' * 2)';
+		}
+
+		$attrs = array(
+			'icon'  => $this->options['icon'],
+			'style' => array( 'dimensions' => array( 'width' => $width ) ),
+		);
+
+		$color = sanitize_hex_color( trim( $el->getAttribute( 'data-color' ) ) );
+		$bg    = sanitize_hex_color( trim( $el->getAttribute( 'data-bg' ) ) );
+		if ( $color ) {
+			$attrs['style']['color']['text'] = $color;
+		}
+		if ( $bg ) {
+			$attrs['style']['color']['background'] = $bg;
+		}
+
+		$radius = $this->css_length( $el->getAttribute( 'data-radius' ), array( 'px' => array( 0, 999 ), '%' => array( 0, 50 ), 'rem' => array( 0, 10 ) ) );
+		if ( '' !== $radius ) {
+			$attrs['style']['border']['radius'] = $radius;
+		}
+
+		if ( '' !== $padding ) {
+			$attrs['style']['spacing']['padding'] = array(
+				'top'    => $padding,
+				'right'  => $padding,
+				'bottom' => $padding,
+				'left'   => $padding,
+			);
+		}
+
+		$align = strtolower( trim( $el->getAttribute( 'data-align' ) ) );
+		if ( in_array( $align, array( 'left', 'center', 'right' ), true ) ) {
+			$attrs['align'] = $align;
+		}
+
+		$classes = $this->classes( $el );
+		if ( $classes ) {
+			$attrs['className'] = $classes;
+		}
+
+		return '<!-- wp:icon ' . serialize_block_attributes( $this->with_element_styles( $attrs, $el ) ) . ' /-->';
 	}
 
 	/**
