@@ -3673,6 +3673,9 @@ class AiDemoGenerator {
 			// Transparent header: the theme's navigation floats over the
 			// page's first cover — push its content clear of the bar.
 			. ".iss-ai-demo.iss-ai-under-header>.wp-block-cover>.wp-block-cover__inner-container{margin-top:80px}"
+			// Native grid/flex groups space their children with the block gap;
+			// the baseline heading/paragraph margins below must not add to it.
+			. ".iss-ai-demo .is-layout-flex>*,.iss-ai-demo .is-layout-grid>*{margin:0}"
 			. ".iss-ai-demo h1,.iss-ai-demo h2,.iss-ai-demo h3,.iss-ai-demo h4{margin-top:0;margin-bottom:.5em}"
 			. ".iss-ai-demo p{margin-top:0;margin-bottom:1em}"
 			. ".iss-ai-demo p:last-child,.iss-ai-demo h2:last-child,.iss-ai-demo h3:last-child{margin-bottom:0}"

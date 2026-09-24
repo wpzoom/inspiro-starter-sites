@@ -26,6 +26,11 @@
  *   section data-height        → cover minHeight; data-position → contentPosition
  *   background img data-overlay → cover overlay color
  *   ai-cols child data-width   → column width; wrapper data-valign → alignment
+ *   div/section data-layout    → group layout: grid (data-columns = Max.
+ *                                columns, data-min = Min. column width), flex
+ *                                row or stack; data-gap → block gap
+ *   child data-col-span / data-row-span / data-grow / data-basis
+ *                              → grid spans and flex sizing of that child
  *
  * The visual design ships as a per-demo stylesheet (see AiDemoGenerator);
  * the blocks stay native and editable.
@@ -330,7 +335,8 @@ class HtmlToBlocks {
 				}
 				$bg = $this->find_background_image( $el );
 				if ( $bg ) {
-					return $this->cover_block( $el, $bg );
+					// A photo tile in a grid or column stays inside its cell.
+					return $this->cover_block( $el, $bg, false );
 				}
 				return $this->group_block( $el, false );
 
@@ -375,7 +381,7 @@ class HtmlToBlocks {
 				// Classes preserved: .ai-rule hairline dividers are a core
 				// editorial device in the design system.
 				$hr_classes = $this->classes( $el );
-				$hr_attrs   = $this->with_block_css( $hr_classes ? array( 'className' => $hr_classes ) : array(), $el );
+				$hr_attrs   = $this->with_element_styles( $hr_classes ? array( 'className' => $hr_classes ) : array(), $el );
 				return sprintf(
 					"<!-- wp:separator%s -->\n<hr class=\"wp-block-separator has-alpha-channel-opacity%s\"/>\n<!-- /wp:separator -->",
 					$hr_attrs ? ' ' . serialize_block_attributes( $hr_attrs ) : '',
@@ -418,7 +424,13 @@ class HtmlToBlocks {
 			return '';
 		}
 
-		$attrs = array( 'layout' => array( 'type' => 'default' ) );
+		// data-layout: a native grid / row / stack (layout CSS is generated
+		// by WordPress at render time, nothing goes into the saved markup).
+		$layout = $this->group_layout( $el );
+		$attrs  = array( 'layout' => $layout ? $layout['layout'] : array( 'type' => 'default' ) );
+		if ( $layout && '' !== $layout['gap'] ) {
+			$attrs['style'] = array( 'spacing' => array( 'blockGap' => $layout['gap'] ) );
+		}
 		$class = 'wp-block-group';
 		$style = '';
 
@@ -461,7 +473,7 @@ class HtmlToBlocks {
 		}
 
 		if ( $bg || $text ) {
-			$attrs['style'] = array( 'color' => array() );
+			$attrs['style']['color'] = array();
 			if ( $bg ) {
 				$attrs['style']['color']['background'] = $bg;
 				$class .= ' has-background';
@@ -474,7 +486,7 @@ class HtmlToBlocks {
 			}
 		}
 
-		$attrs  = $this->with_block_css( $attrs, $el );
+		$attrs  = $this->with_element_styles( $attrs, $el );
 		$class .= $this->css_class( $attrs );
 
 		return sprintf(
@@ -499,7 +511,7 @@ class HtmlToBlocks {
 			$attrs['className'] = $classes;
 			$class             .= ' ' . $classes;
 		}
-		$attrs  = $this->with_block_css( $attrs, $el );
+		$attrs  = $this->with_element_styles( $attrs, $el );
 		$class .= $this->css_class( $attrs );
 
 		return sprintf(
@@ -514,7 +526,7 @@ class HtmlToBlocks {
 
 	private function paragraph_block( $el, $force_classes = '' ) {
 		$classes = $force_classes ? $force_classes : $this->classes( $el );
-		$attrs   = $this->with_block_css( $classes ? array( 'className' => $classes ) : array(), $el );
+		$attrs   = $this->with_element_styles( $classes ? array( 'className' => $classes ) : array(), $el );
 		$class   = trim( $classes . $this->css_class( $attrs ) );
 		$attrs   = $attrs ? ' ' . serialize_block_attributes( $attrs ) : '';
 		$class   = $class ? ' class="' . esc_attr( $class ) . '"' : '';
@@ -662,7 +674,7 @@ class HtmlToBlocks {
 			);
 		}
 
-		$attrs = $this->with_block_css(
+		$attrs = $this->with_element_styles(
 			array(
 				'columns' => $columns,
 				'linkTo'  => 'none',
@@ -747,7 +759,7 @@ class HtmlToBlocks {
 			$attrs['className'] = $classes;
 			$class             .= ' ' . $classes;
 		}
-		$attrs  = $this->with_block_css( $attrs, $el );
+		$attrs  = $this->with_element_styles( $attrs, $el );
 		$class .= $this->css_class( $attrs );
 
 		$caption_html = '' !== $caption ? sprintf( '<figcaption class="wp-element-caption">%s</figcaption>', $caption ) : '';
@@ -798,14 +810,17 @@ class HtmlToBlocks {
 
 	/**
 	 * Native cover block: the marked image becomes a cropped background, the
-	 * section's remaining children the inner content. Always full-bleed
-	 * (a photo background is a painted background).
+	 * section's remaining children the inner content. Sections are full-bleed
+	 * (a photo background is a painted background); nested tiles are not —
+	 * alignfull inside a grid cell or column would fight the theme's
+	 * full-width rules.
 	 *
-	 * @param \DOMElement $el Section element.
-	 * @param \DOMElement $bg Background <img data-role="background">.
+	 * @param \DOMElement $el   Section element.
+	 * @param \DOMElement $bg   Background <img data-role="background">.
+	 * @param bool        $full Span the viewport.
 	 * @return string
 	 */
-	private function cover_block( $el, $bg ) {
+	private function cover_block( $el, $bg, $full = true ) {
 		$query = trim( $bg->getAttribute( 'data-query' ) );
 		$image = $query ? call_user_func( $this->image_resolver, $query, trim( $bg->getAttribute( 'data-orientation' ) ) ? trim( $bg->getAttribute( 'data-orientation' ) ) : 'landscape' ) : null;
 
@@ -813,7 +828,7 @@ class HtmlToBlocks {
 		$el->removeChild( $bg );
 
 		if ( ! $image ) {
-			return $this->group_block( $el, true );
+			return $this->group_block( $el, $full );
 		}
 
 		$inner = $this->convert_children( $el );
@@ -832,10 +847,13 @@ class HtmlToBlocks {
 			'dimRatio'           => $dim,
 			'customOverlayColor' => $overlay,
 			'isUserOverlayColor' => true,
-			'align'              => 'full',
 			'layout'             => array( 'type' => 'default' ),
 		);
-		$class = 'wp-block-cover alignfull';
+		$class = 'wp-block-cover';
+		if ( $full ) {
+			$attrs['align'] = 'full';
+			$class         .= ' alignfull';
+		}
 		$style = '';
 
 		// Native height: stays editable in the block UI and beats the
@@ -862,7 +880,7 @@ class HtmlToBlocks {
 			$attrs['className'] = $classes;
 			$class             .= ' ' . $classes;
 		}
-		$attrs  = $this->with_block_css( $attrs, $el );
+		$attrs  = $this->with_element_styles( $attrs, $el );
 		$class .= $this->css_class( $attrs );
 
 		// Core's save() omits the dim class for its default ratio (50).
@@ -936,7 +954,7 @@ class HtmlToBlocks {
 			$attrs['className'] = $classes;
 			$class             .= ' ' . $classes;
 		}
-		$attrs  = $this->with_block_css( $attrs, $el );
+		$attrs  = $this->with_element_styles( $attrs, $el );
 		$class .= $this->css_class( $attrs );
 
 		$rows = array();
@@ -976,8 +994,10 @@ class HtmlToBlocks {
 		if ( $figure_classes && ! $img->getAttribute( 'class' ) ) {
 			$img->setAttribute( 'class', $figure_classes );
 		}
-		if ( $el->hasAttribute( 'data-css' ) && ! $img->hasAttribute( 'data-css' ) ) {
-			$img->setAttribute( 'data-css', $el->getAttribute( 'data-css' ) );
+		foreach ( array( 'data-css', 'data-col-span', 'data-row-span', 'data-grow', 'data-basis' ) as $name ) {
+			if ( $el->hasAttribute( $name ) && ! $img->hasAttribute( $name ) ) {
+				$img->setAttribute( $name, $el->getAttribute( $name ) );
+			}
 		}
 
 		return $this->image_block( $img, $caption );
@@ -1059,7 +1079,7 @@ class HtmlToBlocks {
 		}
 
 		$tag   = $ordered ? 'ol' : 'ul';
-		$attrs     = $this->with_block_css( $ordered ? array( 'ordered' => true ) : array(), $el );
+		$attrs     = $this->with_element_styles( $ordered ? array( 'ordered' => true ) : array(), $el );
 		$css_class = $this->css_class( $attrs );
 		$attrs     = $attrs ? ' ' . serialize_block_attributes( $attrs ) : '';
 
@@ -1096,7 +1116,7 @@ class HtmlToBlocks {
 			return '';
 		}
 
-		$attrs = $this->with_block_css( array(), $el );
+		$attrs = $this->with_element_styles( array(), $el );
 
 		return sprintf(
 			"<!-- wp:quote%s -->\n<blockquote class=\"wp-block-quote%s\">%s%s</blockquote>\n<!-- /wp:quote -->",
@@ -1204,23 +1224,148 @@ class HtmlToBlocks {
 	}
 
 	/**
-	 * Add the element's data-css to block attributes as per-block custom CSS
-	 * (style.css) when enabled and anything valid remains.
+	 * Add the element's per-block styles to its block attributes: data-css as
+	 * custom CSS (style.css) and its place in a grid/flex parent
+	 * (style.layout). Neither is written into the saved markup — WordPress
+	 * renders both — apart from the has-custom-css class (see css_class()).
 	 *
 	 * @param array       $attrs Block attributes.
 	 * @param \DOMElement $el    Source element.
 	 * @return array
 	 */
-	private function with_block_css( array $attrs, $el ) {
-		$css = $this->block_css( $el );
-		if ( '' === $css ) {
+	private function with_element_styles( array $attrs, $el ) {
+		$css   = $this->block_css( $el );
+		$child = $this->child_layout( $el );
+		if ( '' === $css && ! $child ) {
 			return $attrs;
 		}
 
-		$attrs['style']        = isset( $attrs['style'] ) && is_array( $attrs['style'] ) ? $attrs['style'] : array();
-		$attrs['style']['css'] = $css;
+		$attrs['style'] = isset( $attrs['style'] ) && is_array( $attrs['style'] ) ? $attrs['style'] : array();
+		if ( '' !== $css ) {
+			$attrs['style']['css'] = $css;
+		}
+		if ( $child ) {
+			$attrs['style']['layout'] = $child;
+		}
 
 		return $attrs;
+	}
+
+	/**
+	 * Native group layout from data-layout:
+	 *   grid  — data-columns (Max. columns, 1-6) and data-min (Min. column
+	 *           width). A minimum is always set: it is what makes the grid
+	 *           responsive (fewer columns on small screens, and core un-spans
+	 *           spanned children there); a bare column count never reflows.
+	 *   flex  — a row (alias: row): data-justify, data-align, data-wrap.
+	 *   stack — a vertical flex: data-justify, data-align.
+	 * data-gap on any of them becomes the block gap.
+	 *
+	 * @param \DOMElement $el
+	 * @return array|null [ 'layout' => array, 'gap' => string ] or null.
+	 */
+	private function group_layout( $el ) {
+		$type = strtolower( trim( $el->getAttribute( 'data-layout' ) ) );
+		if ( ! in_array( $type, array( 'grid', 'flex', 'row', 'stack' ), true ) ) {
+			return null;
+		}
+
+		if ( 'grid' === $type ) {
+			$columns = (int) $el->getAttribute( 'data-columns' );
+			$minimum = $this->css_length( $el->getAttribute( 'data-min' ), array( 'rem' => array( 4, 40 ), 'em' => array( 4, 40 ), 'px' => array( 64, 640 ) ) );
+			$layout  = array(
+				'type'               => 'grid',
+				'columnCount'        => max( 1, min( 6, $columns ? $columns : 3 ) ),
+				'minimumColumnWidth' => '' !== $minimum ? $minimum : '12rem',
+			);
+		} else {
+			$vertical = 'stack' === $type;
+			$layout   = array( 'type' => 'flex' );
+			if ( $vertical ) {
+				$layout['orientation'] = 'vertical';
+			}
+
+			$justify = strtolower( trim( $el->getAttribute( 'data-justify' ) ) );
+			if ( in_array( $justify, $vertical ? array( 'left', 'center', 'right', 'stretch' ) : array( 'left', 'center', 'right', 'space-between' ), true ) ) {
+				$layout['justifyContent'] = $justify;
+			}
+
+			$align = strtolower( trim( $el->getAttribute( 'data-align' ) ) );
+			if ( in_array( $align, $vertical ? array( 'top', 'center', 'bottom', 'space-between' ) : array( 'top', 'center', 'bottom', 'stretch' ), true ) ) {
+				$layout['verticalAlignment'] = $align;
+			}
+
+			// Rows wrap by default, so they never overflow a phone screen.
+			if ( ! $vertical && 'nowrap' === strtolower( trim( $el->getAttribute( 'data-wrap' ) ) ) ) {
+				$layout['flexWrap'] = 'nowrap';
+			}
+		}
+
+		return array(
+			'layout' => $layout,
+			'gap'    => $this->css_length( $el->getAttribute( 'data-gap' ), array( 'rem' => array( 0, 8 ), 'em' => array( 0, 8 ), 'px' => array( 0, 128 ) ) ),
+		);
+	}
+
+	/**
+	 * An element's place in a grid/flex parent: data-col-span and
+	 * data-row-span (2-6) for grid cells, data-grow='1' (fill the remaining
+	 * space) or data-basis (fixed width) for flex children.
+	 *
+	 * @param \DOMElement $el
+	 * @return array Child layout values (empty when none).
+	 */
+	private function child_layout( $el ) {
+		$layout = array();
+
+		$column_span = (int) $el->getAttribute( 'data-col-span' );
+		$row_span    = (int) $el->getAttribute( 'data-row-span' );
+		if ( $column_span >= 2 ) {
+			$layout['columnSpan'] = min( 6, $column_span );
+		}
+		if ( $row_span >= 2 ) {
+			$layout['rowSpan'] = min( 6, $row_span );
+		}
+
+		if ( '1' === trim( $el->getAttribute( 'data-grow' ) ) ) {
+			$layout['selfStretch'] = 'fill';
+		} else {
+			$basis = $this->css_length( $el->getAttribute( 'data-basis' ), array( 'px' => array( 40, 960 ), 'rem' => array( 3, 60 ), '%' => array( 5, 95 ) ) );
+			if ( '' !== $basis ) {
+				$layout['selfStretch'] = 'fixed';
+				$layout['flexSize']    = $basis;
+			}
+		}
+
+		return $layout;
+	}
+
+	/**
+	 * A CSS length within per-unit bounds ("2rem", "240px", "30%"); a bare
+	 * "0" is accepted when 0 is in range.
+	 *
+	 * @param string $raw    Attribute value.
+	 * @param array  $bounds Unit => [ min, max ].
+	 * @return string '' when absent/invalid.
+	 */
+	private function css_length( $raw, array $bounds ) {
+		$raw = strtolower( trim( (string) $raw ) );
+		if ( '0' === $raw ) {
+			foreach ( $bounds as $range ) {
+				if ( 0 >= $range[0] ) {
+					return '0';
+				}
+			}
+			return '';
+		}
+
+		if ( ! preg_match( '/^(\d{1,4}(?:\.\d{1,2})?)(px|rem|em|%)$/', $raw, $m ) || ! isset( $bounds[ $m[2] ] ) ) {
+			return '';
+		}
+
+		$value = (float) $m[1];
+
+		return ( $value >= $bounds[ $m[2] ][0] && $value <= $bounds[ $m[2] ][1] ) ? $m[1] . $m[2] : '';
 	}
 
 	/**

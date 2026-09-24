@@ -82,6 +82,12 @@ class ThemeOptions {
 	public static function caps() {
 		$caps = array( 'layout_attrs' );
 
+		// Native grid/row/stack groups: the responsive grid (Max. columns +
+		// Min. column width) and child spans need WordPress 6.6+.
+		if ( version_compare( get_bloginfo( 'version' ), '6.6', '>=' ) ) {
+			$caps[] = 'layout_group';
+		}
+
 		if ( self::has_template( self::TEMPLATE_TRANSPARENT ) ) {
 			$caps[] = 'page_header';
 		}
