@@ -379,7 +379,7 @@ class HtmlToBlocks {
 				return sprintf(
 					"<!-- wp:separator%s -->\n<hr class=\"wp-block-separator has-alpha-channel-opacity%s\"/>\n<!-- /wp:separator -->",
 					$hr_attrs ? ' ' . serialize_block_attributes( $hr_attrs ) : '',
-					$hr_classes ? ' ' . esc_attr( $hr_classes ) : ''
+					( $hr_classes ? ' ' . esc_attr( $hr_classes ) : '' ) . $this->css_class( $hr_attrs )
 				);
 
 			case 'a':
@@ -474,7 +474,8 @@ class HtmlToBlocks {
 			}
 		}
 
-		$attrs = $this->with_block_css( $attrs, $el );
+		$attrs  = $this->with_block_css( $attrs, $el );
+		$class .= $this->css_class( $attrs );
 
 		return sprintf(
 			"<!-- wp:group %s -->\n<div class=\"%s\"%s>%s</div>\n<!-- /wp:group -->",
@@ -498,7 +499,8 @@ class HtmlToBlocks {
 			$attrs['className'] = $classes;
 			$class             .= ' ' . $classes;
 		}
-		$attrs = $this->with_block_css( $attrs, $el );
+		$attrs  = $this->with_block_css( $attrs, $el );
+		$class .= $this->css_class( $attrs );
 
 		return sprintf(
 			"<!-- wp:heading%s -->\n<h%d class=\"%s\">%s</h%d>\n<!-- /wp:heading -->",
@@ -513,8 +515,9 @@ class HtmlToBlocks {
 	private function paragraph_block( $el, $force_classes = '' ) {
 		$classes = $force_classes ? $force_classes : $this->classes( $el );
 		$attrs   = $this->with_block_css( $classes ? array( 'className' => $classes ) : array(), $el );
+		$class   = trim( $classes . $this->css_class( $attrs ) );
 		$attrs   = $attrs ? ' ' . serialize_block_attributes( $attrs ) : '';
-		$class   = $classes ? ' class="' . esc_attr( $classes ) . '"' : '';
+		$class   = $class ? ' class="' . esc_attr( $class ) . '"' : '';
 		$inner   = $this->inline_html( $el );
 
 		if ( '' === trim( wp_strip_all_tags( $inner ) ) ) {
@@ -610,9 +613,11 @@ class HtmlToBlocks {
 		// currentColor makes the icons inherit the surrounding text color —
 		// light in the theme's dark footer, dark on light content pages.
 		// Without an icon color, logos-only falls back to BRAND colors and
-		// the X logo (black) disappears on the dark footer.
+		// the X logo (black) disappears on the dark footer. Core colors each
+		// icon from iconColorValue; the list itself gets no style — save()
+		// never writes one, so it would fail block validation.
 		return '<!-- wp:social-links {"iconColorValue":"currentColor","className":"is-style-logos-only","style":{"spacing":{"blockGap":{"left":"18px"}}}} -->' . "\n"
-			. '<ul class="wp-block-social-links has-icon-color is-style-logos-only" style="color:currentColor">' . implode( '', $items ) . "</ul>\n"
+			. '<ul class="wp-block-social-links has-icon-color is-style-logos-only">' . implode( '', $items ) . "</ul>\n"
 			. '<!-- /wp:social-links -->';
 	}
 
@@ -666,7 +671,7 @@ class HtmlToBlocks {
 		);
 
 		return '<!-- wp:gallery ' . serialize_block_attributes( $attrs ) . ' -->' . "\n"
-			. '<figure class="wp-block-gallery has-nested-images columns-' . $columns . ' is-cropped">' . "\n"
+			. '<figure class="wp-block-gallery has-nested-images columns-' . $columns . ' is-cropped' . $this->css_class( $attrs ) . '">' . "\n"
 			. trim( $inner ) . "\n"
 			. "</figure>\n"
 			. '<!-- /wp:gallery -->';
@@ -742,7 +747,8 @@ class HtmlToBlocks {
 			$attrs['className'] = $classes;
 			$class             .= ' ' . $classes;
 		}
-		$attrs = $this->with_block_css( $attrs, $el );
+		$attrs  = $this->with_block_css( $attrs, $el );
+		$class .= $this->css_class( $attrs );
 
 		$caption_html = '' !== $caption ? sprintf( '<figcaption class="wp-element-caption">%s</figcaption>', $caption ) : '';
 
@@ -847,21 +853,30 @@ class HtmlToBlocks {
 			$class                   .= ' has-custom-content-position is-position-' . str_replace( ' ', '-', $position );
 		}
 
+		$alt = trim( $bg->getAttribute( 'alt' ) );
+		if ( '' !== $alt ) {
+			$attrs['alt'] = $alt;
+		}
+
 		if ( $classes ) {
 			$attrs['className'] = $classes;
 			$class             .= ' ' . $classes;
 		}
-		$attrs = $this->with_block_css( $attrs, $el );
+		$attrs  = $this->with_block_css( $attrs, $el );
+		$class .= $this->css_class( $attrs );
+
+		// Core's save() omits the dim class for its default ratio (50).
+		$dim_class = 50 === $dim ? '' : ' has-background-dim-' . $dim;
 
 		return sprintf(
-			"<!-- wp:cover %s -->\n<div class=\"%s\"%s><span aria-hidden=\"true\" class=\"wp-block-cover__background has-background-dim-%d has-background-dim\" style=\"background-color:%s\"></span><img class=\"wp-block-cover__image-background wp-image-%d\" alt=\"%s\" src=\"%s\" data-object-fit=\"cover\"/><div class=\"wp-block-cover__inner-container\">%s</div></div>\n<!-- /wp:cover -->",
+			"<!-- wp:cover %s -->\n<div class=\"%s\"%s><span aria-hidden=\"true\" class=\"wp-block-cover__background%s has-background-dim\" style=\"background-color:%s\"></span><img class=\"wp-block-cover__image-background wp-image-%d\" alt=\"%s\" src=\"%s\" data-object-fit=\"cover\"/><div class=\"wp-block-cover__inner-container\">%s</div></div>\n<!-- /wp:cover -->",
 			serialize_block_attributes( $attrs ),
 			esc_attr( $class ),
 			$style,
-			$dim,
+			$dim_class,
 			esc_attr( $overlay ),
 			(int) $image['id'],
-			esc_attr( trim( $bg->getAttribute( 'alt' ) ) ),
+			esc_attr( $alt ),
 			esc_url( $image['url'] ),
 			"\n" . $inner . "\n"
 		);
@@ -921,7 +936,8 @@ class HtmlToBlocks {
 			$attrs['className'] = $classes;
 			$class             .= ' ' . $classes;
 		}
-		$attrs = $this->with_block_css( $attrs, $el );
+		$attrs  = $this->with_block_css( $attrs, $el );
+		$class .= $this->css_class( $attrs );
 
 		$rows = array();
 		foreach ( array_chunk( $columns, $per_row ) as $chunk ) {
@@ -1043,13 +1059,15 @@ class HtmlToBlocks {
 		}
 
 		$tag   = $ordered ? 'ol' : 'ul';
-		$attrs = $this->with_block_css( $ordered ? array( 'ordered' => true ) : array(), $el );
-		$attrs = $attrs ? ' ' . serialize_block_attributes( $attrs ) : '';
+		$attrs     = $this->with_block_css( $ordered ? array( 'ordered' => true ) : array(), $el );
+		$css_class = $this->css_class( $attrs );
+		$attrs     = $attrs ? ' ' . serialize_block_attributes( $attrs ) : '';
 
 		return sprintf(
-			"<!-- wp:list%s -->\n<%s class=\"wp-block-list\">%s</%s>\n<!-- /wp:list -->",
+			"<!-- wp:list%s -->\n<%s class=\"wp-block-list%s\">%s</%s>\n<!-- /wp:list -->",
 			$attrs,
 			$tag,
+			$css_class,
 			"\n" . implode( "\n\n", $items ) . "\n",
 			$tag
 		);
@@ -1081,8 +1099,9 @@ class HtmlToBlocks {
 		$attrs = $this->with_block_css( array(), $el );
 
 		return sprintf(
-			"<!-- wp:quote%s -->\n<blockquote class=\"wp-block-quote\">%s%s</blockquote>\n<!-- /wp:quote -->",
+			"<!-- wp:quote%s -->\n<blockquote class=\"wp-block-quote%s\">%s%s</blockquote>\n<!-- /wp:quote -->",
 			$attrs ? ' ' . serialize_block_attributes( $attrs ) : '',
+			$this->css_class( $attrs ),
 			implode( "\n\n", $paras ),
 			$cite
 		);
@@ -1202,6 +1221,19 @@ class HtmlToBlocks {
 		$attrs['style']['css'] = $css;
 
 		return $attrs;
+	}
+
+	/**
+	 * The class the editor's customCSS block support adds to a block's saved
+	 * root element whenever style.css is set (addSaveProps). Without it in the
+	 * markup, block validation fails: "Block contains unexpected or invalid
+	 * content".
+	 *
+	 * @param array $attrs Block attributes.
+	 * @return string ' has-custom-css' or ''.
+	 */
+	private function css_class( array $attrs ) {
+		return isset( $attrs['style']['css'] ) && '' !== trim( (string) $attrs['style']['css'] ) ? ' has-custom-css' : '';
 	}
 
 	/**
