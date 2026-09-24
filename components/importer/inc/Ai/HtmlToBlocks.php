@@ -21,6 +21,12 @@
  *   hr             → wp:separator
  *   svg, unknown   → wp:html passthrough
  *
+ * Optional per-element attributes map onto native block attributes:
+ *   data-css                   → per-block custom CSS (style.css, WordPress 7.0+)
+ *   section data-height        → cover minHeight; data-position → contentPosition
+ *   background img data-overlay → cover overlay color
+ *   ai-cols child data-width   → column width; wrapper data-valign → alignment
+ *
  * The visual design ships as a per-demo stylesheet (see AiDemoGenerator);
  * the blocks stay native and editable.
  *
@@ -57,11 +63,29 @@ class HtmlToBlocks {
 	private $brand = array();
 
 	/**
+	 * block_css    — emit data-css as per-block custom CSS (needs WP 7.0+
+	 *                and the edit_css capability, or core strips it on save);
+	 * under_header — the page's header floats over its first section.
+	 *
+	 * @var array
+	 */
+	private $options = array();
+
+	/**
+	 * Whether the last converted page opens with a photo cover — the only
+	 * first section a transparent header can float over.
+	 *
+	 * @var bool
+	 */
+	private $opens_with_cover = false;
+
+	/**
 	 * @param array    $page_links     slug => URL map.
 	 * @param callable $image_resolver fn( string $query, string $orientation ): ?array
 	 * @param array    $brand          [ 'accent' => hex, 'accent_text' => hex, 'radius' => css length ]
+	 * @param array    $options        [ 'block_css' => bool, 'under_header' => bool ]
 	 */
-	public function __construct( array $page_links, callable $image_resolver, array $brand = array() ) {
+	public function __construct( array $page_links, callable $image_resolver, array $brand = array(), array $options = array() ) {
 		$this->page_links     = $page_links;
 		$this->image_resolver = $image_resolver;
 		$this->brand          = wp_parse_args(
@@ -72,6 +96,22 @@ class HtmlToBlocks {
 				'radius'      => '8px',
 			)
 		);
+		$this->options        = wp_parse_args(
+			$options,
+			array(
+				'block_css'    => false,
+				'under_header' => false,
+			)
+		);
+	}
+
+	/**
+	 * Whether the last converted page opens with a photo cover.
+	 *
+	 * @return bool
+	 */
+	public function opens_with_cover() {
+		return $this->opens_with_cover;
 	}
 
 	/**
@@ -130,6 +170,8 @@ class HtmlToBlocks {
 			return '';
 		}
 
+		$this->opens_with_cover = 0 === strpos( $sections[0], '<!-- wp:cover' );
+
 		$classes = trim( 'iss-ai-demo' . ( $page_slug ? ' iss-ai-demo--' . sanitize_html_class( $page_slug ) : '' ) );
 
 		// Each top-level section gets its own scope-class wrapper (all the
@@ -139,16 +181,23 @@ class HtmlToBlocks {
 		// side padding on small screens. One big alignfull wrapper would
 		// force every section full-width and lose those gutters.
 		$out = array();
-		foreach ( $sections as $block ) {
+		foreach ( $sections as $i => $block ) {
 			$first   = strtok( $block, "\n" );
 			$is_full = false !== strpos( $first, '"align":"full"' );
+
+			// The transparent header floats over this section; the demo
+			// stylesheet pushes the cover's content below it.
+			$wrapper_classes = $classes;
+			if ( 0 === $i && $this->opens_with_cover && $this->options['under_header'] ) {
+				$wrapper_classes .= ' iss-ai-under-header';
+			}
 
 			$out[] = sprintf(
 				"<!-- wp:group {%s\"className\":\"%s\",\"layout\":{\"type\":\"default\"}} -->\n<div class=\"wp-block-group %s%s\">\n%s\n</div>\n<!-- /wp:group -->",
 				$is_full ? '"align":"full",' : '',
-				esc_attr( $classes ),
+				esc_attr( $wrapper_classes ),
 				$is_full ? 'alignfull ' : '',
-				esc_attr( $classes ),
+				esc_attr( $wrapper_classes ),
 				$block
 			);
 		}
@@ -326,9 +375,10 @@ class HtmlToBlocks {
 				// Classes preserved: .ai-rule hairline dividers are a core
 				// editorial device in the design system.
 				$hr_classes = $this->classes( $el );
+				$hr_attrs   = $this->with_block_css( $hr_classes ? array( 'className' => $hr_classes ) : array(), $el );
 				return sprintf(
 					"<!-- wp:separator%s -->\n<hr class=\"wp-block-separator has-alpha-channel-opacity%s\"/>\n<!-- /wp:separator -->",
-					$hr_classes ? ' ' . wp_json_encode( array( 'className' => $hr_classes ) ) : '',
+					$hr_attrs ? ' ' . serialize_block_attributes( $hr_attrs ) : '',
 					$hr_classes ? ' ' . esc_attr( $hr_classes ) : ''
 				);
 
@@ -424,9 +474,11 @@ class HtmlToBlocks {
 			}
 		}
 
+		$attrs = $this->with_block_css( $attrs, $el );
+
 		return sprintf(
 			"<!-- wp:group %s -->\n<div class=\"%s\"%s>%s</div>\n<!-- /wp:group -->",
-			wp_json_encode( $attrs ),
+			serialize_block_attributes( $attrs ),
 			esc_attr( $class ),
 			$style ? ' style="' . esc_attr( rtrim( $style, ';' ) ) . '"' : '',
 			"\n" . $inner . "\n"
@@ -446,10 +498,11 @@ class HtmlToBlocks {
 			$attrs['className'] = $classes;
 			$class             .= ' ' . $classes;
 		}
+		$attrs = $this->with_block_css( $attrs, $el );
 
 		return sprintf(
 			"<!-- wp:heading%s -->\n<h%d class=\"%s\">%s</h%d>\n<!-- /wp:heading -->",
-			$attrs ? ' ' . wp_json_encode( $attrs ) : '',
+			$attrs ? ' ' . serialize_block_attributes( $attrs ) : '',
 			$level,
 			esc_attr( $class ),
 			$this->inline_html( $el ),
@@ -459,7 +512,8 @@ class HtmlToBlocks {
 
 	private function paragraph_block( $el, $force_classes = '' ) {
 		$classes = $force_classes ? $force_classes : $this->classes( $el );
-		$attrs   = $classes ? ' ' . wp_json_encode( array( 'className' => $classes ) ) : '';
+		$attrs   = $this->with_block_css( $classes ? array( 'className' => $classes ) : array(), $el );
+		$attrs   = $attrs ? ' ' . serialize_block_attributes( $attrs ) : '';
 		$class   = $classes ? ' class="' . esc_attr( $classes ) . '"' : '';
 		$inner   = $this->inline_html( $el );
 
@@ -603,7 +657,15 @@ class HtmlToBlocks {
 			);
 		}
 
-		return '<!-- wp:gallery {"columns":' . $columns . ',"linkTo":"none"} -->' . "\n"
+		$attrs = $this->with_block_css(
+			array(
+				'columns' => $columns,
+				'linkTo'  => 'none',
+			),
+			$el
+		);
+
+		return '<!-- wp:gallery ' . serialize_block_attributes( $attrs ) . ' -->' . "\n"
 			. '<figure class="wp-block-gallery has-nested-images columns-' . $columns . ' is-cropped">' . "\n"
 			. trim( $inner ) . "\n"
 			. "</figure>\n"
@@ -680,12 +742,13 @@ class HtmlToBlocks {
 			$attrs['className'] = $classes;
 			$class             .= ' ' . $classes;
 		}
+		$attrs = $this->with_block_css( $attrs, $el );
 
 		$caption_html = '' !== $caption ? sprintf( '<figcaption class="wp-element-caption">%s</figcaption>', $caption ) : '';
 
 		return sprintf(
 			"<!-- wp:image %s -->\n<figure class=\"%s\"><img src=\"%s\" alt=\"%s\" class=\"wp-image-%d\"%s/>%s</figure>\n<!-- /wp:image -->",
-			wp_json_encode( $attrs ),
+			serialize_block_attributes( $attrs ),
 			esc_attr( $class ),
 			esc_url( $image['url'] ),
 			esc_attr( $alt ),
@@ -752,27 +815,51 @@ class HtmlToBlocks {
 		$dim = (int) $bg->getAttribute( 'data-dim' );
 		$dim = ( $dim >= 0 && $dim <= 90 ) ? (int) ( round( $dim / 10 ) * 10 ) : 40;
 
+		// A brand-colored overlay (duotone wash) instead of black.
+		$overlay = sanitize_hex_color( trim( $bg->getAttribute( 'data-overlay' ) ) );
+		$overlay = $overlay ? $overlay : '#000000';
+
 		$classes = $this->classes( $el );
 		$attrs   = array(
 			'url'                => $image['url'],
 			'id'                 => (int) $image['id'],
 			'dimRatio'           => $dim,
-			'customOverlayColor' => '#000000',
+			'customOverlayColor' => $overlay,
 			'isUserOverlayColor' => true,
 			'align'              => 'full',
 			'layout'             => array( 'type' => 'default' ),
 		);
 		$class = 'wp-block-cover alignfull';
+		$style = '';
+
+		// Native height: stays editable in the block UI and beats the
+		// stylesheet, so a requested full-screen hero is always full-screen.
+		$height = $this->min_height( $el );
+		if ( $height ) {
+			$attrs['minHeight']     = $height[0];
+			$attrs['minHeightUnit'] = $height[1];
+			$style                  = ' style="min-height:' . $height[0] . $height[1] . '"';
+		}
+
+		$position = $this->content_position( $el );
+		if ( $position ) {
+			$attrs['contentPosition'] = $position;
+			$class                   .= ' has-custom-content-position is-position-' . str_replace( ' ', '-', $position );
+		}
+
 		if ( $classes ) {
 			$attrs['className'] = $classes;
 			$class             .= ' ' . $classes;
 		}
+		$attrs = $this->with_block_css( $attrs, $el );
 
 		return sprintf(
-			"<!-- wp:cover %s -->\n<div class=\"%s\"><span aria-hidden=\"true\" class=\"wp-block-cover__background has-background-dim-%d has-background-dim\" style=\"background-color:#000000\"></span><img class=\"wp-block-cover__image-background wp-image-%d\" alt=\"%s\" src=\"%s\" data-object-fit=\"cover\"/><div class=\"wp-block-cover__inner-container\">%s</div></div>\n<!-- /wp:cover -->",
-			wp_json_encode( $attrs ),
+			"<!-- wp:cover %s -->\n<div class=\"%s\"%s><span aria-hidden=\"true\" class=\"wp-block-cover__background has-background-dim-%d has-background-dim\" style=\"background-color:%s\"></span><img class=\"wp-block-cover__image-background wp-image-%d\" alt=\"%s\" src=\"%s\" data-object-fit=\"cover\"/><div class=\"wp-block-cover__inner-container\">%s</div></div>\n<!-- /wp:cover -->",
+			serialize_block_attributes( $attrs ),
 			esc_attr( $class ),
+			$style,
 			$dim,
+			esc_attr( $overlay ),
 			(int) $image['id'],
 			esc_attr( trim( $bg->getAttribute( 'alt' ) ) ),
 			esc_url( $image['url'] ),
@@ -802,8 +889,12 @@ class HtmlToBlocks {
 				: $this->convert_element( $child );
 
 			if ( '' !== $inner ) {
+				// data-width → native column width (asymmetric splits).
+				$width     = $this->column_width( $child );
 				$columns[] = sprintf(
-					"<!-- wp:column -->\n<div class=\"wp-block-column\">%s</div>\n<!-- /wp:column -->",
+					"<!-- wp:column%s -->\n<div class=\"wp-block-column\"%s>%s</div>\n<!-- /wp:column -->",
+					$width ? ' ' . serialize_block_attributes( array( 'width' => $width ) ) : '',
+					$width ? ' style="flex-basis:' . esc_attr( $width ) . '"' : '',
 					"\n" . $inner . "\n"
 				);
 			}
@@ -819,16 +910,24 @@ class HtmlToBlocks {
 
 		$attrs = array();
 		$class = 'wp-block-columns';
+
+		$valign = strtolower( trim( $el->getAttribute( 'data-valign' ) ) );
+		if ( in_array( $valign, array( 'top', 'center', 'bottom' ), true ) ) {
+			$attrs['verticalAlignment'] = $valign;
+			$class                     .= ' are-vertically-aligned-' . $valign;
+		}
+
 		if ( $classes ) {
 			$attrs['className'] = $classes;
 			$class             .= ' ' . $classes;
 		}
+		$attrs = $this->with_block_css( $attrs, $el );
 
 		$rows = array();
 		foreach ( array_chunk( $columns, $per_row ) as $chunk ) {
 			$rows[] = sprintf(
 				"<!-- wp:columns%s -->\n<div class=\"%s\">%s</div>\n<!-- /wp:columns -->",
-				$attrs ? ' ' . wp_json_encode( $attrs ) : '',
+				$attrs ? ' ' . serialize_block_attributes( $attrs ) : '',
 				esc_attr( $class ),
 				"\n" . implode( "\n\n", $chunk ) . "\n"
 			);
@@ -860,6 +959,9 @@ class HtmlToBlocks {
 		$figure_classes = $this->classes( $el );
 		if ( $figure_classes && ! $img->getAttribute( 'class' ) ) {
 			$img->setAttribute( 'class', $figure_classes );
+		}
+		if ( $el->hasAttribute( 'data-css' ) && ! $img->hasAttribute( 'data-css' ) ) {
+			$img->setAttribute( 'data-css', $el->getAttribute( 'data-css' ) );
 		}
 
 		return $this->image_block( $img, $caption );
@@ -941,7 +1043,8 @@ class HtmlToBlocks {
 		}
 
 		$tag   = $ordered ? 'ol' : 'ul';
-		$attrs = $ordered ? ' {"ordered":true}' : '';
+		$attrs = $this->with_block_css( $ordered ? array( 'ordered' => true ) : array(), $el );
+		$attrs = $attrs ? ' ' . serialize_block_attributes( $attrs ) : '';
 
 		return sprintf(
 			"<!-- wp:list%s -->\n<%s class=\"wp-block-list\">%s</%s>\n<!-- /wp:list -->",
@@ -975,8 +1078,11 @@ class HtmlToBlocks {
 			return '';
 		}
 
+		$attrs = $this->with_block_css( array(), $el );
+
 		return sprintf(
-			"<!-- wp:quote -->\n<blockquote class=\"wp-block-quote\">%s%s</blockquote>\n<!-- /wp:quote -->",
+			"<!-- wp:quote%s -->\n<blockquote class=\"wp-block-quote\">%s%s</blockquote>\n<!-- /wp:quote -->",
+			$attrs ? ' ' . serialize_block_attributes( $attrs ) : '',
 			implode( "\n\n", $paras ),
 			$cite
 		);
@@ -1076,6 +1182,144 @@ class HtmlToBlocks {
 			},
 			trim( $html )
 		);
+	}
+
+	/**
+	 * Add the element's data-css to block attributes as per-block custom CSS
+	 * (style.css) when enabled and anything valid remains.
+	 *
+	 * @param array       $attrs Block attributes.
+	 * @param \DOMElement $el    Source element.
+	 * @return array
+	 */
+	private function with_block_css( array $attrs, $el ) {
+		$css = $this->block_css( $el );
+		if ( '' === $css ) {
+			return $attrs;
+		}
+
+		$attrs['style']        = isset( $attrs['style'] ) && is_array( $attrs['style'] ) ? $attrs['style'] : array();
+		$attrs['style']['css'] = $css;
+
+		return $attrs;
+	}
+
+	/**
+	 * An element's data-css reduced to what core's block CSS parser
+	 * (WP_Theme_JSON::process_blocks_custom_css) handles: the block's own
+	 * declarations FIRST, then one-level "& selector { … }" rules. That
+	 * parser splits on "&" and cannot nest, so anything else — at-rules,
+	 * deeper nesting, declarations after a nested rule — is dropped here.
+	 * url(), quotes, escapes and markup never pass.
+	 *
+	 * @param \DOMElement $el
+	 * @return string '' when disabled or nothing valid remains.
+	 */
+	private function block_css( $el ) {
+		if ( empty( $this->options['block_css'] ) || ! $el->hasAttribute( 'data-css' ) ) {
+			return '';
+		}
+
+		$css = str_replace( array( '"', "'", '\\', '<' ), '', (string) $el->getAttribute( 'data-css' ) );
+		if ( '' === trim( $css ) || preg_match( '/@|url\s*\(|expression\s*\(|javascript:|-moz-binding|behavior\s*:/i', $css ) ) {
+			return '';
+		}
+
+		$rules = array();
+		$css   = preg_replace_callback(
+			'/&([^{}&]*)\{([^{}]*)\}/',
+			function ( $m ) use ( &$rules ) {
+				// A leading space makes a descendant selector (& img); none
+				// appends to the block itself (&:hover, &.is-x).
+				$selector = rtrim( preg_replace( '/\s+/', ' ', $m[1] ) );
+				$body     = $this->css_declarations( $m[2] );
+				if ( '' !== $body && '' !== trim( $selector ) && preg_match( '/^[\w\s\-.:#>+~*\[\]=(),]+$/', $selector ) ) {
+					$rules[] = '&' . $selector . '{' . $body . '}';
+				}
+				return '';
+			},
+			$css
+		);
+
+		$own = $this->css_declarations( str_replace( array( '{', '}', '&' ), '', $css ) );
+
+		$out = trim( $own . ' ' . implode( ' ', $rules ) );
+
+		return strlen( $out ) <= 2000 ? $out : '';
+	}
+
+	/**
+	 * Keep only well-formed "property: value" declarations.
+	 *
+	 * @param string $css Declaration list.
+	 * @return string "prop:value;prop:value;" or ''.
+	 */
+	private function css_declarations( $css ) {
+		$out = '';
+		foreach ( explode( ';', (string) $css ) as $declaration ) {
+			if ( preg_match( '/^\s*(-{0,2}[a-zA-Z][a-zA-Z0-9-]*)\s*:\s*([^:;{}]+?)\s*$/', $declaration, $m ) ) {
+				$out .= strtolower( $m[1] ) . ':' . $m[2] . ';';
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * Cover min-height from data-height ("100vh", "85vh", "560px").
+	 *
+	 * @param \DOMElement $el Section element.
+	 * @return array|null [ number, unit ]
+	 */
+	private function min_height( $el ) {
+		if ( ! preg_match( '/^(\d{2,4})(vh|px)$/', strtolower( trim( $el->getAttribute( 'data-height' ) ) ), $m ) ) {
+			return null;
+		}
+
+		$value = (int) $m[1];
+		$valid = 'vh' === $m[2] ? ( $value >= 30 && $value <= 100 ) : ( $value >= 200 && $value <= 1400 );
+
+		return $valid ? array( $value, $m[2] ) : null;
+	}
+
+	/**
+	 * Cover content position from data-position ("bottom left", "center
+	 * right", "bottom" …). The default centre returns '' — no attribute.
+	 *
+	 * @param \DOMElement $el Section element.
+	 * @return string
+	 */
+	private function content_position( $el ) {
+		$words = preg_split( '/[\s\-]+/', strtolower( str_replace( 'centre', 'center', trim( $el->getAttribute( 'data-position' ) ) ) ) );
+		$y     = 'center';
+		$x     = 'center';
+
+		foreach ( $words as $word ) {
+			if ( in_array( $word, array( 'top', 'bottom' ), true ) ) {
+				$y = $word;
+			} elseif ( in_array( $word, array( 'left', 'right' ), true ) ) {
+				$x = $word;
+			}
+		}
+
+		$position = $y . ' ' . $x;
+
+		return 'center center' === $position ? '' : $position;
+	}
+
+	/**
+	 * Column width from a column child's data-width ("60%").
+	 *
+	 * @param \DOMElement $el Column child element.
+	 * @return string '' when absent/invalid.
+	 */
+	private function column_width( $el ) {
+		if ( ! preg_match( '/^(\d{1,2}(?:\.\d{1,2})?)%$/', trim( $el->getAttribute( 'data-width' ) ), $m ) ) {
+			return '';
+		}
+
+		$value = (float) $m[1];
+
+		return ( $value >= 10 && $value <= 90 ) ? $m[1] . '%' : '';
 	}
 
 	/**

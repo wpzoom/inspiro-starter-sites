@@ -1477,9 +1477,12 @@ class AiDemoGenerator {
 		}
 
 		$page = array(
-			'title' => $post->post_title,
-			'slug'  => $post->post_name,
-			'brief' => $brief,
+			'title'  => $post->post_title,
+			'slug'   => $post->post_name,
+			'brief'  => $brief,
+			// A replaced page keeps its header (appended sections never open
+			// the page, so they ignore it).
+			'header' => ThemeOptions::TEMPLATE_TRANSPARENT === get_page_template_slug( $page_id ) ? 'transparent' : 'solid',
 		);
 
 		$this->generate_single_page( $demo['plan_id'], $demo['record'], $page, $page_id, $append );
@@ -1552,6 +1555,7 @@ class AiDemoGenerator {
 				'has_contact_form' => post_type_exists( 'wpzf-form' ),
 				// Sections-only output (no hero, no h1) that continues the page.
 				'append'           => $append && $existing_page_id ? 1 : 0,
+				'caps'             => ThemeOptions::caps(),
 			),
 			array( $stream, 'tick' )
 		);
@@ -1639,9 +1643,18 @@ class AiDemoGenerator {
 			return $images[0];
 		};
 
-		$brand     = isset( $record['brand'] ) && is_array( $record['brand'] ) ? $record['brand'] : array();
-		$converter = new HtmlToBlocks( $page_links, $resolver, $brand );
-		$content   = $converter->convert( $html, $page['slug'] );
+		$brand       = isset( $record['brand'] ) && is_array( $record['brand'] ) ? $record['brand'] : array();
+		$transparent = ! $append && isset( $page['header'] ) && 'transparent' === $page['header'];
+		$converter   = new HtmlToBlocks(
+			$page_links,
+			$resolver,
+			$brand,
+			array(
+				'block_css'    => ThemeOptions::supports_block_css(),
+				'under_header' => $transparent,
+			)
+		);
+		$content     = $converter->convert( $html, $page['slug'] );
 
 		delete_option( self::PLAN_TRANSIENT_PREFIX . $op_id . '_imgs' );
 
@@ -1669,6 +1682,11 @@ class AiDemoGenerator {
 			if ( is_wp_error( $result ) ) {
 				$stream->finish_error( array( 'message' => $result->get_error_message() ) );
 			}
+			// A replaced transparent-header page that no longer opens with a
+			// photo cover falls back to the solid header bar.
+			if ( $transparent && ! $converter->opens_with_cover() ) {
+				update_post_meta( $existing_page_id, '_wp_page_template', ThemeOptions::TEMPLATE_SOLID );
+			}
 			$page_id = $existing_page_id;
 		} else {
 			$page_id = wp_insert_post(
@@ -1682,7 +1700,7 @@ class AiDemoGenerator {
 						'menu_order'   => count( $page_ids ),
 						'meta_input'   => array(
 							self::GENERATED_META_KEY => $plan_id,
-							'_wp_page_template'      => 'page-templates/full-width-no-title.php',
+							'_wp_page_template'      => ThemeOptions::page_template( $transparent && $converter->opens_with_cover() ? 'transparent' : 'solid' ),
 						),
 					)
 				),
@@ -1864,6 +1882,11 @@ class AiDemoGenerator {
 				'design_level'   => $design_level,
 				'art_direction'  => $art_direction,
 				'variant_seed'   => $variant_seed,
+				// Dialect features this client renders (page headers, theme
+				// settings, cover/column attributes, block CSS) — the server
+				// only asks the AI for what is announced here.
+				'caps'           => ThemeOptions::caps(),
+				'header_layouts' => ThemeOptions::header_layouts(),
 			),
 			array( $stream, 'tick' )
 		);
@@ -2231,6 +2254,7 @@ class AiDemoGenerator {
 				// value simply yields the standard page prompt.
 				'design_level'     => isset( $state['design_level'] ) ? $state['design_level'] : 'standard',
 				'art_direction'    => isset( $state['plan']['art_direction'] ) ? $state['plan']['art_direction'] : '',
+				'caps'             => ThemeOptions::caps(),
 			),
 			array( $stream, 'tick' )
 		);
@@ -2295,13 +2319,26 @@ class AiDemoGenerator {
 			return $images[0];
 		};
 
-		$brand     = isset( $state['plan']['brand'] ) ? $state['plan']['brand'] : array();
-		$converter = new HtmlToBlocks( $page_links, $resolver, $brand );
-		$content   = $converter->convert( $html, $page['slug'] );
+		$brand       = isset( $state['plan']['brand'] ) ? $state['plan']['brand'] : array();
+		$transparent = isset( $page['header'] ) && 'transparent' === $page['header'];
+		$converter   = new HtmlToBlocks(
+			$page_links,
+			$resolver,
+			$brand,
+			array(
+				'block_css'    => ThemeOptions::supports_block_css(),
+				'under_header' => $transparent,
+			)
+		);
+		$content     = $converter->convert( $html, $page['slug'] );
 
 		if ( '' === $content ) {
 			$stream->finish_error( array( 'message' => esc_html__( 'The AI returned an unusable page design. Please try again.', 'inspiro-starter-sites' ) ) );
 		}
+
+		// The header can only float over a photo cover: a page that came back
+		// opening with anything else keeps the solid header bar.
+		$template = ThemeOptions::page_template( $transparent && $converter->opens_with_cover() ? 'transparent' : 'solid' );
 
 		$post_id = wp_insert_post(
 			wp_slash(
@@ -2314,7 +2351,7 @@ class AiDemoGenerator {
 					'menu_order'   => $index,
 					'meta_input'   => array(
 						self::GENERATED_META_KEY => $plan_id,
-						'_wp_page_template'      => 'page-templates/full-width-no-title.php',
+						'_wp_page_template'      => $template,
 					),
 				)
 			),
@@ -2754,27 +2791,19 @@ class AiDemoGenerator {
 		// into the AI design — the AI demo owns the site's look from here.
 		delete_option( 'inspiro_demo_layout' );
 
-		// Align the THEME's own accent with the demo so native theme UI
-		// (links, buttons, hovers) matches the generated design. The pre-AI
-		// customizer values are preserved once — the first generation ever —
-		// and restored when the AI demo is fully deleted.
-		if ( false === get_option( 'inspiro_starter_sites_ai_prev_colors', false ) ) {
-			update_option(
-				'inspiro_starter_sites_ai_prev_colors',
-				array(
-					// Lite mods.
-					'colorscheme'          => get_theme_mod( 'colorscheme', false ),
-					'color_palette'        => get_theme_mod( 'color_palette', false ),
-					'colorscheme_hex'      => get_theme_mod( 'colorscheme_hex', false ),
-					// Premium (WPZOOM framework) mods.
-					'color-palettes'       => get_theme_mod( 'color-palettes', false ),
-					'color-accent'         => get_theme_mod( 'color-accent', false ),
-					// Typography (same mod names in both themes).
-					'body-font-family'     => get_theme_mod( 'body-font-family', false ),
-					'headings-font-family' => get_theme_mod( 'headings-font-family', false ),
-				),
-				false
-			);
+		// Align the THEME's own accent, header and footer with the demo so
+		// native theme UI matches the generated design. The pre-AI value of
+		// every mod the generator touches is preserved once — by the first
+		// generation that touches it — and restored when the AI demo is fully
+		// deleted. null marks a mod that was not set.
+		$prev_mods = get_option( 'inspiro_starter_sites_ai_prev_colors', array() );
+		$prev_mods = is_array( $prev_mods ) ? $prev_mods : array();
+		$missing   = array_diff( $this->ai_theme_mods(), array_keys( $prev_mods ) );
+		if ( $missing ) {
+			foreach ( $missing as $mod ) {
+				$prev_mods[ $mod ] = get_theme_mod( $mod, null );
+			}
+			update_option( 'inspiro_starter_sites_ai_prev_colors', $prev_mods, false );
 		}
 
 		// Hand the demo's fonts to the THEME's typography options instead of
@@ -2802,6 +2831,10 @@ class AiDemoGenerator {
 			}
 		}
 
+		// Header layout, width and colors plus footer colors the plan chose
+		// (and Lite's own front-page hero switched off).
+		ThemeOptions::apply( isset( $state['plan']['theme'] ) ? $state['plan']['theme'] : array() );
+
 		// Footer content goes into the theme's real footer widget areas —
 		// generated pages never carry their own footer.
 		$footer_widget_ids = $this->populate_footer_widgets( $state['plan'] );
@@ -2821,6 +2854,7 @@ class AiDemoGenerator {
 				'design_level'  => isset( $state['design_level'] ) ? $state['design_level'] : '',
 				'palette'       => isset( $state['palette'] ) ? $state['palette'] : '',
 				'art_direction' => isset( $state['plan']['art_direction'] ) ? $state['plan']['art_direction'] : '',
+				'theme'         => isset( $state['plan']['theme'] ) ? $state['plan']['theme'] : array(),
 				'page_count'    => count( $created_pages ),
 				'premium'       => class_exists( 'WPZOOM' ),
 			),
@@ -2949,6 +2983,20 @@ class AiDemoGenerator {
 	 * ------------------------------------------------------------------ */
 
 	/**
+	 * Every theme mod a generation may change: accent/palette and fonts (both
+	 * themes' names) plus the header/footer settings ThemeOptions applies on
+	 * the active theme.
+	 *
+	 * @return string[]
+	 */
+	private function ai_theme_mods() {
+		return array_merge(
+			array( 'colorscheme', 'color_palette', 'colorscheme_hex', 'color-palettes', 'color-accent', 'body-font-family', 'headings-font-family' ),
+			ThemeOptions::tracked_mods()
+		);
+	}
+
+	/**
 	 * Fill the theme's footer widget areas (footer_1 / footer_2) with two
 	 * block widgets built from the plan's footer content: an about blurb and
 	 * the contact details. Returns the created widget IDs for cleanup.
@@ -2963,12 +3011,24 @@ class AiDemoGenerator {
 
 		// Widget titles are h2: it's the only heading level the shipped
 		// theme's footer styles fully cover (light color on the dark footer).
-		if ( ! empty( $footer['about'] ) ) {
-			$widgets['footer_1'] = sprintf(
-				"<!-- wp:heading -->\n<h2 class=\"wp-block-heading\">%s</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>%s</p>\n<!-- /wp:paragraph -->",
-				esc_html( $plan['site_title'] ),
-				esc_html( $footer['about'] )
+		// Lite hardcodes that light color, so when the plan chose the footer
+		// colors the titles carry its text color inline — a pale footer
+		// would otherwise get white-on-white titles.
+		$title_color   = isset( $plan['theme']['footer_text'] ) ? $plan['theme']['footer_text'] : '';
+		$heading_block = static function ( $text ) use ( $title_color ) {
+			if ( '' === $title_color ) {
+				return sprintf( "<!-- wp:heading -->\n<h2 class=\"wp-block-heading\">%s</h2>\n<!-- /wp:heading -->", esc_html( $text ) );
+			}
+			return sprintf(
+				"<!-- wp:heading {\"style\":{\"color\":{\"text\":\"%1\$s\"}}} -->\n<h2 class=\"wp-block-heading has-text-color\" style=\"color:%1\$s\">%2\$s</h2>\n<!-- /wp:heading -->",
+				esc_attr( $title_color ),
+				esc_html( $text )
 			);
+		};
+
+		if ( ! empty( $footer['about'] ) ) {
+			$widgets['footer_1'] = $heading_block( $plan['site_title'] )
+				. sprintf( "\n\n<!-- wp:paragraph -->\n<p>%s</p>\n<!-- /wp:paragraph -->", esc_html( $footer['about'] ) );
 		}
 
 		$contact_lines = array();
@@ -2986,10 +3046,7 @@ class AiDemoGenerator {
 		if ( $contact_lines || $social_markup ) {
 			$heading = ! empty( $footer['contact_heading'] ) ? $footer['contact_heading'] : __( 'Contact', 'inspiro-starter-sites' );
 
-			$content = sprintf(
-				"<!-- wp:heading -->\n<h2 class=\"wp-block-heading\">%s</h2>\n<!-- /wp:heading -->",
-				esc_html( $heading )
-			);
+			$content = $heading_block( $heading );
 			if ( $contact_lines ) {
 				$content .= sprintf( "\n\n<!-- wp:paragraph -->\n<p>%s</p>\n<!-- /wp:paragraph -->", implode( '<br>', $contact_lines ) );
 			}
@@ -3205,14 +3262,21 @@ class AiDemoGenerator {
 				update_option( 'page_on_front', 0 );
 			}
 
-			// Restore the customizer colors and fonts from before the first AI demo.
+			// Restore the customizer values from before the first AI demo.
+			// Mods missing from the snapshot were never touched — leave them.
+			// null means "was not set", and so does false for the string mods
+			// (older snapshots recorded unset mods as false).
 			$prev_colors = get_option( 'inspiro_starter_sites_ai_prev_colors' );
 			if ( is_array( $prev_colors ) ) {
-				foreach ( array( 'colorscheme', 'color_palette', 'colorscheme_hex', 'color-palettes', 'color-accent', 'body-font-family', 'headings-font-family' ) as $mod ) {
-					if ( array_key_exists( $mod, $prev_colors ) && false !== $prev_colors[ $mod ] ) {
-						set_theme_mod( $mod, $prev_colors[ $mod ] );
-					} else {
+				foreach ( $this->ai_theme_mods() as $mod ) {
+					if ( ! array_key_exists( $mod, $prev_colors ) ) {
+						continue;
+					}
+					$value = $prev_colors[ $mod ];
+					if ( null === $value || ( false === $value && ! in_array( $mod, ThemeOptions::BOOLEAN_MODS, true ) ) ) {
 						remove_theme_mod( $mod );
+					} else {
+						set_theme_mod( $mod, $value );
 					}
 				}
 			}
@@ -3453,28 +3517,31 @@ class AiDemoGenerator {
 			$seen_slugs[ $slug ] = true;
 
 			$clean['pages'][] = array(
-				'slug'  => $slug,
-				'title' => $title,
-				'brief' => $brief,
+				'slug'   => $slug,
+				'title'  => $title,
+				'brief'  => $brief,
+				// Solid header bar, or transparent over the page's photo hero.
+				'header' => ( isset( $page['header'] ) && 'transparent' === $page['header'] ) ? 'transparent' : 'solid',
 			);
 		}
 
 		// User-approved pages are authoritative: keep their slugs, titles and
-		// order exactly; take the AI's expanded briefs where it provided them.
+		// order exactly; take the AI's expanded briefs and headers where it
+		// provided them.
 		if ( $approved ) {
-			$ai_briefs = array();
+			$ai_pages = array();
 			foreach ( $clean['pages'] as $page ) {
-				if ( '' !== $page['brief'] ) {
-					$ai_briefs[ $page['slug'] ] = $page['brief'];
-				}
+				$ai_pages[ $page['slug'] ] = $page;
 			}
 
 			$clean['pages'] = array();
 			foreach ( $approved as $page ) {
+				$ai_page          = isset( $ai_pages[ $page['slug'] ] ) ? $ai_pages[ $page['slug'] ] : null;
 				$clean['pages'][] = array(
-					'slug'  => $page['slug'],
-					'title' => $page['title'],
-					'brief' => isset( $ai_briefs[ $page['slug'] ] ) ? $ai_briefs[ $page['slug'] ] : $page['brief'],
+					'slug'   => $page['slug'],
+					'title'  => $page['title'],
+					'brief'  => $ai_page && '' !== $ai_page['brief'] ? $ai_page['brief'] : $page['brief'],
+					'header' => $ai_page ? $ai_page['header'] : 'solid',
 				);
 			}
 		}
@@ -3527,6 +3594,18 @@ class AiDemoGenerator {
 				);
 			}
 		}
+
+		$has_transparent = false;
+		foreach ( $clean['pages'] as $i => $page ) {
+			if ( ! empty( $page['is_blog'] ) ) {
+				$clean['pages'][ $i ]['header'] = 'solid';
+			} elseif ( 'transparent' === $page['header'] ) {
+				$has_transparent = true;
+			}
+		}
+
+		// Site header/footer settings, applied as theme mods in finalize.
+		$clean['theme'] = ThemeOptions::sanitize( isset( $plan['theme'] ) ? $plan['theme'] : array(), $has_transparent );
 
 		if ( '' === $clean['site_title'] ) {
 			$clean['site_title'] = esc_html__( 'AI Demo', 'inspiro-starter-sites' );
@@ -3591,6 +3670,9 @@ class AiDemoGenerator {
 			. ".iss-ai-demo ul.wp-block-list,.iss-ai-demo ol.wp-block-list{padding-left:1.4em;margin-bottom:1em}"
 			. ".iss-ai-demo .wp-block-quote{padding-left:1.2em}"
 			. ".iss-ai-demo .ai-card{margin-block-start:0}"
+			// Transparent header: the theme's navigation floats over the
+			// page's first cover — push its content clear of the bar.
+			. ".iss-ai-demo.iss-ai-under-header>.wp-block-cover>.wp-block-cover__inner-container{margin-top:80px}"
 			. ".iss-ai-demo h1,.iss-ai-demo h2,.iss-ai-demo h3,.iss-ai-demo h4{margin-top:0;margin-bottom:.5em}"
 			. ".iss-ai-demo p{margin-top:0;margin-bottom:1em}"
 			. ".iss-ai-demo p:last-child,.iss-ai-demo h2:last-child,.iss-ai-demo h3:last-child{margin-bottom:0}"
