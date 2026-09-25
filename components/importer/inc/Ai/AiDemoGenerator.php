@@ -3632,7 +3632,8 @@ class AiDemoGenerator {
 
 		$plan['engine']       = 'catalog';
 		$plan['palette']      = $palette;
-		$plan['css']          = Catalog\Catalog::css( $palette );
+		$plan['buttons']      = Catalog\Catalog::button_style( isset( $raw['buttons'] ) ? $raw['buttons'] : array() );
+		$plan['css']          = Catalog\Catalog::css( $palette, $plan['buttons'] );
 		$plan['requirements'] = array();
 		foreach ( array_slice( isset( $raw['requirements'] ) && is_array( $raw['requirements'] ) ? $raw['requirements'] : array(), 0, 20 ) as $requirement ) {
 			$requirement = mb_substr( sanitize_text_field( (string) $requirement ), 0, 200 );

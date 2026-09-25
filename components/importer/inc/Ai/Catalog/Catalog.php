@@ -27,6 +27,14 @@ class Catalog {
 	/** Blocks some sections need that only recent WordPress versions register. */
 	const VERSIONED_BLOCKS = array( 'core/accordion', 'core/icon' );
 
+	/** Button shapes the blueprint picks from => corner radius. */
+	const BUTTON_SHAPES = array(
+		'square'  => '0px',
+		'soft'    => '4px',
+		'rounded' => '10px',
+		'pill'    => '999px',
+	);
+
 	/** @var array|null [ 'version' => ..., 'sections' => id => meta ] */
 	private static $meta = null;
 
@@ -195,23 +203,67 @@ class Catalog {
 	}
 
 	/**
+	 * The site's button style from the blueprint: one shape, letter case and
+	 * weight for every button of the demo, whichever sections it uses.
+	 *
+	 * @param mixed $raw Model output ({shape, case, weight}).
+	 * @return array{shape:string,case:string,weight:string}
+	 */
+	public static function button_style( $raw ) {
+		$raw    = is_array( $raw ) ? $raw : array();
+		$shape  = isset( $raw['shape'] ) ? sanitize_key( (string) $raw['shape'] ) : '';
+		$case   = isset( $raw['case'] ) ? sanitize_key( (string) $raw['case'] ) : '';
+		$weight = isset( $raw['weight'] ) ? (string) $raw['weight'] : '';
+
+		return array(
+			'shape'  => isset( self::BUTTON_SHAPES[ $shape ] ) ? $shape : 'soft',
+			'case'   => 'uppercase' === $case ? 'uppercase' : 'normal',
+			'weight' => in_array( $weight, array( '400', '500', '600', '700' ), true ) ? $weight : '500',
+		);
+	}
+
+	/**
 	 * CSS every composed demo carries: Lite-sourced sections read the theme
 	 * palette's primary/secondary slugs with Lite's meaning (near-black /
 	 * accent), which Premium swaps — pin them per section to the palette.
 	 *
 	 * @param array $palette Role => hex.
+	 * @param array $buttons Button style, see button_style().
 	 * @return string
 	 */
-	public static function css( array $palette ) {
+	public static function css( array $palette, array $buttons = array() ) {
+		$buttons = self::button_style( $buttons );
+		$caps    = 'uppercase' === $buttons['case'];
+		$btn     = '.iss-ai-cs .wp-block-button.iss-btn>.wp-block-button__link';
+
 		return '.iss-ai-cs--lite{--wp--preset--color--primary:' . $palette['dark'] . ';--wp--preset--color--secondary:' . $palette['accent'] . ';--wp--preset--color--header-footer:' . $palette['dark'] . '}'
 			// Themes color headings directly, so a heading inside a section that
 			// sets a (light) text color would stay dark on a dark ground. Headings
 			// and paragraphs without their own color follow the section's.
 			. '.iss-ai-cs:where(.has-text-color) :where(h1,h2,h3,h4,h5,h6,p),.iss-ai-cs :where(.has-text-color) :where(h1,h2,h3,h4,h5,h6,p){color:inherit}'
-			. '.iss-ai-cs .glass-button{-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}'
+			// One button style for the whole site (SectionRenderer strips the
+			// demos' own): edit these to restyle every button at once.
+			. ':root{--iss-btn-radius:' . self::BUTTON_SHAPES[ $buttons['shape'] ] . ';--iss-btn-weight:' . $buttons['weight']
+			. ';--iss-btn-case:' . ( $caps ? 'uppercase' : 'none' ) . ';--iss-btn-tracking:' . ( $caps ? '.08em' : '0' )
+			. ';--iss-btn-size:' . ( $caps ? '.8125rem' : '1rem' ) . ';--iss-btn-fill:' . $palette['accent'] . ';--iss-btn-fill-hover:' . $palette['accentdark']
+			. ';--iss-btn-ink:' . $palette['dark'] . '}'
+			. $btn . '{display:inline-block;padding:.9em 1.9em;border:2px solid transparent;border-radius:var(--iss-btn-radius);background:none;box-shadow:none;'
+			. 'font-size:var(--iss-btn-size);font-weight:var(--iss-btn-weight);line-height:1.2;text-transform:var(--iss-btn-case);letter-spacing:var(--iss-btn-tracking);text-decoration:none}'
+			// Filled: the call to action, in the brand color on any ground.
+			. '.iss-ai-cs .wp-block-button.iss-btn.is-style-fill>.wp-block-button__link{background:var(--iss-btn-fill);border-color:var(--iss-btn-fill);color:#fff}'
+			. '.iss-ai-cs .wp-block-button.iss-btn.is-style-fill>.wp-block-button__link:hover{background:var(--iss-btn-fill-hover);border-color:var(--iss-btn-fill-hover);color:#fff}'
+			// Outline: the secondary action, in the ground's ink.
+			. '.iss-ai-cs .wp-block-button.iss-btn.is-style-outline>.wp-block-button__link{border-color:currentColor;color:var(--iss-btn-ink)}'
+			. '.iss-ai-cs .wp-block-button.iss-btn.is-style-outline>.wp-block-button__link:hover{background:var(--iss-btn-ink);border-color:var(--iss-btn-ink);color:#fff!important}'
+			. '.iss-ai-cs .wp-block-button.iss-btn.iss-btn-on-dark.is-style-outline>.wp-block-button__link{color:#fff}'
+			. '.iss-ai-cs .wp-block-button.iss-btn.iss-btn-on-dark.is-style-outline>.wp-block-button__link:hover{background:#fff;border-color:#fff;color:var(--iss-btn-ink)!important}'
+			// Text link: "Read more" under cards and lists.
+			. '.iss-ai-cs .wp-block-button.iss-btn.iss-btn-link>.wp-block-button__link{padding:0 0 .2em;border:0;border-bottom:2px solid currentColor;border-radius:0;color:var(--iss-btn-fill)}'
+			. '.iss-ai-cs .wp-block-button.iss-btn.iss-btn-link>.wp-block-button__link:hover{background:none;color:var(--iss-btn-fill-hover)}'
+			. '.iss-ai-cs .wp-block-button.iss-btn.iss-btn-on-dark.iss-btn-link>.wp-block-button__link,.iss-ai-cs .wp-block-button.iss-btn.iss-btn-on-dark.iss-btn-link>.wp-block-button__link:hover{color:#fff}'
 			// A call-to-action link at the end of the menu ("Book a class").
-			. '.iss-ai-menu-cta>a{padding:.55em 1.2em!important;border-radius:999px;background:' . $palette['accent'] . ';color:#fff!important}'
-			. '.iss-ai-menu-cta>a:hover{background:' . $palette['accentdark'] . '}';
+			. '.iss-ai-menu-cta>a{padding:.55em 1.2em!important;border-radius:var(--iss-btn-radius);background:var(--iss-btn-fill);color:#fff!important;font-weight:var(--iss-btn-weight);text-transform:var(--iss-btn-case);letter-spacing:var(--iss-btn-tracking)}'
+			. '.iss-ai-menu-cta>a:hover{background:var(--iss-btn-fill-hover)}';
 	}
 
 	/**

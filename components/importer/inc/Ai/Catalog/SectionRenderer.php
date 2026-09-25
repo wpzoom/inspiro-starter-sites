@@ -7,7 +7,9 @@
  *
  * Output is native block markup that stays valid in the editor: only text,
  * attribute values that mirror each other in the block comment and the
- * saved HTML, and whole repeatable items are ever changed.
+ * saved HTML, and whole repeatable items are ever changed — plus buttons,
+ * which are rebuilt without the demo's own styling so every section shares
+ * the site's button style (see Catalog::css()).
  *
  * @package Inspiro Starter Sites
  */
@@ -25,6 +27,12 @@ class SectionRenderer {
 
 	/** Containers that disappear when every child was pruned. */
 	const EMPTY_DROP = array( 'core/columns', 'core/buttons', 'core/list', 'core/gallery', 'core/social-links', 'core/accordion' );
+
+	/** Palette roles and theme color slugs that paint a dark ground. */
+	const DARK_ROLES = array( 'dark', 'accent', 'accentdark', 'black', 'primary', 'secondary', 'header-footer' );
+
+	/** Palette roles and theme color slugs that paint a light ground. */
+	const LIGHT_ROLES = array( 'surface', 'accentlight', 'white', 'background', 'base' );
 
 	/** @var array role => hex */
 	private $palette;
@@ -81,6 +89,7 @@ class SectionRenderer {
 		$this->counts = array();
 		$this->flatten( $section['fields'], $content, '' );
 
+		$tone   = isset( $section['tone'] ) ? $section['tone'] : 'light';
 		$blocks = array();
 		foreach ( parse_blocks( $section['markup'] ) as $block ) {
 			if ( empty( $block['blockName'] ) ) {
@@ -88,7 +97,7 @@ class SectionRenderer {
 			}
 			$block = $this->prune( $block );
 			if ( null !== $block ) {
-				$blocks[] = $block;
+				$blocks[] = $this->buttons( $block, in_array( $tone, array( 'dark', 'image', 'accent' ), true ) );
 			}
 		}
 		if ( ! $blocks ) {
@@ -242,6 +251,120 @@ class SectionRenderer {
 		}
 
 		return $block;
+	}
+
+	/* ------------------------------------------------------------------
+	 * Buttons
+	 * ---------------------------------------------------------------- */
+
+	/**
+	 * Every demo styled its buttons its own way (radius, size, case, colors,
+	 * glass). Rebuild each one as a plain core button with one of three roles
+	 * — a filled call to action, a secondary outline, a text link — plus the
+	 * ground it sits on, and let the site's button style paint them all.
+	 *
+	 * @param array $block Block.
+	 * @param bool  $dark  Whether the block sits on a dark ground.
+	 * @return array
+	 */
+	private function buttons( array $block, $dark ) {
+		if ( 'core/button' === $block['blockName'] ) {
+			return $this->button( $block, $dark );
+		}
+
+		$ground = $this->ground( $block );
+		$dark   = null === $ground ? $dark : $ground;
+		foreach ( $block['innerBlocks'] as $i => $child ) {
+			$block['innerBlocks'][ $i ] = $this->buttons( $child, $dark );
+		}
+		return $block;
+	}
+
+	private function button( array $block, $dark ) {
+		$html = (string) $block['innerHTML'];
+		if ( ! preg_match( '#^(\s*)<div\b[^>]*>\s*<a\b([^>]*)>(.*)</a>\s*</div>(\s*)$#s', $html, $m ) ) {
+			return $block; // Not a link button: left as designed.
+		}
+
+		$attrs = $block['attrs'];
+		$class = isset( $attrs['className'] ) ? (string) $attrs['className'] : '';
+		$fill  = isset( $attrs['style']['color']['background'] ) ? (string) $attrs['style']['color']['background'] : '';
+		if ( preg_match( '/\bis-style-outline\b|\bglass-button\b/', $class ) ) {
+			$role = 'is-style-outline';
+		} elseif ( 'transparent' === $fill || preg_match( '/^%%iss:c:[a-z]+:00%%$/', $fill ) ) {
+			$role = 'iss-btn-link';
+		} else {
+			$role = 'is-style-fill';
+		}
+		$class = $role . ' iss-btn' . ( $dark ? ' iss-btn-on-dark' : '' );
+
+		$kept = array( 'className' => $class );
+		if ( isset( $attrs['width'] ) && in_array( (int) $attrs['width'], array( 25, 50, 75, 100 ), true ) ) {
+			$kept['width'] = (int) $attrs['width'];
+		}
+		if ( ! empty( $attrs['metadata'] ) ) {
+			$kept['metadata'] = $attrs['metadata'];
+		}
+
+		// Exactly what core's button save() writes for these attributes.
+		$wrap = 'wp-block-button' . ( isset( $kept['width'] ) ? ' has-custom-width wp-block-button__width-' . $kept['width'] : '' ) . ' ' . $class;
+		$href = preg_match( '/\shref="([^"]*)"/', $m[2], $h ) ? ' href="' . $h[1] . '"' : '';
+		$html = $m[1] . '<div class="' . $wrap . '"><a class="wp-block-button__link wp-element-button"' . $href . '>' . $m[3] . '</a></div>' . $m[4];
+
+		$block['attrs']        = $kept;
+		$block['innerHTML']    = $html;
+		$block['innerContent'] = array( $html );
+		return $block;
+	}
+
+	/**
+	 * Whether a block paints a dark (true) or light (false) ground, or null
+	 * when it paints none and its parent's ground shows through.
+	 */
+	private function ground( array $block ) {
+		$attrs = $block['attrs'];
+		if ( 'core/cover' === $block['blockName'] ) {
+			return true; // A photo under a scrim: the demos set white text on every one.
+		}
+		if ( ! empty( $attrs['gradient'] ) || ! empty( $attrs['style']['color']['gradient'] ) ) {
+			return null;
+		}
+		if ( ! empty( $attrs['backgroundColor'] ) ) {
+			return $this->role_dark( (string) $attrs['backgroundColor'] );
+		}
+		if ( empty( $attrs['style']['color']['background'] ) ) {
+			return null;
+		}
+
+		$value = strtolower( trim( (string) $attrs['style']['color']['background'] ) );
+		if ( preg_match( '/^%%iss:c:([a-z]+)(?::([0-9a-f]{2}))?%%$/', $value, $m ) ) {
+			return isset( $m[2] ) && hexdec( $m[2] ) < 128 ? null : $this->role_dark( $m[1] );
+		}
+		if ( preg_match( '/^var:preset\|color\|([a-z0-9-]+)$/', $value, $m ) ) {
+			return $this->role_dark( $m[1] );
+		}
+		if ( preg_match( '/^#([0-9a-f]{3}|[0-9a-f]{6})([0-9a-f]{2})?$/', $value, $m ) ) {
+			if ( isset( $m[2] ) && hexdec( $m[2] ) < 128 ) {
+				return null;
+			}
+			$hex = 3 === strlen( $m[1] ) ? $m[1][0] . $m[1][0] . $m[1][1] . $m[1][1] . $m[1][2] . $m[1][2] : $m[1];
+			$rgb = array( hexdec( substr( $hex, 0, 2 ) ), hexdec( substr( $hex, 2, 2 ) ), hexdec( substr( $hex, 4, 2 ) ) );
+		} elseif ( preg_match( '/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)$/', $value, $m ) ) {
+			if ( isset( $m[4] ) && (float) $m[4] < 0.5 ) {
+				return null;
+			}
+			$rgb = array( (int) $m[1], (int) $m[2], (int) $m[3] );
+		} else {
+			return null; // transparent, inherit, …
+		}
+		return ( 0.299 * $rgb[0] + 0.587 * $rgb[1] + 0.114 * $rgb[2] ) < 140;
+	}
+
+	private function role_dark( $role ) {
+		if ( in_array( $role, self::DARK_ROLES, true ) ) {
+			return true;
+		}
+		return in_array( $role, self::LIGHT_ROLES, true ) ? false : null;
 	}
 
 	/** Mark the section root so the palette's preset overrides apply inside it. */
