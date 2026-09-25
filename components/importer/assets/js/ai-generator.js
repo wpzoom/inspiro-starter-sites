@@ -1143,9 +1143,11 @@ jQuery( function ( $ ) {
 	// Whether the picker gets a page of its own between describing the site
 	// and reviewing the pages. Premium-only, and only for Creative runs — the
 	// proxy ignores a recipe on any other request, so showing the step there
-	// would offer a choice that gets discarded.
+	// would offer a choice that gets discarded. The catalog engine composes
+	// the demo's own sections and never applies a recipe either.
 	function hasArtStep() {
-		return !! $root.find( '.js-iss-ai-art-grid .iss-ai-art-card' ).length &&
+		return 'catalog' !== currentEngine() &&
+			!! $root.find( '.js-iss-ai-art-grid .iss-ai-art-card' ).length &&
 			!! ( quota && quota.licensed ) &&
 			'pro' === currentDesignLevel();
 	}
@@ -1422,7 +1424,7 @@ jQuery( function ( $ ) {
 			engine:       currentEngine(),
 			// Only Creative runs use a recipe, so don't send a pin the proxy
 			// would discard — the plan then records what it actually built to.
-			art_direction: 'pro' === level ? currentArtDirection() : '',
+			art_direction: 'pro' === level && 'catalog' !== currentEngine() ? currentArtDirection() : '',
 			// A fresh seed per run, so re-generating the same description picks
 			// a different art direction instead of rebuilding the same site.
 			variant_seed: Math.random().toString( 36 ).slice( 2, 12 ) + Date.now().toString( 36 ).slice( -6 ),

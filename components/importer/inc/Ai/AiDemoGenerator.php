@@ -1987,7 +1987,7 @@ class AiDemoGenerator {
 		// A pinned art direction is authoritative for the page builds — the model
 		// echoes the slug back in the plan, but a miss would silently drop the
 		// user's choice for every page after this one.
-		if ( ! is_wp_error( $plan ) && '' !== $art_direction ) {
+		if ( ! is_wp_error( $plan ) && '' !== $art_direction && 'catalog' !== $engine ) {
 			$plan['art_direction'] = $art_direction;
 		}
 
