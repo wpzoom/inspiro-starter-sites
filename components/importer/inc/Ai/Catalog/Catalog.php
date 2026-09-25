@@ -223,9 +223,10 @@ class Catalog {
 	}
 
 	/**
-	 * CSS every composed demo carries: Lite-sourced sections read the theme
-	 * palette's primary/secondary slugs with Lite's meaning (near-black /
-	 * accent), which Premium swaps — pin them per section to the palette.
+	 * CSS every composed demo carries: sections read the theme palette's
+	 * primary/secondary slugs with their source theme's meaning (Lite:
+	 * near-black / accent; Premium swaps them) — pin them per section to the
+	 * demo palette so a section looks the same on either theme.
 	 *
 	 * @param array $palette Role => hex.
 	 * @param array $buttons Button style, see button_style().
@@ -237,6 +238,7 @@ class Catalog {
 		$btn     = '.iss-ai-cs .wp-block-button.iss-btn>.wp-block-button__link';
 
 		return '.iss-ai-cs--lite{--wp--preset--color--primary:' . $palette['dark'] . ';--wp--preset--color--secondary:' . $palette['accent'] . ';--wp--preset--color--header-footer:' . $palette['dark'] . '}'
+			. '.iss-ai-cs--premium{--wp--preset--color--primary:' . $palette['accent'] . ';--wp--preset--color--secondary:' . $palette['dark'] . ';--wp--preset--color--header-footer:' . $palette['dark'] . ';--wp--preset--color--brown:' . $palette['accent'] . ';--wp--preset--color--green:' . $palette['accent'] . '}'
 			// Themes color headings directly, so a heading inside a section that
 			// sets a (light) text color would stay dark on a dark ground. Headings
 			// and paragraphs without their own color follow the section's.

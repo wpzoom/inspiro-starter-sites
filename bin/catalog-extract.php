@@ -169,12 +169,14 @@ final class ISS_Catalog_Extractor {
 		$markup = serialize_block( $block );
 		$markup = $this->name_main_heading( $markup );
 		$markup = $this->map_colors( $markup );
-		// Lite demos are authored against a 16px root; Premium's root is 10px.
-		// Absolute px renders the same on both (attrs and inline styles alike).
+		// Lite demos are authored against a 16px root, Premium demos against
+		// Premium's 10px root. Absolute px renders the same on both themes
+		// (attrs and inline styles alike).
+		$root   = 'premium' === $this->source ? 10 : 16;
 		$markup = preg_replace_callback(
 			'/(?<![\w.-])(\d*\.?\d+)rem\b/',
-			static function ( $m ) {
-				return rtrim( rtrim( number_format( (float) $m[1] * 16, 2, '.', '' ), '0' ), '.' ) . 'px';
+			static function ( $m ) use ( $root ) {
+				return rtrim( rtrim( number_format( (float) $m[1] * $root, 2, '.', '' ), '0' ), '.' ) . 'px';
 			},
 			$markup
 		);

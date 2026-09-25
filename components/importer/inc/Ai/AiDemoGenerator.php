@@ -550,6 +550,8 @@ class AiDemoGenerator {
 					'role_blog'            => __( 'Blog', 'inspiro-starter-sites' ),
 					'role_contact'         => __( 'Contact', 'inspiro-starter-sites' ),
 					'role_cta'             => __( 'Call to action', 'inspiro-starter-sites' ),
+					'role_menu'            => __( 'Menu', 'inspiro-starter-sites' ),
+					'role_events'          => __( 'Events', 'inspiro-starter-sites' ),
 					'page_working'     => __( 'Designing the page — this takes about half a minute…', 'inspiro-starter-sites' ),
 					/* translators: %s: page title */
 					'page_done'        => __( '“%s” is ready.', 'inspiro-starter-sites' ),
@@ -4018,7 +4020,10 @@ class AiDemoGenerator {
 			$fields = isset( $content_by_id[ $item['id'] ] ) ? $content_by_id[ $item['id'] ] : array();
 			// The planned headline is the section's heading, whatever the copy
 			// call wrote there: it is what the customer saw in the preview.
-			if ( '' !== $item['headline'] && isset( $section['fields']['heading'] ) ) {
+			// Not when that "heading" is a statement paragraph set in display
+			// type (a 40-word welcome): a short headline would change the design.
+			if ( '' !== $item['headline'] && isset( $section['fields']['heading'] )
+				&& ( empty( $section['fields']['heading']['words'] ) || (int) $section['fields']['heading']['words'] <= 16 ) ) {
 				$fields['heading'] = $item['headline'];
 			}
 			$content .= $renderer->render( $section, $fields ) . "\n\n";
