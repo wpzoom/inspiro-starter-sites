@@ -38,6 +38,8 @@ phpcs.xml
 phpcs.xml.dist
 phpstan.neon.dist
 README.md
+CLAUDE.md
+.claude
 tests
 webpack.config.js
 .wordpress-org

@@ -5,7 +5,7 @@ Author URI:			https://www.wpzoom.com/
 Requires at least: 	6.5
 Tested up to: 		7.1
 Requires PHP: 		7.4  
-Stable tag: 		1.2.6
+Stable tag: 		1.3.0
 License: 			GPLv2 or later  
 License URI: 		https://www.gnu.org/licenses/gpl-2.0.html
 Tags: 				starter sites, templates, demo importer, elementor, gutenberg
@@ -139,6 +139,16 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 4. Demo Imported message
 
 == Changelog ==
+
+= 1.3.0 =
+* New: AI demo generator can build your site from Inspiro's hand-built demo sections ("From Inspiro demo sections"), filled with your own content
+* New: Preview every page section by section before building, and swap, move or remove sections
+* New: With an active Inspiro Premium license, sections from the Premium demos are included, such as restaurant menus, wine and price lists, tour and event dates, and portfolio grids
+* New: A call-to-action button in the header menu (Book, Reserve, Get a quote) when your description asks for one
+* New: One button style per demo (shape, letter case and weight) across every section
+* Improved: AI-designed pages turn more HTML into native blocks: grid and flex layouts, icons and custom HTML, with CSS applied to the right blocks
+* Improved: Header layout options for AI demos (the hamburger menu option was removed)
+* Fixed: The art direction step no longer appears when building from demo sections, where it had no effect
 
 = 1.2.6 =
 * Improved: AI demo headings are plain text again — no more single accented words inside headlines — and heading weights now follow the art direction (light to heavy) instead of always bold
