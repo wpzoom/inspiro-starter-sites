@@ -141,6 +141,7 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 == Changelog ==
 
 = 1.2.6 =
+* Improved: AI demo headings are plain text again — no more single accented words inside headlines — and heading weights now follow the art direction (light to heavy) instead of always bold
 * Minor improvements
 
 = 1.2.5 =

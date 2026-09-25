@@ -765,15 +765,46 @@ class AiDemoGenerator {
 
 		if ( '' !== $display && $this->theme_knows_font( $display ) ) {
 			set_theme_mod( 'headings-font-family', $display );
+			// The theme only downloads the variants selected here, so hand it
+			// the whole range the stylesheet may use (a light h1 with a
+			// medium h2), and match its site-wide headings weight to the demo's.
+			set_theme_mod( 'headings-font-variant', $this->font_variants_for( $display ) );
+			$weight = isset( $fonts['display_weight'] ) ? (string) $fonts['display_weight'] : '';
+			if ( preg_match( '/^[3-8]00$/', $weight ) ) {
+				set_theme_mod( 'headings-font-weight', $weight );
+			}
 			$applied[] = $display;
 		}
 
 		if ( '' !== $body && $this->theme_knows_font( $body ) ) {
 			set_theme_mod( 'body-font-family', $body );
+			set_theme_mod( 'body-font-variant', $this->font_variants_for( $body ) );
 			$applied[] = $body;
 		}
 
 		return array_unique( $applied );
+	}
+
+	/**
+	 * The theme's comma-separated font-variant value covering every weight
+	 * the whitelist loads for a family, e.g. "300,400,500,600,700,800".
+	 *
+	 * @param string $family Font family name.
+	 * @return string
+	 */
+	private function font_variants_for( $family ) {
+		$whitelist = $this->font_whitelist();
+		$spec      = isset( $whitelist[ $family ] ) ? $whitelist[ $family ] : '';
+
+		if ( preg_match( '/wght@(\d{3})\.\.(\d{3})/', $spec, $m ) ) {
+			return implode( ',', range( (int) $m[1], (int) $m[2], 100 ) );
+		}
+		if ( preg_match( '/wght@([\d;]+)/', $spec, $m ) ) {
+			return str_replace( ';', ',', $m[1] );
+		}
+
+		// Italic-only faces (Instrument Serif): regular plus italic.
+		return '400,italic';
 	}
 
 	/**
@@ -1930,7 +1961,7 @@ class AiDemoGenerator {
 		if ( function_exists( 'wptt_get_webfont_styles' ) && ! empty( $plan['fonts'] ) ) {
 			$whitelist = $this->font_whitelist();
 			$specs     = array();
-			foreach ( array_unique( array_values( $plan['fonts'] ) ) as $family ) {
+			foreach ( array_unique( array_intersect_key( $plan['fonts'], array( 'display' => 1, 'body' => 1 ) ) ) as $family ) {
 				// Families the theme can load itself are handed to its
 				// typography options in finalize() — no need to duplicate
 				// ~25KB of @font-face rules inside the demo stylesheet.
@@ -3007,7 +3038,7 @@ class AiDemoGenerator {
 	 */
 	private function ai_theme_mods() {
 		return array_merge(
-			array( 'colorscheme', 'color_palette', 'colorscheme_hex', 'color-palettes', 'color-accent', 'body-font-family', 'headings-font-family' ),
+			array( 'colorscheme', 'color_palette', 'colorscheme_hex', 'color-palettes', 'color-accent', 'body-font-family', 'body-font-variant', 'headings-font-family', 'headings-font-variant', 'headings-font-weight' ),
 			ThemeOptions::tracked_mods()
 		);
 	}
@@ -3478,9 +3509,13 @@ class AiDemoGenerator {
 		$raw_fonts      = ( ! empty( $plan['fonts'] ) && is_array( $plan['fonts'] ) ) ? $plan['fonts'] : array();
 		$display        = isset( $raw_fonts['display'] ) ? trim( (string) $raw_fonts['display'] ) : '';
 		$body           = isset( $raw_fonts['body'] ) ? trim( (string) $raw_fonts['body'] ) : '';
+		$weight         = isset( $raw_fonts['display_weight'] ) ? trim( (string) $raw_fonts['display_weight'] ) : '';
 		$clean['fonts'] = array(
-			'display' => isset( $whitelist[ $display ] ) ? $display : 'Inter Tight',
-			'body'    => isset( $whitelist[ $body ] ) ? $body : 'Inter',
+			'display'        => isset( $whitelist[ $display ] ) ? $display : 'Inter Tight',
+			'body'           => isset( $whitelist[ $body ] ) ? $body : 'Inter',
+			// The weight the stylesheet uses for main headlines (300-800); the
+			// theme's own headings weight is matched to it in finalize.
+			'display_weight' => preg_match( '/^[3-8]00$/', $weight ) ? $weight : '',
 		);
 
 		// Portfolio: items shown via the WPZOOM Portfolio plugin's block.
@@ -3848,24 +3883,27 @@ class AiDemoGenerator {
 	 */
 	private function font_whitelist() {
 		return array(
-			'Inter'            => 'Inter:wght@400;500;600;700',
-			'Inter Tight'      => 'Inter+Tight:wght@400;500;600;700',
-			'DM Sans'          => 'DM+Sans:wght@400;500;700',
-			'Onest'            => 'Onest:wght@400;500;600;700',
-			'Jost'             => 'Jost:wght@400;500;600;700',
-			'Epilogue'         => 'Epilogue:wght@400;500;600;700',
-			'Montserrat'       => 'Montserrat:wght@400;500;600;700',
-			'Poppins'          => 'Poppins:wght@400;500;600;700',
-			'Raleway'          => 'Raleway:wght@400;500;600;700',
-			'Manrope'          => 'Manrope:wght@400;500;600;700',
-			'Sora'             => 'Sora:wght@400;500;600;700',
-			'Space Grotesk'    => 'Space+Grotesk:wght@400;500;600;700',
-			'Syne'             => 'Syne:wght@500;600;700;800',
-			'Archivo'          => 'Archivo:wght@400;500;600;700',
+			// Full weight ranges so a light 300 or heavy 800 headline renders
+			// as designed instead of snapping to the nearest loaded weight.
+			// Variable families take a range; Poppins is static-only.
+			'Inter'            => 'Inter:wght@300..800',
+			'Inter Tight'      => 'Inter+Tight:wght@300..800',
+			'DM Sans'          => 'DM+Sans:wght@300..800',
+			'Onest'            => 'Onest:wght@300..800',
+			'Jost'             => 'Jost:wght@300..800',
+			'Epilogue'         => 'Epilogue:wght@300..800',
+			'Montserrat'       => 'Montserrat:wght@300..800',
+			'Poppins'          => 'Poppins:wght@300;400;500;600;700;800',
+			'Raleway'          => 'Raleway:wght@300..800',
+			'Manrope'          => 'Manrope:wght@300..800',
+			'Sora'             => 'Sora:wght@300..800',
+			'Space Grotesk'    => 'Space+Grotesk:wght@300..700',
+			'Syne'             => 'Syne:wght@400..800',
+			'Archivo'          => 'Archivo:wght@300..800',
 			'Instrument Serif' => 'Instrument+Serif:ital@0;1',
-			'Bitter'           => 'Bitter:wght@400;500;600;700',
-			'Fraunces'         => 'Fraunces:wght@400;500;600;700',
-			'Playfair Display' => 'Playfair+Display:wght@400;500;600;700',
+			'Bitter'           => 'Bitter:wght@300..800',
+			'Fraunces'         => 'Fraunces:wght@300..800',
+			'Playfair Display' => 'Playfair+Display:wght@400..800',
 		);
 	}
 

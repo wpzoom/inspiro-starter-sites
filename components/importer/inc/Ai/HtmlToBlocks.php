@@ -184,6 +184,18 @@ class HtmlToBlocks {
 			return '';
 		}
 
+		// Headlines are one colour and one weight: unwrap the single-word
+		// accent spans older prompts produced (<span class="ai-highlight">)
+		// and strip any other inline styling inside h1-h6 — only <br> stays.
+		$html = preg_replace( '#<span\b[^>]*\bai-highlight\b[^>]*>(.*?)</span>#is', '$1', $html );
+		$html = preg_replace_callback(
+			'#<(h[1-6])\b([^>]*)>(.*?)</\1>#is',
+			static function ( $m ) {
+				return '<' . $m[1] . $m[2] . '>' . strip_tags( $m[3], '<br>' ) . '</' . $m[1] . '>';
+			},
+			$html
+		);
+
 		$doc = new \DOMDocument();
 		// The dialect is a fragment — wrap it so DOMDocument keeps structure.
 		$wrapped = '<?xml encoding="utf-8"?><html><body>' . $html . '</body></html>';
@@ -1608,7 +1620,8 @@ class HtmlToBlocks {
 
 			// Nested rules aren't supported; emptied rules aren't worth keeping.
 			if ( false !== strpos( $body, '{' ) || '' === trim( $body, " 	
-;" ) ) {
+
+;" ) ) {
 				continue;
 			}
 
