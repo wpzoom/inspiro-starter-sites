@@ -28,13 +28,15 @@ class ThemeOptions {
 
 	/**
 	 * AI header layout slug => `header-menu-style` value (same mod in both
-	 * themes; the last two are Premium-only).
+	 * themes; the last two are Premium-only). The "hidden menu" style
+	 * (wpz_menu_hamburger) is deliberately absent: both themes hide the
+	 * side-panel menu above 1024px, so it left the desktop site with no
+	 * navigation at all.
 	 */
 	const HEADER_LAYOUTS = array(
 		'classic'        => 'wpz_menu_normal',
 		'menu-left'      => 'wpz_menu_left',
 		'menu-center'    => 'wpz_menu_center',
-		'hamburger'      => 'wpz_menu_hamburger',
 		'split-logo'     => 'wpz_menu_left_logo_center',
 		'stacked-center' => 'wpz_menu_center_logo_center',
 	);
@@ -160,7 +162,7 @@ class ThemeOptions {
 
 		$slugs = array_keys( self::HEADER_LAYOUTS );
 
-		return 'premium' === $kind ? $slugs : array_slice( $slugs, 0, 4 );
+		return 'premium' === $kind ? $slugs : array_slice( $slugs, 0, 3 );
 	}
 
 	/**
