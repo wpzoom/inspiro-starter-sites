@@ -4,8 +4,9 @@
  *
  * All AI traffic goes through the WPZOOM proxy — no API keys ever live on the
  * user's site. The proxy exposes:
- *   - POST /services/v1/claude   — forwards an Anthropic Messages body (the
- *     proxy owns model selection and may remap the requested model).
+ *   - POST /services/v1/claude   — runs a server-defined AI task. The proxy
+ *     builds the prompt and picks the model (its "AI Demo Model" setting —
+ *     Claude or Grok) and always answers in the Anthropic Messages shape.
  *   - POST /services/v1/pexels   — Pexels photo search.
  *   - POST /services/v1/ai-quota — server-enforced free-generation quota,
  *     keyed by site URL (action: check | consume | refund).
@@ -27,13 +28,6 @@ class AiProxyClient {
 	 * 'demo-tailor' feature so the two free tiers are metered separately.
 	 */
 	const FEATURE = 'demo-generate';
-
-	/**
-	 * Model requested from the proxy. The proxy remaps any model that is not
-	 * on its allowlist to its configured default, so a retired model here
-	 * degrades gracefully without a plugin update.
-	 */
-	const MODEL = 'claude-sonnet-4-6';
 
 	/**
 	 * Options holding the email registration issued by the proxy's
@@ -93,68 +87,6 @@ class AiProxyClient {
 			),
 			self::base_url() . '/' . $service
 		);
-	}
-
-	/**
-	 * Ask Claude (via the proxy) for a JSON object and return it decoded.
-	 *
-	 * @param string        $system     System prompt.
-	 * @param string        $prompt     User prompt.
-	 * @param int           $max_tokens Completion cap.
-	 * @param callable|null $heartbeat  Invoked periodically while waiting on
-	 *                                  the proxy so the caller can emit
-	 *                                  keep-alive bytes (see StreamingResponse).
-	 * @return array|WP_Error Decoded JSON object.
-	 */
-	public function claude_json( $system, $prompt, $max_tokens = 12000, $heartbeat = null ) {
-		$text = $this->claude_text( $system, $prompt, $max_tokens, $heartbeat );
-
-		if ( is_wp_error( $text ) ) {
-			return $text;
-		}
-
-		// Strip markdown fences, then slice out the first brace-balanced
-		// object so stray prose before/after the JSON can't break the parse.
-		$text = preg_replace( '/^```(?:json)?\s*|\s*```$/s', '', trim( $text ) );
-		$text = $this->extract_json_object( $text );
-
-		$decoded = $this->decode_json_lenient( $text );
-
-		if ( ! is_array( $decoded ) ) {
-			return new WP_Error( 'ai_parse_error', __( 'The AI returned a malformed response. Please try again.', 'inspiro-starter-sites' ) );
-		}
-
-		return $decoded;
-	}
-
-	/**
-	 * Ask Claude (via the proxy) for raw text (e.g. an HTML document).
-	 *
-	 * @param string        $system     System prompt.
-	 * @param string        $prompt     User prompt.
-	 * @param int           $max_tokens Completion cap.
-	 * @param callable|null $heartbeat  Keep-alive callback (see claude_json()).
-	 * @return string|WP_Error Concatenated text content.
-	 */
-	public function claude_text( $system, $prompt, $max_tokens = 12000, $heartbeat = null ) {
-		$body = array(
-			'model'      => self::MODEL,
-			'max_tokens' => (int) $max_tokens,
-			'stream'     => false,
-			// No-op on Sonnet 4.6/Haiku 4.5, but keeps generation on the fast
-			// path if the proxy is switched to a model where thinking is on
-			// by default (Sonnet 5+).
-			'thinking'   => array( 'type' => 'disabled' ),
-			'system'     => $system,
-			'messages'   => array(
-				array(
-					'role'    => 'user',
-					'content' => $prompt,
-				),
-			),
-		);
-
-		return $this->request_claude( $body, $heartbeat );
 	}
 
 	/**
@@ -408,9 +340,9 @@ class AiProxyClient {
 	}
 
 	/**
-	 * POST a request body to the Claude proxy and return the text content.
+	 * POST a task request to the AI proxy and return the text content.
 	 *
-	 * @param array         $body      Request body (raw Anthropic or task form).
+	 * @param array         $body      Task request body.
 	 * @param callable|null $heartbeat Keep-alive callback.
 	 * @return string|WP_Error
 	 */
@@ -436,7 +368,8 @@ class AiProxyClient {
 			return new WP_Error( 'ai_proxy_error', $msg ? $msg : ( 'HTTP ' . $code ) );
 		}
 
-		// $raw['data'] is the verbatim Anthropic Messages response object.
+		// $raw['data'] is an Anthropic Messages response object — the proxy
+		// converts other providers' replies (e.g. Grok) to this shape.
 		$claude = isset( $raw['data'] ) && is_array( $raw['data'] ) ? $raw['data'] : array();
 
 		if ( isset( $claude['stop_reason'] ) && 'max_tokens' === $claude['stop_reason'] ) {
