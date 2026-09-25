@@ -487,6 +487,7 @@ jQuery( function ( $ ) {
 							'</div>' +
 							'<p class="iss-ai-delete-result js-iss-ai-delete-result" hidden></p>' +
 
+							'<p class="iss-ai-error js-iss-ai-input-error" hidden></p>' +
 							'<p class="iss-ai-field-label">' + esc( t.describe_label || '' ) + '</p>' +
 							'<textarea class="iss-ai-textarea js-iss-ai-description" rows="4" maxlength="1200" placeholder="' + esc( t.placeholder || '' ) + '"></textarea>' +
 							'<div class="iss-ai-enhance-row">' +
@@ -524,7 +525,6 @@ jQuery( function ( $ ) {
 								'</a></p>'
 							: '' ) +
 
-							'<p class="iss-ai-error js-iss-ai-input-error" hidden></p>' +
 						'</div>' +
 
 
