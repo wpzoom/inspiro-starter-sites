@@ -100,6 +100,11 @@ class AiProxyClient {
 	 * @return string|WP_Error Text response.
 	 */
 	public function claude_task( $task, array $vars, $heartbeat = null ) {
+		$local = $this->local_task_body( $task, $vars );
+		if ( null !== $local ) {
+			return is_wp_error( $local ) ? $local : $this->request_claude( $local, $heartbeat );
+		}
+
 		return $this->request_claude(
 			array(
 				'task'        => $task,
@@ -115,6 +120,95 @@ class AiProxyClient {
 				'license_key' => self::premium_license(),
 			),
 			$heartbeat
+		);
+	}
+
+	/**
+	 * Section catalog of the catalog engine (/services/v1/ai-catalog):
+	 * metadata of every section, or the full data of the given ids.
+	 *
+	 * @param string[] $ids    Sections wanted in full ([] = metadata of all).
+	 * @param string[] $blocks Versioned blocks this WordPress registers.
+	 * @return array|WP_Error [ 'version' => ..., 'sections' => [ id => ... ] ]
+	 */
+	public function catalog( array $ids, array $blocks ) {
+		$response = wp_remote_post(
+			$this->endpoint( 'ai-catalog' ),
+			array(
+				'headers' => array( 'Content-Type' => 'application/json' ),
+				'body'    => wp_json_encode(
+					array(
+						'site_key'    => (string) get_option( self::SITE_KEY_OPTION, '' ),
+						'license_key' => self::premium_license(),
+						'blocks'      => array_values( $blocks ),
+						'ids'         => array_values( $ids ),
+					)
+				),
+				'timeout' => 20,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return new WP_Error( 'ai_catalog_unreachable', $response->get_error_message() );
+		}
+
+		$data = json_decode( wp_remote_retrieve_body( $response ), true );
+		if ( 200 !== (int) wp_remote_retrieve_response_code( $response ) || ! is_array( $data ) || empty( $data['success'] ) || ! isset( $data['sections'] ) || ! is_array( $data['sections'] ) ) {
+			$msg = is_array( $data ) && isset( $data['message'] ) ? (string) $data['message'] : __( 'The section catalog is unavailable. Please try again later.', 'inspiro-starter-sites' );
+			return new WP_Error( 'ai_catalog_error', $msg );
+		}
+
+		return array(
+			'version'  => isset( $data['version'] ) ? (string) $data['version'] : '',
+			'sections' => $data['sections'],
+		);
+	}
+
+	/**
+	 * DEVELOPMENT ONLY. With INSPIRO_STARTER_SITES_AI_LOCAL_PROMPTS set to the
+	 * path of a local wpzoom-api-key-provider checkout (in wp-config.php),
+	 * task prompts are built from that checkout and sent as a plain request,
+	 * so prompt changes can be tested before the provider is deployed.
+	 * Never defined on customer sites: returns null and nothing changes.
+	 *
+	 * @param string $task Task slug.
+	 * @param array  $vars Task variables.
+	 * @return array|WP_Error|null Anthropic request body, error, or null (off).
+	 */
+	private function local_task_body( $task, array $vars ) {
+		if ( ! defined( 'INSPIRO_STARTER_SITES_AI_LOCAL_PROMPTS' ) || ! INSPIRO_STARTER_SITES_AI_LOCAL_PROMPTS ) {
+			return null;
+		}
+		$file = trailingslashit( (string) INSPIRO_STARTER_SITES_AI_LOCAL_PROMPTS ) . 'wpzoom-ai-prompts.php';
+		if ( ! class_exists( 'WPZOOM_AI_Prompts' ) ) {
+			if ( ! is_readable( $file ) ) {
+				return null;
+			}
+			require_once $file;
+		}
+
+		$built = \WPZOOM_AI_Prompts::build( $task, $vars, '' !== self::premium_license() );
+		if ( is_wp_error( $built ) ) {
+			return $built;
+		}
+
+		$prompt = isset( $built['prompt'] ) ? (string) $built['prompt'] : '';
+		if ( ! empty( $built['prompt_blocks'] ) ) {
+			$prompt = implode( "\n\n", wp_list_pluck( $built['prompt_blocks'], 'text' ) );
+		}
+
+		return array(
+			'model'      => self::MODEL,
+			'max_tokens' => isset( $built['max_tokens'] ) ? (int) $built['max_tokens'] : 8000,
+			'stream'     => false,
+			'thinking'   => array( 'type' => 'disabled' ),
+			'system'     => $built['system'],
+			'messages'   => array(
+				array(
+					'role'    => 'user',
+					'content' => $prompt,
+				),
+			),
 		);
 	}
 
@@ -142,6 +236,19 @@ class AiProxyClient {
 		}
 
 		return $decoded;
+	}
+
+	/**
+	 * Decode one JSON object from model text (fences stripped, the first
+	 * brace-balanced object taken, the repair passes applied).
+	 *
+	 * @param string $text Model text.
+	 * @return array|null
+	 */
+	public function decode_object( $text ) {
+		$text    = preg_replace( '/^```(?:json)?\s*|\s*```$/s', '', trim( (string) $text ) );
+		$decoded = $this->decode_json_lenient( $this->extract_json_object( $text ) );
+		return is_array( $decoded ) ? $decoded : null;
 	}
 
 	/**

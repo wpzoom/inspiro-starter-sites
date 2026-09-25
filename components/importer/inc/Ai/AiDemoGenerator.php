@@ -73,6 +73,7 @@ class AiDemoGenerator {
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_suggest_pages', array( $this, 'ajax_suggest_pages' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_generate', array( $this, 'ajax_generate' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_build_page', array( $this, 'ajax_build_page' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_update_blueprint', array( $this, 'ajax_update_blueprint' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_finalize', array( $this, 'ajax_finalize' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_delete', array( $this, 'ajax_delete' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_feedback', array( $this, 'ajax_feedback' ) );
@@ -317,6 +318,10 @@ class AiDemoGenerator {
 				// Premium theme without an activated license: the exhausted-
 				// quota card asks to activate instead of upselling.
 				'is_premium_theme' => self::is_premium_inspiro(),
+				// Catalog engine available (sections shipped with this build),
+				// and which engine the modal preselects.
+				'catalog_engine'   => Catalog\Catalog::available(),
+				'default_engine'   => 'catalog' === apply_filters( 'inspiro_starter_sites/ai_default_engine', 'html' ) ? 'catalog' : 'html',
 				// Premium page tools also require an ACTIVE license.
 				'has_license'      => '' !== AiProxyClient::premium_license(),
 				// Pages of the active demo, for the regenerate picker (the
@@ -510,6 +515,41 @@ class AiDemoGenerator {
 					'append_describe'  => __( 'What should be added?', 'inspiro-starter-sites' ),
 					'append_ph'        => __( 'e.g. A section with our opening hours and a map, and a short FAQ', 'inspiro-starter-sites' ),
 					'append_go'        => __( 'Add to page', 'inspiro-starter-sites' ),
+					// Catalog engine.
+					'engine_label'         => __( 'How should pages be designed?', 'inspiro-starter-sites' ),
+					'engine_catalog'       => __( 'From Inspiro demo sections', 'inspiro-starter-sites' ),
+					'engine_catalog_hint'  => __( 'Layouts from our hand-built demos, filled with your content. Preview before building.', 'inspiro-starter-sites' ),
+					'engine_html'          => __( 'Designed by AI', 'inspiro-starter-sites' ),
+					'engine_html_hint'     => __( 'The AI writes every page layout from scratch.', 'inspiro-starter-sites' ),
+					'preview_title'        => __( 'Your site, section by section', 'inspiro-starter-sites' ),
+					'preview_hint'         => __( 'Each block is a section from an Inspiro demo, planned for your business. Swap, move or remove sections, then build.', 'inspiro-starter-sites' ),
+					/* translators: %s: number of requests */
+					'preview_requirements' => __( 'We read %s requests in your description', 'inspiro-starter-sites' ),
+					'preview_build'        => __( 'Build my site', 'inspiro-starter-sites' ),
+					'preview_saving'       => __( 'Saving your plan…', 'inspiro-starter-sites' ),
+					'preview_blog'         => __( 'This page lists your latest blog posts.', 'inspiro-starter-sites' ),
+					'preview_swap'         => __( 'Try another layout', 'inspiro-starter-sites' ),
+					'preview_up'           => __( 'Move up', 'inspiro-starter-sites' ),
+					'preview_down'         => __( 'Move down', 'inspiro-starter-sites' ),
+					'preview_remove'       => __( 'Remove section', 'inspiro-starter-sites' ),
+					'role_hero'            => __( 'Hero', 'inspiro-starter-sites' ),
+					'role_page_header'     => __( 'Page header', 'inspiro-starter-sites' ),
+					'role_intro'           => __( 'Intro', 'inspiro-starter-sites' ),
+					'role_about'           => __( 'About', 'inspiro-starter-sites' ),
+					'role_services'        => __( 'Services', 'inspiro-starter-sites' ),
+					'role_features'        => __( 'Features', 'inspiro-starter-sites' ),
+					'role_process'         => __( 'Process', 'inspiro-starter-sites' ),
+					'role_stats'           => __( 'Figures', 'inspiro-starter-sites' ),
+					'role_gallery'         => __( 'Photo', 'inspiro-starter-sites' ),
+					'role_portfolio'       => __( 'Portfolio', 'inspiro-starter-sites' ),
+					'role_team'            => __( 'Team', 'inspiro-starter-sites' ),
+					'role_testimonials'    => __( 'Testimonials', 'inspiro-starter-sites' ),
+					'role_logos'           => __( 'Clients', 'inspiro-starter-sites' ),
+					'role_pricing'         => __( 'Pricing', 'inspiro-starter-sites' ),
+					'role_faq'             => __( 'FAQ', 'inspiro-starter-sites' ),
+					'role_blog'            => __( 'Blog', 'inspiro-starter-sites' ),
+					'role_contact'         => __( 'Contact', 'inspiro-starter-sites' ),
+					'role_cta'             => __( 'Call to action', 'inspiro-starter-sites' ),
 					'page_working'     => __( 'Designing the page — this takes about half a minute…', 'inspiro-starter-sites' ),
 					/* translators: %s: page title */
 					'page_done'        => __( '“%s” is ready.', 'inspiro-starter-sites' ),
@@ -1907,7 +1947,13 @@ class AiDemoGenerator {
 		$approved_raw   = isset( $_POST['pages'] ) ? json_decode( wp_unslash( $_POST['pages'] ), true ) : null; // phpcs:ignore WordPress.Security.ValidatedSanitized
 		$approved_pages = $this->sanitize_review_pages( $approved_raw );
 
-		$plan = $this->proxy->claude_task_json(
+		// Catalog engine: the site is composed from sections of the theme's
+		// hand-built demos. HTML engine: every page is designed as HTML.
+		$engine = $this->requested_engine();
+
+		$plan = 'catalog' === $engine
+			? $this->blueprint_plan( $description, $style, $typography, $palette ? $palette_options[ $palette ]['colors'] : array(), $approved_pages, $variant_seed, $stream )
+			: $this->proxy->claude_task_json(
 			'demo-plan',
 			array(
 				'description'    => $description,
@@ -1932,7 +1978,7 @@ class AiDemoGenerator {
 			array( $stream, 'tick' )
 		);
 
-		if ( ! is_wp_error( $plan ) ) {
+		if ( ! is_wp_error( $plan ) && 'catalog' !== $engine ) {
 			$plan = $this->sanitize_plan( $plan, $approved_pages );
 		}
 
@@ -2019,6 +2065,7 @@ class AiDemoGenerator {
 				'plan'           => $plan,
 				'palette'        => $palette, // chosen palette slug ('' = AI decides)
 				'design_level'   => $design_level,
+				'engine'         => $engine,
 				'replace'        => $replace,
 				'created_pages'  => array(), // page index => post ID
 				'used_photo_ids' => array(),
@@ -2050,6 +2097,9 @@ class AiDemoGenerator {
 					'needed'        => ! empty( $plan['contact_form_needed'] ),
 					'plugin_active' => post_type_exists( 'wpzf-form' ),
 				),
+				'engine'     => $engine,
+				// Catalog engine: the modal previews the site before building.
+				'blueprint'  => 'catalog' === $engine ? $this->blueprint_preview( $plan ) : null,
 			)
 		);
 	}
@@ -2259,6 +2309,11 @@ class AiDemoGenerator {
 		// WordPress posts page (assigned in finalize) plus a few actual posts.
 		if ( ! empty( $page['is_blog'] ) ) {
 			$this->build_blog_page( $state, $plan_id, $index, $page, $stream );
+		}
+
+		// Catalog engine: copy for the page's chosen sections, then render.
+		if ( isset( $state['engine'] ) && 'catalog' === $state['engine'] ) {
+			$this->build_catalog_page( $state, $plan_id, $index, $page, $stream, $image_pool );
 		}
 
 		// One Claude call designs this page as HTML against the shared
@@ -2801,6 +2856,27 @@ class AiDemoGenerator {
 						'menu-item-title'     => isset( $pages[ $page_index ]['title'] ) ? $pages[ $page_index ]['title'] : get_the_title( $page_id ),
 					)
 				);
+			}
+
+			// The plan's call-to-action ("Book a class") closes the menu as a button.
+			if ( ! empty( $state['plan']['menu_cta'] ) ) {
+				foreach ( $pages as $page_index => $p ) {
+					if ( $p['slug'] === $state['plan']['menu_cta']['page'] && isset( $created_pages[ $page_index ] ) ) {
+						wp_update_nav_menu_item(
+							$menu_id,
+							0,
+							array(
+								'menu-item-object-id' => (int) $created_pages[ $page_index ],
+								'menu-item-object'    => 'page',
+								'menu-item-type'      => 'post_type',
+								'menu-item-status'    => 'publish',
+								'menu-item-title'     => $state['plan']['menu_cta']['label'],
+								'menu-item-classes'   => 'iss-ai-menu-cta',
+							)
+						);
+						break;
+					}
+				}
 			}
 
 			$locations            = get_theme_mod( 'nav_menu_locations', array() );
@@ -3461,6 +3537,678 @@ class AiDemoGenerator {
 	 *                        expanded briefs are merged in by slug.
 	 * @return array|\WP_Error
 	 */
+	/* ---------------------------------------------------------------------
+	 * Catalog engine: sites composed from the theme's own demo sections
+	 * ------------------------------------------------------------------ */
+
+	/**
+	 * Which engine this generation uses. The catalog engine is opt-in while
+	 * it is compared with the HTML engine: the modal toggle sends it, and
+	 * the filter can make it the default.
+	 *
+	 * @return string 'catalog' or 'html'.
+	 */
+	private function requested_engine() {
+		$engine = isset( $_POST['engine'] ) ? sanitize_key( wp_unslash( $_POST['engine'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		if ( '' === $engine ) {
+			/**
+			 * Filter the default generation engine ('html' or 'catalog').
+			 *
+			 * @param string $engine Engine slug.
+			 */
+			$engine = (string) apply_filters( 'inspiro_starter_sites/ai_default_engine', 'html' );
+		}
+		return ( 'catalog' === $engine && Catalog\Catalog::available() ) ? 'catalog' : 'html';
+	}
+
+	/**
+	 * The blueprint call: site identity, palette, fonts, header and footer,
+	 * the customer's requirements, and every page as an ordered list of
+	 * catalog sections with a headline. One fast call (no layouts, no CSS).
+	 *
+	 * @return array|\WP_Error Sanitized plan.
+	 */
+	private function blueprint_plan( $description, $style, $typography, array $palette_colors, array $approved, $seed, StreamingResponse $stream ) {
+		$vars = array(
+			'description'    => $description,
+			'style'          => $style,
+			'typography'     => $typography,
+			'palette_colors' => $palette_colors,
+			'pages'          => $approved,
+			// The server builds the section index itself; it only needs to
+			// know which recent core blocks this WordPress can render.
+			'blocks'         => Catalog\Catalog::blocks(),
+			'font_families'  => array_keys( $this->font_whitelist() ),
+			'caps'           => ThemeOptions::caps(),
+			'header_layouts' => ThemeOptions::header_layouts(),
+		);
+		$plan = $this->proxy->claude_task_json( 'demo-blueprint', $vars, array( $stream, 'tick' ) );
+
+		// A malformed reply is retried once before the generation fails.
+		if ( is_wp_error( $plan ) && 'ai_parse_error' === $plan->get_error_code() ) {
+			$plan = $this->proxy->claude_task_json( 'demo-blueprint', $vars, array( $stream, 'tick' ) );
+		}
+
+		return is_wp_error( $plan ) ? $plan : $this->sanitize_blueprint( $plan, $approved, $seed );
+	}
+
+	/**
+	 * Blueprint → plan. The shared sanitizer handles identity, fonts,
+	 * footer, theme, portfolio and blog; this adds the palette, the
+	 * requirements and each page's sections.
+	 *
+	 * @param array  $raw      Model output.
+	 * @param array  $approved Pages the user approved.
+	 * @param string $seed     Per-generation seed (default openers).
+	 * @return array|\WP_Error
+	 */
+	private function sanitize_blueprint( $raw, array $approved, $seed = '' ) {
+		if ( ! is_array( $raw ) || empty( $raw['pages'] ) || ! is_array( $raw['pages'] ) ) {
+			return new \WP_Error( 'ai_invalid_plan', esc_html__( 'The AI returned an unusable site plan. Please try again.', 'inspiro-starter-sites' ) );
+		}
+
+		$raw_palette = isset( $raw['palette'] ) && is_array( $raw['palette'] ) ? $raw['palette'] : array();
+		$palette     = Catalog\Catalog::palette(
+			$this->readable_accent( isset( $raw_palette['accent'] ) ? (string) $raw_palette['accent'] : '' ),
+			isset( $raw_palette['dark'] ) ? (string) $raw_palette['dark'] : '',
+			isset( $raw_palette['surface'] ) ? (string) $raw_palette['surface'] : ''
+		);
+
+		// The shared sanitizer requires an AI stylesheet; the catalog engine's
+		// CSS is generated here (not by the model) and set after it.
+		$raw['css']   = '.iss-ai-demo{}';
+		$raw['brand'] = array(
+			'accent'      => $palette['accent'],
+			'accent_text' => '#ffffff',
+			'radius'      => '8px',
+		);
+
+		$plan = $this->sanitize_plan( $raw, $approved );
+		if ( is_wp_error( $plan ) ) {
+			return $plan;
+		}
+
+		$plan['engine']       = 'catalog';
+		$plan['palette']      = $palette;
+		$plan['css']          = Catalog\Catalog::css( $palette );
+		$plan['requirements'] = array();
+		foreach ( array_slice( isset( $raw['requirements'] ) && is_array( $raw['requirements'] ) ? $raw['requirements'] : array(), 0, 20 ) as $requirement ) {
+			$requirement = mb_substr( sanitize_text_field( (string) $requirement ), 0, 200 );
+			if ( '' !== $requirement ) {
+				$plan['requirements'][] = $requirement;
+			}
+		}
+
+		$raw_sections = array();
+		foreach ( $raw['pages'] as $page ) {
+			if ( is_array( $page ) && ! empty( $page['slug'] ) ) {
+				$raw_sections[ sanitize_title( (string) $page['slug'] ) ] = isset( $page['sections'] ) && is_array( $page['sections'] ) ? $page['sections'] : array();
+			}
+		}
+
+		foreach ( $plan['pages'] as $i => $page ) {
+			$plan['pages'][ $i ]['sections'] = empty( $page['is_blog'] )
+				? $this->clean_sections( isset( $raw_sections[ $page['slug'] ] ) ? $raw_sections[ $page['slug'] ] : array(), 0 === $i, $plan, $seed . $page['slug'] )
+				: array();
+		}
+
+		// A call-to-action link at the end of the menu, pointing at a page.
+		if ( ! empty( $raw['menu_cta'] ) && is_array( $raw['menu_cta'] ) && ! empty( $raw['menu_cta']['label'] ) ) {
+			$target = sanitize_title( (string) ( isset( $raw['menu_cta']['page'] ) ? $raw['menu_cta']['page'] : '' ) );
+			foreach ( $plan['pages'] as $page ) {
+				if ( $page['slug'] === $target ) {
+					$plan['menu_cta'] = array(
+						'label' => mb_substr( sanitize_text_field( (string) $raw['menu_cta']['label'] ), 0, 30 ),
+						'page'  => $target,
+					);
+					break;
+				}
+			}
+		}
+
+		$this->blueprint_flags( $plan );
+
+		return $plan;
+	}
+
+	/**
+	 * Validate one page's section list: known ids that fit the page, no
+	 * repeats, dependencies met, and the right opener first (a hero on the
+	 * homepage, a page header on inner pages).
+	 *
+	 * @param array  $list Raw sections ([ id, headline ] or ids).
+	 * @param bool   $home Homepage.
+	 * @param array  $plan Sanitized plan (blog, portfolio).
+	 * @param string $seed Seed for a default opener.
+	 * @return array[] [ [ 'id' => ..., 'headline' => ... ] ]
+	 */
+	private function clean_sections( array $list, $home, array $plan, $seed ) {
+		$has_posts     = ! empty( $plan['blog']['posts'] ) || ! empty( $plan['blog']['needed'] );
+		$has_portfolio = ! empty( $plan['portfolio']['needed'] ) && ! empty( $plan['portfolio']['items'] );
+		$opener        = $home ? 'hero' : 'page-header';
+
+		$out  = array();
+		$seen = array();
+		foreach ( array_slice( $list, 0, 12 ) as $item ) {
+			$id      = sanitize_key( (string) ( is_array( $item ) ? ( isset( $item['id'] ) ? $item['id'] : '' ) : $item ) );
+			$section = Catalog\Catalog::get( $id );
+			if ( ! $section || isset( $seen[ $id ] ) || ! $this->section_fits( $section, $home ) ) {
+				continue;
+			}
+			$needs = isset( $section['needs'] ) ? (array) $section['needs'] : array();
+			if ( ( in_array( 'posts', $needs, true ) && ! $has_posts ) || ( in_array( 'wpzoom-portfolio', $needs, true ) && ! $has_portfolio ) ) {
+				continue;
+			}
+			// One contact form per page.
+			if ( in_array( 'wpzoom-forms', $needs, true ) ) {
+				if ( ! empty( $has_form ) ) {
+					continue;
+				}
+				$has_form = true;
+			}
+			// One opener per page, and only in first position.
+			if ( in_array( $section['role'], array( 'hero', 'page-header' ), true ) && ( $out || $section['role'] !== $opener ) ) {
+				continue;
+			}
+			$seen[ $id ] = true;
+			$out[]       = array(
+				'id'       => $id,
+				'headline' => is_array( $item ) && isset( $item['headline'] ) ? mb_substr( sanitize_text_field( (string) $item['headline'] ), 0, 160 ) : '',
+			);
+		}
+
+		if ( ! $out || Catalog\Catalog::get( $out[0]['id'] )['role'] !== $opener ) {
+			$pool = array();
+			foreach ( Catalog\Catalog::meta() as $id => $section ) {
+				if ( $section['role'] === $opener && $this->section_fits( $section, $home ) ) {
+					$pool[] = $id;
+				}
+			}
+			if ( $pool ) {
+				array_unshift(
+					$out,
+					array(
+						'id'       => $pool[ crc32( (string) $seed ) % count( $pool ) ],
+						'headline' => '',
+					)
+				);
+			}
+		}
+
+		return array_slice( $out, 0, 10 );
+	}
+
+	private function section_fits( array $section, $home ) {
+		$fits = isset( $section['fits'] ) ? $section['fits'] : 'any';
+		return ! ( ( 'home' === $fits && ! $home ) || ( 'inner' === $fits && $home ) );
+	}
+
+	/**
+	 * Plan flags the shared build and finalize steps read: a contact form
+	 * when a section embeds one, demo posts when a section lists them.
+	 *
+	 * @param array $plan Plan (by reference).
+	 */
+	private function blueprint_flags( array &$plan ) {
+		$needs = array();
+		foreach ( $plan['pages'] as $page ) {
+			foreach ( isset( $page['sections'] ) ? $page['sections'] : array() as $item ) {
+				$section = Catalog\Catalog::get( $item['id'] );
+				$needs   = array_merge( $needs, $section && isset( $section['needs'] ) ? (array) $section['needs'] : array() );
+			}
+		}
+		$needs = array_values( array_unique( $needs ) );
+
+		$plan['contact_form_needed'] = in_array( 'wpzoom-forms', $needs, true );
+		if ( in_array( 'posts', $needs, true ) ) {
+			$plan['blog']['needed'] = true;
+		}
+		$plan['plugins'] = array_values( array_intersect( $needs, array( 'icon-block' ) ) );
+	}
+
+	/**
+	 * Brand accent readable under white button text (WCAG 4.5:1): darkened
+	 * in steps until it is.
+	 *
+	 * @param string $hex Proposed accent.
+	 * @return string
+	 */
+	private function readable_accent( $hex ) {
+		$hex = sanitize_hex_color( $hex ) ? strtolower( $hex ) : '#0b6e69';
+		if ( 4 === strlen( $hex ) ) {
+			$hex = '#' . $hex[1] . $hex[1] . $hex[2] . $hex[2] . $hex[3] . $hex[3];
+		}
+		for ( $i = 0; $i < 10 && $this->contrast_with_white( $hex ) < 4.5; $i++ ) {
+			$hex = Catalog\Catalog::mix( $hex, '#000000', 0.12 );
+		}
+		return $hex;
+	}
+
+	private function contrast_with_white( $hex ) {
+		$lum = 0;
+		foreach ( array( 0.2126, 0.7152, 0.0722 ) as $i => $weight ) {
+			$c    = hexdec( substr( $hex, 1 + $i * 2, 2 ) ) / 255;
+			$c    = $c <= 0.03928 ? $c / 12.92 : pow( ( $c + 0.055 ) / 1.055, 2.4 );
+			$lum += $weight * $c;
+		}
+		return 1.05 / ( $lum + 0.05 );
+	}
+
+	/**
+	 * What the modal's preview step shows: every page as its sections, each
+	 * with the alternatives it can be swapped for, plus the requirements.
+	 *
+	 * @param array $plan Plan.
+	 * @return array
+	 */
+	private function blueprint_preview( array $plan ) {
+		$pages   = array();
+		$catalog = array();
+		foreach ( $plan['pages'] as $i => $page ) {
+			$sections = array();
+			foreach ( isset( $page['sections'] ) ? $page['sections'] : array() as $item ) {
+				if ( Catalog\Catalog::get( $item['id'] ) ) {
+					$sections[] = array(
+						'id'       => $item['id'],
+						'headline' => $item['headline'],
+					);
+				}
+			}
+			$pages[] = array(
+				'slug'     => $page['slug'],
+				'title'    => $page['title'],
+				'home'     => 0 === $i,
+				'is_blog'  => ! empty( $page['is_blog'] ),
+				'sections' => $sections,
+			);
+		}
+
+		// Everything the preview needs to draw and swap sections locally
+		// (metadata only: the markup is fetched when pages are built).
+		foreach ( Catalog\Catalog::meta() as $id => $section ) {
+			$catalog[ $id ] = array(
+				'role'        => $section['role'],
+				'fits'        => isset( $section['fits'] ) ? $section['fits'] : 'any',
+				'tone'        => isset( $section['tone'] ) ? $section['tone'] : 'light',
+				'description' => isset( $section['description'] ) ? $section['description'] : '',
+				'photos'      => isset( $section['photos'] ) ? (int) $section['photos'] : 0,
+				'items'       => isset( $section['items'] ) ? (int) $section['items'] : 0,
+				'needs'       => isset( $section['needs'] ) ? array_values( (array) $section['needs'] ) : array(),
+			);
+		}
+
+		return array(
+			'pages'        => $pages,
+			'requirements' => isset( $plan['requirements'] ) ? $plan['requirements'] : array(),
+			'palette'      => isset( $plan['palette'] ) ? $plan['palette'] : array(),
+			'fonts'        => $plan['fonts'],
+			'has_posts'    => ! empty( $plan['blog']['posts'] ) || ! empty( $plan['blog']['needed'] ),
+			'has_portfolio' => ! empty( $plan['portfolio']['needed'] ) && ! empty( $plan['portfolio']['items'] ),
+			'catalog'      => $catalog,
+		);
+	}
+
+	/**
+	 * AJAX: the preview step's final structure (sections swapped, moved or
+	 * removed). Re-validated server-side; plugins the sections need are
+	 * installed here, once, before the parallel page builds start.
+	 */
+	public function ajax_update_blueprint() {
+		Helpers::verify_ajax_call();
+
+		$plan_id = isset( $_POST['plan_id'] ) ? sanitize_key( wp_unslash( $_POST['plan_id'] ) ) : '';
+		$state   = $this->get_plan_state( $plan_id );
+		if ( ! $state || 'catalog' !== ( isset( $state['engine'] ) ? $state['engine'] : '' ) ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'This generation session has expired. Please start again.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$raw     = isset( $_POST['pages'] ) ? json_decode( wp_unslash( $_POST['pages'] ), true ) : null; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		$by_slug = array();
+		foreach ( is_array( $raw ) ? $raw : array() as $page ) {
+			if ( is_array( $page ) && ! empty( $page['slug'] ) && isset( $page['sections'] ) && is_array( $page['sections'] ) ) {
+				$by_slug[ sanitize_title( (string) $page['slug'] ) ] = $page['sections'];
+			}
+		}
+
+		foreach ( $state['plan']['pages'] as $i => $page ) {
+			if ( empty( $page['is_blog'] ) && isset( $by_slug[ $page['slug'] ] ) ) {
+				$state['plan']['pages'][ $i ]['sections'] = $this->clean_sections( $by_slug[ $page['slug'] ], 0 === $i, $state['plan'], $plan_id . $page['slug'] );
+			}
+		}
+		$this->blueprint_flags( $state['plan'] );
+		set_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id, $state, HOUR_IN_SECONDS );
+
+		// Icons in the chosen sections come from The Icon Block plugin.
+		if ( in_array( 'icon-block', $state['plan']['plugins'], true ) && ! \WP_Block_Type_Registry::get_instance()->is_registered( 'outermost/icon-block' ) && current_user_can( 'install_plugins' ) ) {
+			$installer = new \Inspiro\Starter_Sites\PluginInstaller();
+			$installer->set_plugins();
+			$installer->install_plugin( 'icon-block' );
+		}
+
+		wp_send_json_success(
+			array(
+				'blueprint' => $this->blueprint_preview( $state['plan'] ),
+				'forms'     => array(
+					'needed'        => ! empty( $state['plan']['contact_form_needed'] ),
+					'plugin_active' => post_type_exists( 'wpzf-form' ),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Build one page of a catalog-engine demo: one copy call fills the
+	 * fields of the page's sections, then every section renders from its
+	 * demo markup with the copy, photos and palette. Streams and exits.
+	 *
+	 * @param array             $state      Plan state.
+	 * @param string            $plan_id    Plan ID.
+	 * @param int               $index      Page index.
+	 * @param array             $page       Page entry.
+	 * @param StreamingResponse $stream     Keep-alive responder.
+	 * @param array             $image_pool Photos other pages already sideloaded.
+	 */
+	private function build_catalog_page( array $state, $plan_id, $index, array $page, StreamingResponse $stream, array $image_pool ) {
+		$plan     = $state['plan'];
+		$sections = isset( $page['sections'] ) ? $page['sections'] : array();
+
+		// Full sections (markup, fields) of this page only, from the AI
+		// server's catalog; the copy call gets their schemas server-side.
+		$full = Catalog\Catalog::sections( wp_list_pluck( $sections, 'id' ) );
+		if ( ! $full ) {
+			$stream->finish_error( array( 'message' => esc_html__( 'The section catalog is unavailable. Please try again later.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$schemas = array();
+		foreach ( $sections as $item ) {
+			if ( isset( $full[ $item['id'] ] ) ) {
+				$schemas[] = array(
+					'id'       => $item['id'],
+					'headline' => $item['headline'],
+				);
+			}
+		}
+
+		$pages_list = array_map(
+			static function ( $p ) {
+				return array(
+					'slug'  => $p['slug'],
+					'title' => $p['title'],
+				);
+			},
+			$plan['pages']
+		);
+
+		$copy_vars = array(
+			'description'  => $state['description'],
+			'site_title'   => $plan['site_title'],
+			'tagline'      => $plan['tagline'],
+			'language'     => isset( $plan['language'] ) ? $plan['language'] : '',
+			'requirements' => isset( $plan['requirements'] ) ? $plan['requirements'] : array(),
+			'pages'        => $pages_list,
+			'page'         => array(
+				'slug'  => $page['slug'],
+				'title' => $page['title'],
+			),
+			'sections'     => $schemas,
+		);
+
+		// One JSON line per section, so a slip in one costs that section
+		// only; sections still missing get one targeted retry.
+		$content_by_id = array();
+		for ( $attempt = 0; $attempt < 2 && count( $content_by_id ) < count( $schemas ); $attempt++ ) {
+			if ( $attempt ) {
+				$copy_vars['sections'] = array_values(
+					array_filter(
+						$schemas,
+						static function ( $schema ) use ( $content_by_id ) {
+							return ! isset( $content_by_id[ $schema['id'] ] );
+						}
+					)
+				);
+			}
+			$text = $this->proxy->claude_task( 'demo-copy', $copy_vars, array( $stream, 'tick' ) );
+			if ( is_wp_error( $text ) ) {
+				if ( ! $content_by_id && $attempt ) {
+					$stream->finish_error(
+						array(
+							'message' => $text->get_error_message(),
+							'detail'  => $text->get_error_code(),
+						)
+					);
+				}
+				continue;
+			}
+			$content_by_id += $this->parse_copy( $text );
+		}
+		if ( ! $content_by_id ) {
+			$stream->finish_error( array( 'message' => esc_html__( 'The AI returned a malformed response. Please try again.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$page_links = array();
+		foreach ( $plan['pages'] as $p ) {
+			$page_links[ $p['slug'] ] = ( 'home' === $p['slug'] ) ? home_url( '/' ) : home_url( '/' . $p['slug'] . '/' );
+		}
+
+		$build_images = array();
+		$resolver     = $this->make_image_resolver( $state, $build_images, $image_pool, $plan_id, $stream );
+		$renderer     = new Catalog\SectionRenderer(
+			array(
+				'palette'        => $plan['palette'],
+				'weight'         => isset( $plan['fonts']['display_weight'] ) ? $plan['fonts']['display_weight'] : '',
+				'links'          => $page_links,
+				'resolve_image'  => $resolver,
+				'resolve_asset'  => function ( $url ) use ( $plan_id ) {
+					return $this->catalog_asset( $url, $plan_id );
+				},
+				'fallback_query' => $plan['site_title'] . ' ' . $page['title'],
+				'form_id'        => $this->first_form_id(),
+			)
+		);
+
+		$content = '';
+		foreach ( $sections as $item ) {
+			$section = isset( $full[ $item['id'] ] ) ? $full[ $item['id'] ] : null;
+			if ( ! $section ) {
+				continue;
+			}
+			$fields = isset( $content_by_id[ $item['id'] ] ) ? $content_by_id[ $item['id'] ] : array();
+			// The planned headline is the section's heading, whatever the copy
+			// call wrote there: it is what the customer saw in the preview.
+			if ( '' !== $item['headline'] && isset( $section['fields']['heading'] ) ) {
+				$fields['heading'] = $item['headline'];
+			}
+			$content .= $renderer->render( $section, $fields ) . "\n\n";
+			$stream->tick();
+		}
+
+		if ( '' === trim( $content ) ) {
+			$stream->finish_error( array( 'message' => esc_html__( 'The AI returned an unusable page design. Please try again.', 'inspiro-starter-sites' ) ) );
+		}
+
+		// The header floats over the page only when it opens with a photo.
+		$first       = $sections ? Catalog\Catalog::get( $sections[0]['id'] ) : null;
+		$transparent = isset( $page['header'] ) && 'transparent' === $page['header'] && $first && 'image' === $first['tone'];
+
+		$post_id = wp_insert_post(
+			wp_slash(
+				array(
+					'post_type'    => 'page',
+					'post_status'  => 'publish',
+					'post_title'   => $page['title'],
+					'post_name'    => $page['slug'],
+					'post_content' => trim( $content ),
+					'menu_order'   => $index,
+					'meta_input'   => array(
+						self::GENERATED_META_KEY => $plan_id,
+						'_wp_page_template'      => ThemeOptions::page_template( $transparent ? 'transparent' : 'solid' ),
+					),
+				)
+			),
+			true
+		);
+
+		if ( is_wp_error( $post_id ) ) {
+			$stream->finish_error( array( 'message' => $post_id->get_error_message() ) );
+		}
+
+		set_transient(
+			self::PLAN_TRANSIENT_PREFIX . $plan_id . '_p' . $index,
+			array(
+				'page_id'   => (int) $post_id,
+				'photo_ids' => wp_list_pluck( $build_images, 'photo_id' ),
+				'images'    => $build_images,
+			),
+			HOUR_IN_SECONDS
+		);
+
+		$stream->finish_success(
+			array(
+				'page_id'  => (int) $post_id,
+				'edit_url' => get_edit_post_link( $post_id, 'raw' ),
+			)
+		);
+	}
+
+	/**
+	 * Section contents from a copy call: JSON Lines (one {"id", ...fields}
+	 * per line) or the wrapped form {"sections":[{"id","content"}]}.
+	 *
+	 * @param string $text Model output.
+	 * @return array id => fields
+	 */
+	private function parse_copy( $text ) {
+		$out  = array();
+		$text = preg_replace( '/^```(?:json)?\s*|\s*```$/s', '', trim( (string) $text ) );
+
+		$whole = json_decode( $text, true );
+		if ( is_array( $whole ) && isset( $whole['sections'] ) && is_array( $whole['sections'] ) ) {
+			foreach ( $whole['sections'] as $entry ) {
+				if ( is_array( $entry ) && ! empty( $entry['id'] ) ) {
+					$fields = isset( $entry['content'] ) && is_array( $entry['content'] ) ? $entry['content'] : $entry;
+					unset( $fields['id'] );
+					$out[ sanitize_key( (string) $entry['id'] ) ] = $fields;
+				}
+			}
+			return $out;
+		}
+
+		foreach ( preg_split( '/\R/', $text ) as $line ) {
+			$line = rtrim( trim( $line ), ',' );
+			if ( '' === $line || '{' !== $line[0] ) {
+				continue;
+			}
+			$entry = $this->proxy->decode_object( $line );
+			if ( is_array( $entry ) && ! empty( $entry['id'] ) ) {
+				$id = sanitize_key( (string) $entry['id'] );
+				unset( $entry['id'] );
+				if ( ! isset( $out[ $id ] ) ) {
+					$out[ $id ] = isset( $entry['content'] ) && is_array( $entry['content'] ) ? $entry['content'] : $entry;
+				}
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * Photo resolver for one page build: unique Pexels downloads within the
+	 * generation's budget, then reuse of photos already sideloaded (never
+	 * the same one twice in a row). Same policy as the HTML engine.
+	 */
+	private function make_image_resolver( array &$state, array &$build_images, array &$image_pool, $plan_id, StreamingResponse $stream ) {
+		// Catalog sections are image-led (photo tiles, galleries): a larger
+		// unique-download budget than the HTML engine's default 20.
+		$max_images   = max( 3, (int) apply_filters( 'inspiro_starter_sites/ai_max_images', 30 ) );
+		$reuse_cursor = 0;
+		$last_reused  = 0;
+
+		return function ( $query, $orientation ) use ( &$state, &$build_images, &$image_pool, &$reuse_cursor, &$last_reused, $max_images, $plan_id, $stream ) {
+			if ( $this->reserve_image_download( $plan_id ) > $max_images ) {
+				if ( ! $image_pool ) {
+					return null;
+				}
+				$image = $image_pool[ $reuse_cursor % count( $image_pool ) ];
+				$reuse_cursor++;
+				if ( count( $image_pool ) > 1 && (int) $image['id'] === $last_reused ) {
+					$image = $image_pool[ $reuse_cursor % count( $image_pool ) ];
+					$reuse_cursor++;
+				}
+				$last_reused = (int) $image['id'];
+				return $image;
+			}
+
+			$images = $this->resolve_images( $query, 1, $state['used_photo_ids'], $state['plan']['site_title'], $plan_id, array( $stream, 'tick' ), $orientation );
+			if ( ! $images ) {
+				return $image_pool ? $image_pool[ $reuse_cursor++ % count( $image_pool ) ] : null;
+			}
+			$state['used_photo_ids'][] = $images[0]['photo_id'];
+			$build_images[]            = $images[0];
+			$image_pool[]              = $images[0];
+			$last_reused               = (int) $images[0]['id'];
+			$stream->tick();
+			return $images[0];
+		};
+	}
+
+	/**
+	 * A demo's static asset (icon, logo) copied into this site's media
+	 * library once and reused by every section that shows it.
+	 *
+	 * @param string $url     Source URL on the demo server.
+	 * @param string $plan_id Generation (cleanup tag).
+	 * @return array|null [ 'id' => attachment ID, 'url' => URL ]
+	 */
+	private function catalog_asset( $url, $plan_id ) {
+		$map = get_option( 'inspiro_starter_sites_ai_catalog_assets', array() );
+		$map = is_array( $map ) ? $map : array();
+		if ( isset( $map[ $url ] ) && 'attachment' === get_post_type( (int) $map[ $url ] ) ) {
+			return array(
+				'id'  => (int) $map[ $url ],
+				'url' => wp_get_attachment_url( (int) $map[ $url ] ),
+			);
+		}
+
+		if ( ! function_exists( 'media_sideload_image' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/media.php';
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			require_once ABSPATH . 'wp-admin/includes/image.php';
+		}
+		$id = media_sideload_image( esc_url_raw( $url ), 0, null, 'id' );
+		if ( is_wp_error( $id ) ) {
+			return null;
+		}
+		update_post_meta( $id, self::GENERATED_META_KEY, $plan_id );
+		$map[ $url ] = (int) $id;
+		update_option( 'inspiro_starter_sites_ai_catalog_assets', $map, false );
+
+		return array(
+			'id'  => (int) $id,
+			'url' => wp_get_attachment_url( $id ),
+		);
+	}
+
+	/**
+	 * The form contact sections embed: WPZOOM Forms seeds one on activation.
+	 *
+	 * @return int 0 when unavailable (the renderer then drops the form block).
+	 */
+	private function first_form_id() {
+		if ( ! post_type_exists( 'wpzf-form' ) ) {
+			return 0;
+		}
+		$forms = get_posts(
+			array(
+				'post_type'   => 'wpzf-form',
+				'post_status' => 'publish',
+				'numberposts' => 1,
+				'orderby'     => 'ID',
+				'order'       => 'ASC',
+				'fields'      => 'ids',
+			)
+		);
+		return $forms ? (int) $forms[0] : 0;
+	}
+
 	private function sanitize_plan( $plan, $approved = array() ) {
 		if ( empty( $plan['pages'] ) || ! is_array( $plan['pages'] ) ) {
 			return new \WP_Error( 'ai_invalid_plan', esc_html__( 'The AI returned an unusable site plan. Please try again.', 'inspiro-starter-sites' ) );

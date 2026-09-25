@@ -502,8 +502,20 @@ jQuery( function ( $ ) {
 							// Generation mode comes last: it is the one setting
 							// that trades time for design variety, so it reads as
 							// the final call before generating.
+							// Engine (while the catalog engine is compared with the
+							// HTML engine): demo sections or AI-designed layouts.
+							( config.catalog_engine ?
+								'<p class="iss-ai-field-label">' + esc( t.engine_label || '' ) + '</p>' +
+								'<div class="iss-ai-mode-choice js-iss-ai-engine" role="radiogroup" aria-label="' + esc( t.engine_label || '' ) + '">' +
+									'<label class="iss-ai-mode-option' + ( 'catalog' === config.default_engine ? ' is-active' : '' ) + '"><input type="radio" name="iss_ai_engine" value="catalog"' + ( 'catalog' === config.default_engine ? ' checked' : '' ) + '> ' +
+										'<strong>' + esc( t.engine_catalog || '' ) + '</strong><span>' + esc( t.engine_catalog_hint || '' ) + '</span></label>' +
+									'<label class="iss-ai-mode-option' + ( 'catalog' !== config.default_engine ? ' is-active' : '' ) + '"><input type="radio" name="iss_ai_engine" value="html"' + ( 'catalog' !== config.default_engine ? ' checked' : '' ) + '> ' +
+										'<strong>' + esc( t.engine_html || '' ) + '</strong><span>' + esc( t.engine_html_hint || '' ) + '</span></label>' +
+								'</div>'
+							: '' ) +
+
 							( designLevelCards ?
-								'<p class="iss-ai-field-label">' + esc( t.design_level_label || '' ) + '</p>' +
+								'<p class="iss-ai-field-label js-iss-ai-design-level-label">' + esc( t.design_level_label || '' ) + '</p>' +
 								'<div class="iss-ai-level-cards js-iss-ai-design-level" role="radiogroup" aria-label="' + esc( t.design_level_label || '' ) + '">' + designLevelCards + '</div>' +
 								'<p class="iss-ai-level-lock js-iss-ai-level-lock" hidden>' +
 									'<a href="' + esc( ( config.is_premium_theme ? ( config.license_url || '#' ) : ( config.upgrade_url || '#' ) ) ) + '"' +
@@ -535,6 +547,15 @@ jQuery( function ( $ ) {
 								'<button type="button" class="button js-iss-ai-plan-add">' + esc( t.plan_add || '' ) + '</button>' +
 							'</div>' +
 							'<p class="iss-ai-error js-iss-ai-plan-error" hidden></p>' +
+						'</div>' +
+
+						// Step: preview (catalog engine) — the composed site before it is built.
+						'<div class="iss-ai-step iss-ai-step-preview" data-step="preview">' +
+							'<h3 class="iss-ai-plan-title">' + esc( t.preview_title || '' ) + '</h3>' +
+							'<p class="iss-ai-plan-hint">' + esc( t.preview_hint || '' ) + '</p>' +
+							'<div class="iss-ai-pv-meta js-iss-ai-preview-meta"></div>' +
+							'<div class="iss-ai-pv-tabs js-iss-ai-preview-tabs" role="tablist"></div>' +
+							'<ol class="iss-ai-pv-sections js-iss-ai-preview-sections"></ol>' +
 						'</div>' +
 
 						// Step: progress.
@@ -661,6 +682,7 @@ jQuery( function ( $ ) {
 						'<button type="button" class="button button-primary iss-ai-generate-btn js-iss-ai-generate">' + esc( t['continue'] || '' ) + '</button>' +
 						'<button type="button" class="button button-primary iss-ai-generate-btn js-iss-ai-art-next" style="display:none">' + esc( t['continue'] || '' ) + '</button>' +
 						'<button type="button" class="button button-primary iss-ai-generate-btn js-iss-ai-build" style="display:none">' + esc( t.generate || '' ) + '</button>' +
+						'<button type="button" class="button button-primary iss-ai-generate-btn js-iss-ai-preview-build" style="display:none">' + esc( t.preview_build || '' ) + '</button>' +
 					'</div>' +
 				'</div>' +
 			'</div>' +
@@ -681,7 +703,8 @@ jQuery( function ( $ ) {
 	function showStep( step ) {
 		$root.find( '.iss-ai-step' ).removeClass( 'is-active' );
 		$root.find( '.iss-ai-step[data-step="' + step + '"]' ).addClass( 'is-active' );
-		$root.find( '.js-iss-ai-footer' ).toggle( 'input' === step || 'art' === step || 'plan' === step );
+		$root.find( '.js-iss-ai-footer' ).toggle( 'input' === step || 'art' === step || 'plan' === step || 'preview' === step );
+		$root.find( '.js-iss-ai-preview-build' ).toggle( 'preview' === step );
 		$root.find( '.js-iss-ai-generate' ).toggle( 'input' === step );
 		$root.find( '.js-iss-ai-art-next' ).toggle( 'art' === step );
 		$root.find( '.js-iss-ai-art-back' ).toggle( 'art' === step );
@@ -689,7 +712,7 @@ jQuery( function ( $ ) {
 
 		// Sidebar step indicator: everything before the build → 1, progress → 2,
 		// done → 3. The art step is a detour inside step 1, not a step of its own.
-		var current = ( 'progress' === step ) ? 2 : ( ( 'success' === step || 'error' === step ) ? 3 : 1 );
+		var current = ( 'progress' === step || 'preview' === step ) ? 2 : ( ( 'success' === step || 'error' === step ) ? 3 : 1 );
 		$root.find( '.js-iss-ai-steps li' ).each( function () {
 			var num = parseInt( $( this ).attr( 'data-step-num' ), 10 );
 			$( this )
@@ -757,6 +780,261 @@ jQuery( function ( $ ) {
 	/* -----------------------------------------------------------------
 	 * Live build checklist (progress step)
 	 * -------------------------------------------------------------- */
+
+	/* -----------------------------------------------------------------
+	 * Catalog engine: preview the composed site before building
+	 * -------------------------------------------------------------- */
+
+	var previewState = null; // { pages, catalog, active, has_posts, has_portfolio, palette }
+
+	function currentEngine() {
+		return $root.find( 'input[name="iss_ai_engine"]:checked' ).val() || 'html';
+	}
+
+	// The design-level cards (Standard / Creative) only steer the HTML engine.
+	function syncEngine() {
+		var catalog = 'catalog' === currentEngine();
+		$root.find( '.js-iss-ai-engine .iss-ai-mode-option' ).each( function () {
+			$( this ).toggleClass( 'is-active', $( this ).find( 'input' ).prop( 'checked' ) );
+		} );
+		$root.find( '.js-iss-ai-design-level, .js-iss-ai-design-level-label' ).toggle( ! catalog );
+		if ( catalog ) {
+			$root.find( '.js-iss-ai-level-lock' ).attr( 'hidden', 'hidden' );
+		}
+	}
+
+	function renderPreview( bp ) {
+		previewState = {
+			pages: $.map( bp.pages || [], function ( p ) {
+				return [ {
+					slug: p.slug,
+					title: p.title,
+					home: !! p.home,
+					is_blog: !! p.is_blog,
+					sections: $.map( p.sections || [], function ( s ) {
+						return [ { id: s.id, headline: s.headline || '' } ];
+					} )
+				} ];
+			} ),
+			catalog: bp.catalog || {},
+			active: 0,
+			has_posts: !! bp.has_posts,
+			has_portfolio: !! bp.has_portfolio,
+			palette: bp.palette || {}
+		};
+
+		var $meta = $root.find( '.js-iss-ai-preview-meta' ).empty();
+		var $style = $( '<div class="iss-ai-pv-style">' );
+		$.each( [ 'accent', 'dark', 'surface' ], function ( i, key ) {
+			if ( previewState.palette[ key ] ) {
+				$style.append( $( '<span class="iss-ai-pv-swatch">' ).css( 'background-color', previewState.palette[ key ] ).attr( 'title', previewState.palette[ key ] ) );
+			}
+		} );
+		if ( bp.fonts && bp.fonts.display ) {
+			$style.append(
+				$( '<span class="iss-ai-pv-font">' ).text(
+					bp.fonts.display + ( bp.fonts.display_weight ? ' ' + bp.fonts.display_weight : '' ) + ' · ' + bp.fonts.body
+				)
+			);
+		}
+		$meta.append( $style );
+
+		var requirements = bp.requirements || [];
+		if ( requirements.length ) {
+			var $list = $( '<ul>' );
+			$.each( requirements, function ( i, requirement ) {
+				$list.append( $( '<li>' ).text( requirement ) );
+			} );
+			$meta.append(
+				$( '<details class="iss-ai-pv-reqs">' )
+					.append( $( '<summary>' ).text( sprintf( t.preview_requirements || '%s', requirements.length ) ) )
+					.append( $list )
+			);
+		}
+
+		renderPreviewTabs();
+		renderPreviewSections();
+	}
+
+	function renderPreviewTabs() {
+		var $tabs = $root.find( '.js-iss-ai-preview-tabs' ).empty();
+		$.each( previewState.pages, function ( i, page ) {
+			$tabs.append(
+				$( '<button type="button" role="tab" class="iss-ai-pv-tab js-iss-ai-pv-tab">' )
+					.attr( 'data-index', i )
+					.attr( 'aria-selected', i === previewState.active ? 'true' : 'false' )
+					.toggleClass( 'is-active', i === previewState.active )
+					.text( page.title )
+			);
+		} );
+	}
+
+	function renderPreviewSections() {
+		var page = previewState.pages[ previewState.active ];
+		var $list = $root.find( '.js-iss-ai-preview-sections' ).empty();
+		if ( ! page ) {
+			return;
+		}
+		if ( page.is_blog ) {
+			$list.append( $( '<li class="iss-ai-pv-note">' ).text( t.preview_blog || '' ) );
+			return;
+		}
+
+		$.each( page.sections, function ( k, section ) {
+			var info    = previewState.catalog[ section.id ] || {};
+			var opener  = 0 === k;
+			var options = sameRole( page, section );
+
+			$list.append(
+				$( '<li class="iss-ai-pv-section">' ).attr( 'data-index', k )
+					.append( previewSketch( info ) )
+					.append(
+						$( '<div class="iss-ai-pv-body">' )
+							.append( $( '<span class="iss-ai-pv-role">' ).text( t[ 'role_' + ( info.role || '' ).replace( '-', '_' ) ] || info.role || '' ) )
+							.append( section.headline ? $( '<strong class="iss-ai-pv-headline">' ).text( section.headline ) : '' )
+							.append( $( '<p class="iss-ai-pv-desc">' ).text( info.description || '' ) )
+					)
+					.append(
+						$( '<div class="iss-ai-pv-actions">' )
+							.append( previewButton( 'js-iss-ai-pv-swap', t.preview_swap || '', options.length < 2, '&#8646;' ) )
+							.append( previewButton( 'js-iss-ai-pv-up', t.preview_up || '', k <= 1, '&#8593;' ) )
+							.append( previewButton( 'js-iss-ai-pv-down', t.preview_down || '', opener || k === page.sections.length - 1, '&#8595;' ) )
+							.append( previewButton( 'js-iss-ai-pv-remove', t.preview_remove || '', opener || page.sections.length <= 2, '&#10005;' ) )
+					)
+			);
+		} );
+	}
+
+	function previewButton( cls, label, disabled, icon ) {
+		return $( '<button type="button" class="iss-ai-pv-btn">' )
+			.addClass( cls )
+			.attr( 'title', label )
+			.attr( 'aria-label', label )
+			.prop( 'disabled', !! disabled )
+			.html( icon );
+	}
+
+	// A tiny wireframe: the section's ground (photo, dark, tint, light, accent),
+	// two headline strokes, and its grid of items or photos.
+	function previewSketch( info ) {
+		var tone    = info.tone || 'light';
+		var palette = previewState.palette || {};
+		var $sketch = $( '<div class="iss-ai-pv-sketch" aria-hidden="true">' ).addClass( 'is-' + tone );
+
+		if ( 'dark' === tone && palette.dark ) {
+			$sketch.css( 'background-color', palette.dark );
+		} else if ( 'tint' === tone && palette.surface ) {
+			$sketch.css( 'background-color', palette.surface );
+		} else if ( 'accent' === tone && palette.accent ) {
+			$sketch.css( 'background-color', palette.accent );
+		}
+
+		$sketch.append( '<i class="sk-line sk-line--wide"></i><i class="sk-line"></i>' );
+
+		var items = Math.min( info.items || 0, 4 );
+		if ( items ) {
+			var $grid = $( '<span class="sk-grid">' );
+			for ( var i = 0; i < items; i++ ) {
+				$grid.append( '<i class="' + ( ( info.photos || 0 ) > 1 ? 'sk-photo' : 'sk-box' ) + '"></i>' );
+			}
+			$sketch.append( $grid );
+		} else if ( info.photos && 'image' !== tone ) {
+			$sketch.append( '<span class="sk-grid"><i class="sk-photo sk-photo--wide"></i></span>' );
+		}
+
+		return $sketch;
+	}
+
+	// Sections of the same role this slot can take (the current one included),
+	// in catalog order: fits the page, dependencies met, not used elsewhere on it.
+	function sameRole( page, section ) {
+		var info = previewState.catalog[ section.id ] || {};
+		var used = {};
+		$.each( page.sections, function ( i, s ) {
+			if ( s !== section ) {
+				used[ s.id ] = true;
+			}
+		} );
+
+		var out = [];
+		$.each( previewState.catalog, function ( id, c ) {
+			if ( c.role !== info.role || used[ id ] ) {
+				return;
+			}
+			if ( ( 'home' === c.fits && ! page.home ) || ( 'inner' === c.fits && page.home ) ) {
+				return;
+			}
+			if ( ( c.needs.indexOf( 'posts' ) > -1 && ! previewState.has_posts ) || ( c.needs.indexOf( 'wpzoom-portfolio' ) > -1 && ! previewState.has_portfolio ) ) {
+				return;
+			}
+			out.push( id );
+		} );
+		return out;
+	}
+
+	$root.on( 'change', 'input[name="iss_ai_engine"]', syncEngine );
+
+	$root.on( 'click', '.js-iss-ai-pv-tab', function () {
+		previewState.active = parseInt( $( this ).attr( 'data-index' ), 10 ) || 0;
+		renderPreviewTabs();
+		renderPreviewSections();
+	} );
+
+	$root.on( 'click', '.js-iss-ai-pv-swap, .js-iss-ai-pv-up, .js-iss-ai-pv-down, .js-iss-ai-pv-remove', function () {
+		var page = previewState.pages[ previewState.active ];
+		var k    = parseInt( $( this ).closest( '.iss-ai-pv-section' ).attr( 'data-index' ), 10 );
+		if ( ! page || isNaN( k ) || ! page.sections[ k ] ) {
+			return;
+		}
+		var $btn = $( this );
+
+		if ( $btn.hasClass( 'js-iss-ai-pv-swap' ) ) {
+			var options = sameRole( page, page.sections[ k ] );
+			var at      = options.indexOf( page.sections[ k ].id );
+			page.sections[ k ].id = options[ ( at + 1 ) % options.length ];
+		} else if ( $btn.hasClass( 'js-iss-ai-pv-up' ) && k > 1 ) {
+			page.sections.splice( k - 1, 0, page.sections.splice( k, 1 )[ 0 ] );
+		} else if ( $btn.hasClass( 'js-iss-ai-pv-down' ) && k > 0 && k < page.sections.length - 1 ) {
+			page.sections.splice( k + 1, 0, page.sections.splice( k, 1 )[ 0 ] );
+		} else if ( $btn.hasClass( 'js-iss-ai-pv-remove' ) && k > 0 && page.sections.length > 2 ) {
+			page.sections.splice( k, 1 );
+		}
+		renderPreviewSections();
+	} );
+
+	// Save the final structure, then run the usual build: plugins, pages, finalize.
+	$root.on( 'click', '.js-iss-ai-preview-build', function () {
+		var $btn  = $( this ).prop( 'disabled', true );
+		var pages = $.map( previewState.pages, function ( p ) {
+			return [ { slug: p.slug, sections: p.sections } ];
+		} );
+
+		running = true;
+		showStep( 'progress' );
+		$root.find( '.js-iss-ai-progress-pages' ).empty();
+		setProgress( t.preview_saving || '', 0.35 );
+
+		ajax( 'inspiro_starter_sites_ai_update_blueprint', { plan_id: planState.plan_id, pages: JSON.stringify( pages ) }, 180000 )
+			.done( function ( response ) {
+				$btn.prop( 'disabled', false );
+				if ( ! response || ! response.success || ! response.data ) {
+					failWith( responseMessage( response ), responseDetail( response ) );
+					return;
+				}
+				if ( response.data.forms ) {
+					planState.forms = response.data.forms;
+				}
+				renderProgressPages();
+				ensurePortfolioPlugin( function () {
+					ensureFormsPlugin( buildAllPages );
+				} );
+			} )
+			.fail( function ( xhr, textStatus ) {
+				$btn.prop( 'disabled', false );
+				var response = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+				failWith( responseMessage( response ), xhrDetail( xhr, textStatus ) );
+			} );
+	} );
 
 	function renderProgressPages() {
 		var $list = $root.find( '.js-iss-ai-progress-pages' ).empty();
@@ -1141,6 +1419,7 @@ jQuery( function ( $ ) {
 			palette:     $root.find( '.js-iss-ai-palette .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
 			typography:  $root.find( '.js-iss-ai-typography .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
 			design_level: level,
+			engine:       currentEngine(),
 			// Only Creative runs use a recipe, so don't send a pin the proxy
 			// would discard — the plan then records what it actually built to.
 			art_direction: 'pro' === level ? currentArtDirection() : '',
@@ -1163,6 +1442,15 @@ jQuery( function ( $ ) {
 					return;
 				}
 				planState = response.data;
+
+				// Catalog engine: show the composed site first; "Build" continues.
+				if ( response.data.blueprint ) {
+					running = false;
+					renderPreview( response.data.blueprint );
+					showStep( 'preview' );
+					return;
+				}
+
 				renderProgressPages();
 				ensurePortfolioPlugin( function () {
 					ensureFormsPlugin( buildAllPages );

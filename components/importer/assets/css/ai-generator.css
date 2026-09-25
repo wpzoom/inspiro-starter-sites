@@ -2639,3 +2639,248 @@ select.iss-ai-input {
 
 
 /*# sourceMappingURL=ai-generator.css.map */
+
+/* Catalog engine: preview of the composed site */
+.iss-ai-pv-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px 18px;
+  margin: 0 0 14px;
+}
+
+.iss-ai-pv-style {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.iss-ai-pv-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.iss-ai-pv-font {
+  margin-left: 6px;
+  font-size: 12px;
+  color: #50575e;
+}
+
+.iss-ai-pv-reqs {
+  flex: 1 1 260px;
+  font-size: 12.5px;
+  color: #3c434a;
+}
+
+.iss-ai-pv-reqs summary {
+  cursor: pointer;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.iss-ai-pv-reqs ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  list-style: disc;
+}
+
+.iss-ai-pv-reqs li {
+  margin: 3px 0;
+}
+
+.iss-ai-pv-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.iss-ai-pv-tab {
+  padding: 5px 12px;
+  border: 1px solid #dcdcde;
+  border-radius: 999px;
+  background: #fff;
+  color: #1d1d1f;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.iss-ai-pv-tab.is-active {
+  border-color: #1d1d1f;
+  background: #1d1d1f;
+  color: #fff;
+}
+
+.iss-ai-pv-sections {
+  display: grid;
+  gap: 8px;
+  max-height: 52vh;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.iss-ai-pv-section {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.iss-ai-pv-sketch {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  height: 68px;
+  padding: 10px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #e3e3e3;
+}
+
+.iss-ai-pv-sketch.is-image {
+  background: linear-gradient(135deg, #7a7f87, #3b3f45);
+  box-shadow: none;
+}
+
+.iss-ai-pv-sketch.is-dark {
+  background: #1d1d1f;
+  box-shadow: none;
+}
+
+.iss-ai-pv-sketch.is-tint {
+  background: #f3f1ec;
+  box-shadow: none;
+}
+
+.iss-ai-pv-sketch .sk-line {
+  display: block;
+  width: 45%;
+  height: 5px;
+  border-radius: 3px;
+  background: #c9ccd1;
+}
+
+.iss-ai-pv-sketch .sk-line--wide {
+  width: 70%;
+  height: 7px;
+  background: #8c9096;
+}
+
+.iss-ai-pv-sketch.is-image .sk-line,
+.iss-ai-pv-sketch.is-dark .sk-line,
+.iss-ai-pv-sketch.is-accent .sk-line {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.iss-ai-pv-sketch.is-image .sk-line--wide,
+.iss-ai-pv-sketch.is-dark .sk-line--wide,
+.iss-ai-pv-sketch.is-accent .sk-line--wide {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.iss-ai-pv-sketch .sk-grid {
+  display: flex;
+  gap: 4px;
+  margin-top: auto;
+}
+
+.iss-ai-pv-sketch .sk-box,
+.iss-ai-pv-sketch .sk-photo {
+  flex: 1;
+  height: 16px;
+  border-radius: 2px;
+  background: #e6e7e9;
+}
+
+.iss-ai-pv-sketch .sk-photo {
+  background: linear-gradient(135deg, #b7bbc1, #8d9197);
+}
+
+.iss-ai-pv-sketch .sk-photo--wide {
+  height: 20px;
+}
+
+.iss-ai-pv-sketch.is-dark .sk-box {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.iss-ai-pv-role {
+  display: inline-block;
+  margin-bottom: 2px;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #50575e;
+}
+
+.iss-ai-pv-headline {
+  display: block;
+  font-size: 14px;
+  line-height: 1.35;
+  color: #1d1d1f;
+}
+
+.iss-ai-pv-desc {
+  margin: 3px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #646970;
+}
+
+.iss-ai-pv-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.iss-ai-pv-btn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #dcdcde;
+  border-radius: 6px;
+  background: #fff;
+  color: #1d1d1f;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.iss-ai-pv-btn:hover:not(:disabled),
+.iss-ai-pv-btn:focus-visible {
+  border-color: #1d1d1f;
+}
+
+.iss-ai-pv-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.iss-ai-pv-note {
+  padding: 16px;
+  border: 1px dashed #dcdcde;
+  border-radius: 8px;
+  color: #646970;
+  font-size: 13px;
+}
+
+@media (max-width: 782px) {
+  .iss-ai-pv-section {
+    grid-template-columns: 90px minmax(0, 1fr);
+  }
+
+  .iss-ai-pv-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+}
