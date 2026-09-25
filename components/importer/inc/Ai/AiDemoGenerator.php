@@ -3578,6 +3578,8 @@ class AiDemoGenerator {
 			// The server builds the section index itself; it only needs to
 			// know which recent core blocks this WordPress can render.
 			'blocks'         => Catalog\Catalog::blocks(),
+			// Seeds the font shortlist, so re-generating gets different type.
+			'variant_seed'   => $seed,
 			'font_families'  => array_keys( $this->font_whitelist() ),
 			'caps'           => ThemeOptions::caps(),
 			'header_layouts' => ThemeOptions::header_layouts(),
