@@ -1240,6 +1240,7 @@ body.iss-ai-open {
 }
 
 .iss-ai-mode-option {
+  position: relative;
   display: block;
   padding: 11px 13px;
   border: 1.5px solid #dcdcde;
