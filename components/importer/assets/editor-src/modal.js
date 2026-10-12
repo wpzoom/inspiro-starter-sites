@@ -1,171 +1,175 @@
 /**
- * The page builder modal: describe → plan → build & insert.
+ * The page builder: a brief on the left, a live page canvas on the right.
+ *
+ * Picking a preset puts real catalog sections on the canvas at once; the
+ * AI then refines them (headlines, briefs, better picks) in the background.
+ * The canvas is the plan: swap, reorder, remove and add sections there,
+ * then build and insert.
  */
 
 import { __, sprintf } from '@wordpress/i18n';
 import { useState, useEffect, useMemo, useRef, useCallback } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
-import { parse, createBlock } from '@wordpress/blocks';
+import { parse } from '@wordpress/blocks';
 import { BlockPreview } from '@wordpress/block-editor';
-import {
-	Modal,
-	Button,
-	TextareaControl,
-	TextControl,
-	CheckboxControl,
-	Spinner,
-	Notice,
-	Dashicon,
-} from '@wordpress/components';
+import { Modal, Button, TextareaControl, TextControl, CheckboxControl, Spinner, Notice, Dashicon, Popover } from '@wordpress/components';
 
 import { api, config } from './api';
-import { suggest } from './matcher';
+import { PRESETS, ROLE_META, STYLES, composeRows, pickSection, toRow, availableRoles } from './presets';
+import { rolesFor } from './matcher';
 
-const PAGE_TYPES = [
-	{ value: 'auto', label: __( 'Let the AI decide', 'inspiro-starter-sites' ) },
-	{ value: 'home', label: __( 'Homepage', 'inspiro-starter-sites' ) },
-	{ value: 'landing', label: __( 'Landing page', 'inspiro-starter-sites' ) },
-	{ value: 'inner', label: __( 'Inner page', 'inspiro-starter-sites' ) },
-	{ value: 'sections', label: __( 'Sections only', 'inspiro-starter-sites' ) },
+const BUILD_STEPS = [
+	{ at: 0, label: __( 'Writing the copy', 'inspiro-starter-sites' ) },
+	{ at: 18, label: __( 'Finding photos', 'inspiro-starter-sites' ) },
+	{ at: 40, label: __( 'Laying out the sections', 'inspiro-starter-sites' ) },
 ];
 
-const STYLES = [
-	{ value: '', label: __( 'Any style', 'inspiro-starter-sites' ) },
-	{ value: 'light', label: __( 'Light & airy', 'inspiro-starter-sites' ) },
-	{ value: 'dark', label: __( 'Dark & moody', 'inspiro-starter-sites' ) },
-	{ value: 'image', label: __( 'Image-led', 'inspiro-starter-sites' ) },
-	{ value: 'minimal', label: __( 'Minimal', 'inspiro-starter-sites' ) },
-];
-
-const ROLE_LABELS = {
-	hero: __( 'Hero', 'inspiro-starter-sites' ),
-	'page-header': __( 'Page header', 'inspiro-starter-sites' ),
-	about: __( 'About', 'inspiro-starter-sites' ),
-	team: __( 'Team', 'inspiro-starter-sites' ),
-	services: __( 'Services', 'inspiro-starter-sites' ),
-	features: __( 'Features', 'inspiro-starter-sites' ),
-	testimonials: __( 'Testimonials', 'inspiro-starter-sites' ),
-	pricing: __( 'Pricing', 'inspiro-starter-sites' ),
-	faq: __( 'FAQ', 'inspiro-starter-sites' ),
-	cta: __( 'Call to action', 'inspiro-starter-sites' ),
-	contact: __( 'Contact', 'inspiro-starter-sites' ),
-	process: __( 'Process', 'inspiro-starter-sites' ),
-	stats: __( 'Numbers', 'inspiro-starter-sites' ),
-	portfolio: __( 'Portfolio', 'inspiro-starter-sites' ),
-	gallery: __( 'Gallery', 'inspiro-starter-sites' ),
-	blog: __( 'Blog', 'inspiro-starter-sites' ),
-	logos: __( 'Logos', 'inspiro-starter-sites' ),
-	menu: __( 'Menu', 'inspiro-starter-sites' ),
-	events: __( 'Events', 'inspiro-starter-sites' ),
-	intro: __( 'Intro', 'inspiro-starter-sites' ),
-};
-
-const roleLabel = ( role ) => ROLE_LABELS[ role ] || role;
+const roleLabel = ( role ) => ( ROLE_META[ role ] ? ROLE_META[ role ].label : role );
+const roleIcon = ( role ) => ( ROLE_META[ role ] ? ROLE_META[ role ].icon : 'layout' );
 
 /* -------------------------------------------------------------------------
- * Small pieces
+ * Pieces
  * ---------------------------------------------------------------------- */
 
-function Chips( { options, value, onChange } ) {
+function PresetGrid( { value, onPick } ) {
 	return (
-		<div className="iss-pb-chips" role="group">
-			{ options.map( ( opt ) => (
+		<div className="iss-pb-presets" role="radiogroup" aria-label={ __( 'Page type', 'inspiro-starter-sites' ) }>
+			{ PRESETS.map( ( p ) => (
 				<button
-					key={ opt.value }
+					key={ p.key }
 					type="button"
-					className={ 'iss-pb-chip' + ( value === opt.value ? ' is-active' : '' ) }
-					aria-pressed={ value === opt.value }
-					onClick={ () => onChange( opt.value ) }
+					role="radio"
+					aria-checked={ value === p.key }
+					className={ 'iss-pb-preset' + ( value === p.key ? ' is-active' : '' ) }
+					onClick={ () => onPick( p ) }
 				>
-					{ opt.label }
+					<Dashicon icon={ p.icon } />
+					<span>{ p.label }</span>
 				</button>
 			) ) }
 		</div>
 	);
 }
 
-function SectionCard( { section, pinned, onToggle, compact } ) {
-	const locked = section.locked;
-	const unavailable = ! locked && ! section.available;
+function RoleToggles( { roles, selected, onToggle } ) {
 	return (
-		<button
-			type="button"
-			className={
-				'iss-pb-card' +
-				( pinned ? ' is-pinned' : '' ) +
-				( locked ? ' is-locked' : '' ) +
-				( unavailable ? ' is-unavailable' : '' ) +
-				( compact ? ' is-compact' : '' )
-			}
-			onClick={ () => ! locked && ! unavailable && onToggle( section.id ) }
-			title={ locked ? __( 'Included with Inspiro Premium', 'inspiro-starter-sites' ) : section.description }
-			aria-pressed={ pinned }
-		>
-			<span className={ 'iss-pb-card__tone iss-pb-card__tone--' + section.tone } aria-hidden="true" />
-			<span className="iss-pb-card__body">
-				<span className="iss-pb-card__role">
-					{ roleLabel( section.role ) }
-					{ locked && <Dashicon icon="lock" size={ 14 } /> }
-				</span>
-				<span className="iss-pb-card__desc">{ section.description }</span>
-			</span>
-			{ pinned && <Dashicon icon="yes" className="iss-pb-card__check" /> }
-		</button>
-	);
-}
-
-function QuotaCard( { quota, onConnect } ) {
-	if ( ! quota ) {
-		return null;
-	}
-	if ( ! quota.connected ) {
-		return (
-			<div className="iss-pb-quota iss-pb-quota--connect">
-				<span>{ __( 'Connect with your email to use free AI page generations.', 'inspiro-starter-sites' ) }</span>
-				<Button variant="secondary" size="compact" onClick={ onConnect }>
-					{ __( 'Connect', 'inspiro-starter-sites' ) }
-				</Button>
-			</div>
-		);
-	}
-	const exhausted = quota.limit > 0 && quota.remaining <= 0;
-	return (
-		<div className={ 'iss-pb-quota' + ( exhausted ? ' is-exhausted' : '' ) }>
-			<span>
-				{ sprintf(
-					/* translators: 1: used, 2: limit */
-					__( '%1$d of %2$d AI page generations used', 'inspiro-starter-sites' ),
-					quota.used,
-					quota.limit
-				) }
-				{ quota.licensed ? ' · ' + __( 'Inspiro Premium', 'inspiro-starter-sites' ) : '' }
-			</span>
-			{ exhausted && <Upsell quota={ quota } /> }
+		<div className="iss-pb-roles">
+			{ roles.map( ( role ) => {
+				const on = selected.includes( role );
+				return (
+					<button
+						key={ role }
+						type="button"
+						className={ 'iss-pb-role' + ( on ? ' is-on' : '' ) }
+						aria-pressed={ on }
+						title={ ROLE_META[ role ].hint }
+						onClick={ () => onToggle( role ) }
+					>
+						<Dashicon icon={ roleIcon( role ) } size={ 16 } />
+						{ roleLabel( role ) }
+					</button>
+				);
+			} ) }
 		</div>
 	);
 }
 
-function Upsell( { quota } ) {
-	if ( quota && quota.licensed ) {
-		return <span className="iss-pb-upsell">{ __( 'You have used all the page generations included with your license.', 'inspiro-starter-sites' ) }</span>;
-	}
-	if ( config.premiumTheme && ! config.hasLicense ) {
-		return (
-			<span className="iss-pb-upsell">
-				{ __( 'Activate your Inspiro Premium license for more generations.', 'inspiro-starter-sites' ) }{ ' ' }
-				<a href={ config.licenseUrl }>{ __( 'Activate license', 'inspiro-starter-sites' ) }</a>
-			</span>
-		);
-	}
+function StyleSwatches( { value, onChange } ) {
 	return (
-		<span className="iss-pb-upsell">
-			{ __( 'Want to generate more? Inspiro Premium includes extra AI generations and the full section library.', 'inspiro-starter-sites' ) }{ ' ' }
-			<a href={ config.upgradeUrl } target="_blank" rel="noreferrer">{ __( 'Upgrade to Inspiro Premium', 'inspiro-starter-sites' ) }</a>
-		</span>
+		<div className="iss-pb-styles" role="radiogroup" aria-label={ __( 'Style', 'inspiro-starter-sites' ) }>
+			{ STYLES.map( ( s ) => (
+				<button
+					key={ s.value || 'any' }
+					type="button"
+					role="radio"
+					aria-checked={ value === s.value }
+					className={ 'iss-pb-style iss-pb-style--' + ( s.value || 'any' ) + ( value === s.value ? ' is-active' : '' ) }
+					onClick={ () => onChange( s.value ) }
+					title={ s.hint }
+				>
+					<span className="iss-pb-style__art" aria-hidden="true">
+						<i /><i /><i />
+					</span>
+					<span className="iss-pb-style__label">{ s.label }</span>
+				</button>
+			) ) }
+		</div>
 	);
 }
 
-function ConnectForm( { onDone, onCancel } ) {
+function Frame( { row, markup, css, index, count, planned, busy, failed, onSwap, onMove, onRemove, onHeadline, onAddAfter } ) {
+	const blocks = useMemo( () => ( markup ? parse( markup ) : [] ), [ markup ] );
+	return (
+		<div className={ 'iss-pb-frame iss-pb-frame--' + ( row.tone || 'light' ) }>
+			<div className="iss-pb-frame__bar">
+				<span className="iss-pb-frame__role">
+					<Dashicon icon={ roleIcon( row.role ) } size={ 14 } />
+					{ roleLabel( row.role ) }
+				</span>
+				{ planned ? (
+					<input
+						type="text"
+						className="iss-pb-frame__headline"
+						value={ row.headline }
+						placeholder={ __( 'Headline', 'inspiro-starter-sites' ) }
+						onChange={ ( e ) => onHeadline( e.target.value ) }
+						disabled={ busy }
+						aria-label={ __( 'Section headline', 'inspiro-starter-sites' ) }
+					/>
+				) : (
+					<span className="iss-pb-frame__desc">{ row.description }</span>
+				) }
+				<span className="iss-pb-frame__tools">
+					<Button icon="randomize" size="small" label={ __( 'Try another layout', 'inspiro-starter-sites' ) } onClick={ onSwap } disabled={ busy } />
+					<Button icon="arrow-up-alt2" size="small" label={ __( 'Move up', 'inspiro-starter-sites' ) } onClick={ () => onMove( -1 ) } disabled={ busy || index === 0 } />
+					<Button icon="arrow-down-alt2" size="small" label={ __( 'Move down', 'inspiro-starter-sites' ) } onClick={ () => onMove( 1 ) } disabled={ busy || index === count - 1 } />
+					<Button icon="no-alt" size="small" label={ __( 'Remove', 'inspiro-starter-sites' ) } onClick={ onRemove } disabled={ busy || count <= 1 } />
+				</span>
+			</div>
+			<div className="iss-pb-frame__preview">
+				{ markup ? (
+					<BlockPreview blocks={ blocks } viewportWidth={ 1280 } additionalStyles={ css ? [ { css } ] : [] } />
+				) : failed ? (
+					<div className="iss-pb-nopreview">
+						<Dashicon icon={ roleIcon( row.role ) } size={ 24 } />
+						<span>{ row.description }</span>
+					</div>
+				) : (
+					<div className="iss-pb-skeleton"><span /><span /><span /></div>
+				) }
+			</div>
+			{ planned && row.brief && <p className="iss-pb-frame__brief">{ row.brief }</p> }
+			<AddBetween onAdd={ onAddAfter } disabled={ busy } />
+		</div>
+	);
+}
+
+function AddBetween( { onAdd, disabled, roles } ) {
+	const [ open, setOpen ] = useState( false );
+	const ref = useRef();
+	return (
+		<div className="iss-pb-addbetween">
+			<button type="button" ref={ ref } className="iss-pb-addbetween__btn" onClick={ () => setOpen( ! open ) } disabled={ disabled } aria-label={ __( 'Add a section here', 'inspiro-starter-sites' ) }>
+				<Dashicon icon="plus-alt2" size={ 14 } />
+				<span>{ __( 'Add section', 'inspiro-starter-sites' ) }</span>
+			</button>
+			{ open && (
+				<Popover anchor={ ref.current } placement="bottom" onClose={ () => setOpen( false ) } className="iss-pb-rolepop">
+					<div className="iss-pb-rolepop__grid">
+						{ ( roles || window.issPbRoles || [] ).map( ( role ) => (
+							<button key={ role } type="button" className="iss-pb-role" onClick={ () => { setOpen( false ); onAdd( role ); } }>
+								<Dashicon icon={ roleIcon( role ) } size={ 16 } />
+								{ roleLabel( role ) }
+							</button>
+						) ) }
+					</div>
+				</Popover>
+			) }
+		</div>
+	);
+}
+
+function ConnectPanel( { onDone } ) {
 	const [ email, setEmail ] = useState( config.email || '' );
 	const [ consent, setConsent ] = useState( false );
 	const [ code, setCode ] = useState( '' );
@@ -196,69 +200,107 @@ function ConnectForm( { onDone, onCancel } ) {
 
 	return (
 		<div className="iss-pb-connect">
-			<h3>{ __( 'Connect to the WPZOOM AI service', 'inspiro-starter-sites' ) }</h3>
-			<p>{ __( 'Free AI page generations are tied to your email. We send a one-time code to confirm it.', 'inspiro-starter-sites' ) }</p>
+			<Dashicon icon="superhero" size={ 40 } />
+			<h2>{ __( 'Build pages with AI, free', 'inspiro-starter-sites' ) }</h2>
+			<p>{ __( 'Your free page generations are tied to your email. We send a one-time code to confirm it, then you are in.', 'inspiro-starter-sites' ) }</p>
 			{ error && <Notice status="error" isDismissible={ false }>{ error }</Notice> }
 			{ ! pending ? (
 				<>
-					<TextControl label={ __( 'Email address', 'inspiro-starter-sites' ) } type="email" value={ email } onChange={ setEmail } />
-					<CheckboxControl
-						label={ __( 'Send me occasional tips and updates from WPZOOM (optional)', 'inspiro-starter-sites' ) }
-						checked={ consent }
-						onChange={ setConsent }
-					/>
+					<TextControl label={ __( 'Email address', 'inspiro-starter-sites' ) } type="email" value={ email } onChange={ setEmail } __nextHasNoMarginBottom />
+					<CheckboxControl label={ __( 'Send me occasional tips from WPZOOM (optional)', 'inspiro-starter-sites' ) } checked={ consent } onChange={ setConsent } __nextHasNoMarginBottom />
 				</>
 			) : (
-				<TextControl
-					label={ sprintf( /* translators: email */ __( 'Enter the 6-digit code sent to %s', 'inspiro-starter-sites' ), email ) }
-					value={ code }
-					onChange={ setCode }
-					inputMode="numeric"
-				/>
+				<TextControl label={ sprintf( /* translators: email */ __( 'Enter the 6-digit code sent to %s', 'inspiro-starter-sites' ), email ) } value={ code } onChange={ setCode } inputMode="numeric" __nextHasNoMarginBottom />
 			) }
-			<div className="iss-pb-actions">
-				<Button variant="primary" onClick={ submit } isBusy={ busy } disabled={ busy || ( pending ? code.length < 6 : ! email ) }>
-					{ pending ? __( 'Confirm', 'inspiro-starter-sites' ) : __( 'Send code', 'inspiro-starter-sites' ) }
-				</Button>
-				<Button variant="tertiary" onClick={ onCancel }>{ __( 'Back', 'inspiro-starter-sites' ) }</Button>
-			</div>
+			<Button variant="primary" size="large" onClick={ submit } isBusy={ busy } disabled={ busy || ( pending ? code.length < 6 : ! email ) }>
+				{ pending ? __( 'Confirm', 'inspiro-starter-sites' ) : __( 'Send code', 'inspiro-starter-sites' ) }
+			</Button>
 		</div>
 	);
 }
 
-function RowPreview( { markup, css } ) {
-	const blocks = useMemo( () => ( markup ? parse( markup ) : [] ), [ markup ] );
-	if ( ! markup ) {
-		return <div className="iss-pb-row__preview is-loading"><Spinner /></div>;
+function QuotaLine( { quota } ) {
+	if ( ! quota || ! quota.connected ) {
+		return null;
+	}
+	const exhausted = quota.limit > 0 && quota.remaining <= 0;
+	if ( ! exhausted ) {
+		return null;
 	}
 	return (
-		<div className="iss-pb-row__preview">
-			<BlockPreview blocks={ blocks } viewportWidth={ 1280 } additionalStyles={ css ? [ { css } ] : [] } />
+		<div className="iss-pb-quotaline is-exhausted">
+			<Upsell quota={ quota } />
+		</div>
+	);
+}
+
+function Upsell( { quota } ) {
+	if ( quota && quota.licensed ) {
+		return <span>{ __( 'You have used all the page generations included with your license.', 'inspiro-starter-sites' ) }</span>;
+	}
+	if ( config.premiumTheme && ! config.hasLicense ) {
+		return (
+			<span>
+				{ __( 'Out of free generations.', 'inspiro-starter-sites' ) }{ ' ' }
+				<a href={ config.licenseUrl }>{ __( 'Activate your Inspiro Premium license', 'inspiro-starter-sites' ) }</a>{ ' ' }
+				{ __( 'for more.', 'inspiro-starter-sites' ) }
+			</span>
+		);
+	}
+	return (
+		<span>
+			{ __( 'Out of free generations.', 'inspiro-starter-sites' ) }{ ' ' }
+			<a href={ config.upgradeUrl } target="_blank" rel="noreferrer">{ __( 'Upgrade to Inspiro Premium', 'inspiro-starter-sites' ) }</a>{ ' ' }
+			{ __( 'for more generations and the full section library.', 'inspiro-starter-sites' ) }
+		</span>
+	);
+}
+
+function BuildProgress( { startedAt } ) {
+	const [ now, setNow ] = useState( Date.now() );
+	useEffect( () => {
+		const t = setInterval( () => setNow( Date.now() ), 500 );
+		return () => clearInterval( t );
+	}, [] );
+	const elapsed = ( now - startedAt ) / 1000;
+	const pct = Math.min( 92, Math.round( 100 * ( 1 - Math.exp( -elapsed / 35 ) ) ) );
+	const stepIndex = BUILD_STEPS.reduce( ( acc, s, i ) => ( elapsed >= s.at ? i : acc ), 0 );
+	return (
+		<div className="iss-pb-progress">
+			<div className="iss-pb-progress__bar"><span style={ { width: pct + '%' } } /></div>
+			<ol className="iss-pb-progress__steps">
+				{ BUILD_STEPS.map( ( s, i ) => (
+					<li key={ s.label } className={ i < stepIndex ? 'is-done' : i === stepIndex ? 'is-active' : '' }>
+						{ i < stepIndex ? <Dashicon icon="yes" size={ 14 } /> : i === stepIndex ? <Spinner /> : <span className="iss-pb-progress__dot" /> }
+						{ s.label }
+					</li>
+				) ) }
+			</ol>
+			<p>{ __( 'Usually under a minute. The page lands in your editor as blocks you can edit.', 'inspiro-starter-sites' ) }</p>
 		</div>
 	);
 }
 
 /* -------------------------------------------------------------------------
- * The modal
+ * The builder
  * ---------------------------------------------------------------------- */
 
 export default function PageBuilderModal( { onClose } ) {
-	const [ step, setStep ] = useState( 'describe' ); // describe | connect | plan | building
-	const [ description, setDescription ] = useState( '' );
-	const [ pageType, setPageType ] = useState( 'auto' );
-	const [ style, setStyle ] = useState( '' );
-	const [ pinned, setPinned ] = useState( [] );
-	const [ avoid, setAvoid ] = useState( [] );
+	const [ connected, setConnected ] = useState( !! config.connected );
 	const [ index, setIndex ] = useState( [] );
 	const [ quota, setQuota ] = useState( null );
-	const [ plan, setPlan ] = useState( null );
+	const [ preset, setPreset ] = useState( null );
+	const [ brief, setBrief ] = useState( '' );
+	const [ roles, setRoles ] = useState( [] );
+	const [ style, setStyle ] = useState( '' );
+	const [ rows, setRows ] = useState( [] );
+	const [ seeds, setSeeds ] = useState( {} );
 	const [ previews, setPreviews ] = useState( {} );
-	const [ previewCss, setPreviewCss ] = useState( '' );
-	const [ search, setSearch ] = useState( '' );
-	const [ busy, setBusy ] = useState( false );
+	const [ css, setCss ] = useState( '' );
+	const [ ai, setAi ] = useState( { status: 'idle', title: '', requirements: [], language: '', pageType: '' } );
+	const [ building, setBuilding ] = useState( 0 );
 	const [ error, setError ] = useState( '' );
-	const [ progress, setProgress ] = useState( '' );
-	const returnTo = useRef( 'describe' );
+	const canvasRef = useRef();
 
 	const { insertBlocks, replaceBlocks } = useDispatch( 'core/block-editor' );
 	const { editPost } = useDispatch( 'core/editor' );
@@ -268,37 +310,287 @@ export default function PageBuilderModal( { onClose } ) {
 		title: select( 'core/editor' ).getEditedPostAttribute( 'title' ),
 	} ), [] );
 
-	// Catalog index and quota, once.
+	const busy = ai.status === 'working' || building > 0;
+	const pageType = preset ? preset.pageType : 'auto';
+	const allRoles = useMemo( () => availableRoles( index ), [ index ] );
+	window.issPbRoles = allRoles;
+
+	/* Data ------------------------------------------------------------- */
+
+	const refreshQuota = useCallback( () => api.quota().then( setQuota ).catch( () => {} ), [] );
+
 	useEffect( () => {
-		api.catalog().then( ( data ) => setIndex( data.sections || [] ) ).catch( ( e ) => setError( e.message ) );
-		refreshQuota();
-	}, [] );
-
-	const refreshQuota = useCallback( () => {
-		api.quota().then( setQuota ).catch( () => setQuota( null ) );
-	}, [] );
-
-	const suggestions = useMemo( () => suggest( description, index, pinned ), [ description, index, pinned ] );
-
-	const togglePin = ( id ) => setPinned( ( list ) => ( list.includes( id ) ? list.filter( ( x ) => x !== id ) : [ ...list, id ] ) );
-
-	const loadPreviews = useCallback( ( ids ) => {
-		const missing = ids.filter( ( id ) => ! previews[ id ] );
-		if ( ! missing.length ) {
+		if ( ! connected ) {
 			return;
 		}
-		api.preview( missing ).then( ( data ) => {
-			setPreviews( ( prev ) => ( { ...prev, ...( data.markup || {} ) } ) );
-			if ( data.css ) {
-				setPreviewCss( data.css );
-			}
-		} ).catch( () => {} );
-	}, [ previews ] );
+		api.catalog().then( ( data ) => setIndex( data.sections || [] ) ).catch( ( e ) => setError( e.message ) );
+		refreshQuota();
+	}, [ connected ] );
 
-	const handleError = ( e, from ) => {
+	// Previews: deduped across calls, missing ones retried (the server
+	// fetches uncached sections from the AI proxy, which can be slow or
+	// fail on a cold cache), and given up on after a few tries.
+	const previewsRef = useRef( {} );
+	const requested = useRef( new Set() );
+	const attempts = useRef( {} );
+	const [ failed, setFailed ] = useState( {} );
+
+	const loadPreviews = useCallback( ( list, headlines = {} ) => {
+		const ids = list
+			.map( ( r ) => ( typeof r === 'string' ? r : r.id ) )
+			.filter( ( id, k, a ) => a.indexOf( id ) === k )
+			.filter( ( id ) => headlines[ id ] || ( ! previewsRef.current[ id ] && ! requested.current.has( id ) ) );
+		if ( ! ids.length ) {
+			return;
+		}
+		ids.forEach( ( id ) => requested.current.add( id ) );
+
+		const retry = ( missing ) => {
+			const again = missing.filter( ( id ) => {
+				requested.current.delete( id );
+				attempts.current[ id ] = ( attempts.current[ id ] || 0 ) + 1;
+				return attempts.current[ id ] < 3;
+			} );
+			const gaveUp = missing.filter( ( id ) => ! again.includes( id ) );
+			if ( gaveUp.length ) {
+				setFailed( ( prev ) => ( { ...prev, ...Object.fromEntries( gaveUp.map( ( id ) => [ id, true ] ) ) } ) );
+			}
+			if ( again.length ) {
+				setTimeout( () => loadPreviews( again ), 1200 * attempts.current[ again[ 0 ] ] );
+			}
+		};
+
+		api.preview( ids, headlines ).then( ( data ) => {
+			const markup = data.markup && ! Array.isArray( data.markup ) ? data.markup : {};
+			previewsRef.current = { ...previewsRef.current, ...markup };
+			setPreviews( previewsRef.current );
+			if ( data.css ) {
+				setCss( data.css );
+			}
+			const missing = ids.filter( ( id ) => ! markup[ id ] );
+			if ( missing.length ) {
+				retry( missing );
+			}
+		} ).catch( () => retry( ids ) );
+	}, [] );
+
+	// Warm-up: the first section of every role each preset would show, so
+	// clicking a preset paints real sections immediately.
+	useEffect( () => {
+		if ( ! index.length ) {
+			return;
+		}
+		const ids = [];
+		PRESETS.forEach( ( p ) => {
+			composeRows( p.roles, index, [], { pageType: p.pageType, style: '' } ).forEach( ( r ) => ids.push( r.id ) );
+		} );
+		const unique = ids.filter( ( id, k ) => ids.indexOf( id ) === k );
+		// A few requests of moderate size rather than one large one.
+		for ( let k = 0; k < unique.length; k += 8 ) {
+			loadPreviews( unique.slice( k, k + 8 ) );
+		}
+	}, [ index ] );
+
+	/* Brief → canvas (instant) ---------------------------------------- */
+
+	// Until the AI writes headlines, the opening section previews with the
+	// page's name rather than the demo's ("About us" on a Services page).
+	const openerHeadlines = ( list, p = preset ) => {
+		const out = {};
+		if ( p && p.key !== 'custom' && list.length && ( list[ 0 ].role === 'page-header' || list[ 0 ].role === 'hero' ) && ! list[ 0 ].headline ) {
+			out[ list[ 0 ].id ] = p.role === 'hero' ? config.siteName || p.label : p.label;
+		}
+		return out;
+	};
+
+	const applyRoles = ( nextRoles, nextStyle = style, nextPreset = preset ) => {
+		const next = composeRows( nextRoles, index, rows, { pageType: nextPreset ? nextPreset.pageType : 'auto', style: nextStyle, seeds } );
+		setRows( next );
+		setAi( ( a ) => ( a.status === 'done' ? { ...a, status: 'stale' } : a ) );
+		loadPreviews( next );
+		const named = openerHeadlines( next, nextPreset );
+		if ( Object.keys( named ).length ) {
+			loadPreviews( Object.keys( named ), named );
+		}
+	};
+
+	const pickPreset = ( p ) => {
+		setPreset( p );
+		setRoles( p.roles );
+		applyRoles( p.roles, style, p );
+	};
+
+	const toggleRole = ( role ) => {
+		const next = roles.includes( role ) ? roles.filter( ( r ) => r !== role ) : [ ...roles, role ].sort( ( a, b ) => allRoles.indexOf( a ) - allRoles.indexOf( b ) );
+		setRoles( next );
+		applyRoles( next );
+	};
+
+	const changeStyle = ( value ) => {
+		setStyle( value );
+		// Re-pick every section for the new mood, keeping the order.
+		const next = composeRows( rows.map( ( r ) => r.role ), index, [], { pageType, style: value, seeds } );
+		setRows( next );
+		setAi( ( a ) => ( a.status === 'done' ? { ...a, status: 'stale' } : a ) );
+		loadPreviews( next );
+	};
+
+	// Typing roles into the brief ("team", "faq") adds them to the page.
+	const onBrief = ( text ) => {
+		setBrief( text );
+		if ( ! preset ) {
+			return;
+		}
+		const mentioned = rolesFor( text ).filter( ( r ) => allRoles.includes( r ) && ! roles.includes( r ) && r !== 'hero' && r !== 'page-header' );
+		if ( mentioned.length ) {
+			const next = [ ...roles, ...mentioned ];
+			setRoles( next );
+			applyRoles( next );
+		}
+	};
+
+	/* Canvas edits ----------------------------------------------------- */
+
+	const markStale = () => setAi( ( a ) => ( a.status === 'done' ? { ...a, status: 'stale' } : a ) );
+
+	const swap = ( i ) => {
+		const row = rows[ i ];
+		const seed = ( seeds[ row.role ] || 0 ) + 1;
+		const picked = pickSection( row.role, index, { pageType, style, seed, exclude: rows.map( ( r ) => r.id ), prevTone: i > 0 ? rows[ i - 1 ].tone : '' } );
+		if ( ! picked ) {
+			return;
+		}
+		setSeeds( { ...seeds, [ row.role ]: seed } );
+		const next = rows.map( ( r, k ) => ( k === i ? toRow( picked, { headline: r.headline, brief: r.brief } ) : r ) );
+		setRows( next );
+		loadPreviews( [ next[ i ] ], next[ i ].headline ? { [ next[ i ].id ]: next[ i ].headline } : {} );
+	};
+	const move = ( i, dir ) => {
+		const j = i + dir;
+		if ( j < 0 || j >= rows.length ) {
+			return;
+		}
+		const next = [ ...rows ];
+		[ next[ i ], next[ j ] ] = [ next[ j ], next[ i ] ];
+		setRows( next );
+	};
+	const remove = ( i ) => {
+		const next = rows.filter( ( _, k ) => k !== i );
+		setRows( next );
+		setRoles( next.map( ( r ) => r.role ).filter( ( v, k, a ) => a.indexOf( v ) === k ) );
+		markStale();
+	};
+	const setHeadline = ( i, headline ) => setRows( rows.map( ( r, k ) => ( k === i ? { ...r, headline } : r ) ) );
+	const addAfter = ( i, role ) => {
+		const picked = pickSection( role, index, { pageType, style, seed: seeds[ role ] || 0, exclude: rows.map( ( r ) => r.id ), prevTone: i >= 0 ? rows[ i ].tone : '' } );
+		if ( ! picked ) {
+			setError( __( 'No section of that kind is available on this site.', 'inspiro-starter-sites' ) );
+			return;
+		}
+		const row = toRow( picked );
+		const next = [ ...rows ];
+		next.splice( i + 1, 0, row );
+		setRows( next );
+		if ( ! roles.includes( role ) ) {
+			setRoles( [ ...roles, role ] );
+		}
+		markStale();
+		loadPreviews( [ row ] );
+	};
+
+	/* AI --------------------------------------------------------------- */
+
+	// The placeholder is an example, never the user's facts: with no brief,
+	// say only what kind of page this is and whose site it is.
+	const describe = () => {
+		let text = brief.trim();
+		if ( ! text ) {
+			const site = config.siteName || __( 'this website', 'inspiro-starter-sites' );
+			const kind = preset && preset.key !== 'custom' ? preset.label : __( 'A', 'inspiro-starter-sites' );
+			text = sprintf( /* translators: 1: page kind, 2: site name */ __( '%1$s page for %2$s.', 'inspiro-starter-sites' ), kind, site );
+			if ( config.tagline ) {
+				text += ' ' + config.tagline;
+			}
+		}
+		const wanted = rows.map( ( r ) => roleLabel( r.role ) ).join( ', ' );
+		return wanted ? text + '\n\n' + sprintf( /* translators: section list */ __( 'Sections, in order: %s.', 'inspiro-starter-sites' ), wanted ) : text;
+	};
+
+	const refine = async () => {
+		if ( ! rows.length && ! brief.trim() ) {
+			return null;
+		}
+		setAi( ( a ) => ( { ...a, status: 'working' } ) );
+		setError( '' );
+		try {
+			const plan = await api.plan( { description: describe(), page_type: pageType, style, pinned: rows.map( ( r ) => r.id ), avoid: [] } );
+			const next = plan.sections.map( ( s ) => ( { ...s } ) );
+			setRows( next );
+			setRoles( next.map( ( r ) => r.role ).filter( ( v, k, a ) => a.indexOf( v ) === k ) );
+			// The section list sent for ordering comes back as "requirements"
+			// ("Testimonials", "Call to action"): keep only the user's wishes.
+			const labels = Object.keys( ROLE_META ).flatMap( ( r ) => [ r, ROLE_META[ r ].label ] ).map( ( l ) => l.toLowerCase().replace( /[^a-z]/g, '' ) );
+			const wishes = ( plan.requirements || [] ).filter( ( q ) => ! labels.includes( q.toLowerCase().replace( /[^a-z]/g, '' ) ) && ! /^sections/i.test( q ) );
+			setAi( { status: 'done', title: plan.title, requirements: wishes, language: plan.language, pageType: plan.page_type } );
+			const headlines = {};
+			next.forEach( ( r ) => {
+				if ( r.headline ) {
+					headlines[ r.id ] = r.headline;
+				}
+			} );
+			// Headlines change the preview: refresh the rows that got one,
+			// and fetch any section the AI swapped in.
+			loadPreviews( next, headlines );
+			return { ...plan, sections: next };
+		} catch ( e ) {
+			setAi( ( a ) => ( { ...a, status: a.title ? 'stale' : 'idle' } ) );
+			handleError( e );
+			return null;
+		}
+	};
+
+	const planObject = ( current ) => ( {
+		description: describe(),
+		page_type: ai.pageType || ( pageType === 'auto' ? 'inner' : pageType ),
+		language: ai.language || '',
+		title: ai.title || ( preset && preset.key !== 'custom' ? preset.label : '' ),
+		requirements: ai.requirements || [],
+		sections: current,
+	} );
+
+	const build = async () => {
+		setError( '' );
+		let current = rows;
+		let plan = null;
+		if ( ai.status !== 'done' && ai.status !== 'stale' ) {
+			// First pass: let the AI write headlines and briefs before building.
+			plan = await refine();
+			if ( ! plan ) {
+				return;
+			}
+			current = plan.sections;
+		}
+		setBuilding( Date.now() );
+		try {
+			const result = await api.build( plan ? plan : planObject( current ), config.postId );
+			insertResult( result );
+			if ( result.quota ) {
+				setQuota( ( q ) => ( { ...( q || {} ), connected: true, ...result.quota } ) );
+			}
+			createSuccessNotice(
+				sprintf( /* translators: section count */ __( 'Your page is in: %d sections. Review the copy and photos, then publish.', 'inspiro-starter-sites' ), ( result.sections || [] ).length ),
+				{ type: 'snackbar' }
+			);
+			onClose();
+		} catch ( e ) {
+			handleError( e );
+		}
+		setBuilding( 0 );
+	};
+
+	const handleError = ( e ) => {
 		if ( e.code === 'registration_required' ) {
-			returnTo.current = from;
-			setStep( 'connect' );
+			setConnected( false );
 			return;
 		}
 		if ( e.code === 'quota_exhausted' ) {
@@ -307,60 +599,14 @@ export default function PageBuilderModal( { onClose } ) {
 		setError( e.message );
 	};
 
-	const doPlan = async ( extraAvoid = [] ) => {
-		setBusy( true );
-		setError( '' );
-		setProgress( __( 'Planning your page…', 'inspiro-starter-sites' ) );
-		const avoidIds = [ ...avoid, ...extraAvoid ];
-		try {
-			const result = await api.plan( { description, page_type: pageType, style, pinned, avoid: avoidIds } );
-			setPlan( result );
-			setAvoid( avoidIds );
-			setStep( 'plan' );
-			loadPreviews( result.sections.map( ( s ) => s.id ) );
-		} catch ( e ) {
-			handleError( e, 'describe' );
-		}
-		setBusy( false );
-		setProgress( '' );
-	};
-
-	const doBuild = async () => {
-		setBusy( true );
-		setError( '' );
-		setStep( 'building' );
-		setProgress( __( 'Writing the copy and finding photos… this takes about a minute.', 'inspiro-starter-sites' ) );
-		try {
-			const result = await api.build( plan, config.postId );
-			insertResult( result );
-			if ( result.quota ) {
-				setQuota( ( q ) => ( { ...( q || {} ), connected: true, ...result.quota } ) );
-			}
-			createSuccessNotice(
-				sprintf(
-					/* translators: number of sections */
-					__( 'Page inserted: %d sections. Review the copy and photos, then publish.', 'inspiro-starter-sites' ),
-					( result.sections || [] ).length
-				),
-				{ type: 'snackbar' }
-			);
-			onClose();
-		} catch ( e ) {
-			setStep( 'plan' );
-			handleError( e, 'plan' );
-		}
-		setBusy( false );
-		setProgress( '' );
-	};
-
 	const insertResult = ( result ) => {
 		const newBlocks = parse( result.markup || '' );
 		if ( ! newBlocks.length ) {
 			throw { code: 'empty', message: __( 'The AI returned no usable blocks.', 'inspiro-starter-sites' ) };
 		}
 		injectCss( result.css );
-		const isEmptyEditor = blocks.length === 0 || ( blocks.length === 1 && blocks[ 0 ].name === 'core/paragraph' && ! ( blocks[ 0 ].attributes.content || '' ).toString().trim() );
-		if ( isEmptyEditor && blocks.length ) {
+		const emptyEditor = blocks.length === 0 || ( blocks.length === 1 && blocks[ 0 ].name === 'core/paragraph' && ! ( blocks[ 0 ].attributes.content || '' ).toString().trim() );
+		if ( emptyEditor && blocks.length ) {
 			replaceBlocks( blocks.map( ( b ) => b.clientId ), newBlocks );
 		} else {
 			insertBlocks( newBlocks );
@@ -370,201 +616,162 @@ export default function PageBuilderModal( { onClose } ) {
 		}
 	};
 
-	/* Plan editing ------------------------------------------------------ */
-
-	const updateSections = ( fn ) => setPlan( ( p ) => ( { ...p, sections: fn( p.sections ) } ) );
-	const move = ( i, dir ) => updateSections( ( list ) => {
-		const j = i + dir;
-		if ( j < 0 || j >= list.length ) {
-			return list;
-		}
-		const copy = [ ...list ];
-		[ copy[ i ], copy[ j ] ] = [ copy[ j ], copy[ i ] ];
-		return copy;
-	} );
-	const remove = ( i ) => updateSections( ( list ) => list.filter( ( _, k ) => k !== i ) );
-	const setHeadline = ( i, headline ) => updateSections( ( list ) => list.map( ( s, k ) => ( k === i ? { ...s, headline } : s ) ) );
-	const swap = ( i ) => updateSections( ( list ) => {
-		const current = list[ i ];
-		const used = list.map( ( s ) => s.id );
-		const pool = index.filter( ( s ) => s.role === current.role && s.available && ! used.includes( s.id ) );
-		if ( ! pool.length ) {
-			return list;
-		}
-		const next = pool[ ( pool.findIndex( ( s ) => s.id > current.id ) + pool.length ) % pool.length ] || pool[ 0 ];
-		loadPreviews( [ next.id ] );
-		return list.map( ( s, k ) => ( k === i ? { ...next, headline: s.headline, brief: s.brief } : s ) );
-	} );
-	const add = ( section ) => {
-		updateSections( ( list ) => {
-			if ( list.some( ( s ) => s.id === section.id ) ) {
-				return list;
-			}
-			const row = { ...section, headline: '', brief: '' };
-			if ( section.role === 'hero' || section.role === 'page-header' ) {
-				const rest = list.filter( ( s ) => s.role !== 'hero' && s.role !== 'page-header' );
-				return [ row, ...rest ];
-			}
-			return [ ...list, row ];
-		} );
-		loadPreviews( [ section.id ] );
-		setSearch( '' );
-	};
-
-	const searchResults = useMemo( () => {
-		const q = search.trim().toLowerCase();
-		if ( ! q ) {
-			return [];
-		}
-		const used = plan ? plan.sections.map( ( s ) => s.id ) : [];
-		return index
-			.filter( ( s ) => ! used.includes( s.id ) && ( roleLabel( s.role ).toLowerCase().includes( q ) || s.role.includes( q ) || s.description.toLowerCase().includes( q ) || s.id.includes( q ) ) )
-			.slice( 0, 12 );
-	}, [ search, index, plan ] );
-
-	/* Render ------------------------------------------------------------ */
+	/* Render ----------------------------------------------------------- */
 
 	const exhausted = quota && quota.connected && quota.limit > 0 && quota.remaining <= 0;
+	const planned = ai.status === 'done' || ai.status === 'stale';
+
+	const left = quota && quota.connected && quota.limit > 0 ? quota.remaining : null;
 
 	return (
 		<Modal
 			title={ __( 'Generate a page with AI', 'inspiro-starter-sites' ) }
 			onRequestClose={ busy ? () => {} : onClose }
 			className="iss-pb-modal"
+			isFullScreen
+			__experimentalHideHeader
 			shouldCloseOnClickOutside={ false }
 		>
-			{ error && (
-				<Notice status="error" onRemove={ () => setError( '' ) }>{ error }</Notice>
-			) }
-
-			{ step === 'connect' && (
-				<ConnectForm
-					onDone={ () => {
-						refreshQuota();
-						setStep( returnTo.current );
-					} }
-					onCancel={ () => setStep( returnTo.current ) }
-				/>
-			) }
-
-			{ step === 'describe' && (
-				<div className="iss-pb-describe">
-					<QuotaCard quota={ quota } onConnect={ () => { returnTo.current = 'describe'; setStep( 'connect' ); } } />
-					<TextareaControl
-						label={ __( 'What page do you need?', 'inspiro-starter-sites' ) }
-						help={ __( 'Name the sections you want and what they should say. Mention the business, the audience, and any counts (three plans, a team of four).', 'inspiro-starter-sites' ) }
-						value={ description }
-						onChange={ setDescription }
-						rows={ 4 }
-						placeholder={ ( config.examples || [] )[ 0 ] || '' }
-					/>
-					{ ! description && ( config.examples || [] ).length > 0 && (
-						<div className="iss-pb-examples">
-							<span>{ __( 'Try:', 'inspiro-starter-sites' ) }</span>
-							{ config.examples.map( ( ex, i ) => (
-								<button key={ i } type="button" className="iss-pb-example" onClick={ () => setDescription( ex ) }>{ ex }</button>
-							) ) }
-						</div>
-					) }
-					<div className="iss-pb-options">
-						<div>
-							<span className="iss-pb-label">{ __( 'Page type', 'inspiro-starter-sites' ) }</span>
-							<Chips options={ PAGE_TYPES } value={ pageType } onChange={ setPageType } />
-						</div>
-						<div>
-							<span className="iss-pb-label">{ __( 'Style', 'inspiro-starter-sites' ) }</span>
-							<Chips options={ STYLES } value={ style } onChange={ setStyle } />
-						</div>
-					</div>
-					{ suggestions.length > 0 && (
-						<div className="iss-pb-suggest">
-							<span className="iss-pb-label">
-								{ __( 'Sections that fit your description', 'inspiro-starter-sites' ) }
-								<small>{ __( 'Click to pin one; the AI builds the plan around pinned sections.', 'inspiro-starter-sites' ) }</small>
-							</span>
-							<div className="iss-pb-strip">
-								{ suggestions.map( ( s ) => (
-									<SectionCard key={ s.id } section={ s } pinned={ pinned.includes( s.id ) } onToggle={ togglePin } />
-								) ) }
-							</div>
-						</div>
-					) }
-					<div className="iss-pb-actions">
-						<Button variant="primary" onClick={ () => doPlan() } isBusy={ busy } disabled={ busy || description.trim().length < 3 }>
-							{ busy ? progress : __( 'Plan the page', 'inspiro-starter-sites' ) }
-						</Button>
-						<Button variant="tertiary" onClick={ onClose } disabled={ busy }>{ __( 'Cancel', 'inspiro-starter-sites' ) }</Button>
-					</div>
+			<div className="iss-pb-shell">
+			<header className="iss-pb-top">
+				<span className="iss-pb-top__logo" aria-hidden="true"><Dashicon icon="superhero" /></span>
+				<div className="iss-pb-top__title">
+					<strong>{ __( 'AI page builder', 'inspiro-starter-sites' ) }</strong>
+					<span>{ __( 'Pages composed from Inspiro\'s designed sections', 'inspiro-starter-sites' ) }</span>
 				</div>
-			) }
+				{ left !== null && (
+					<span className={ 'iss-pb-top__pill' + ( left <= 0 ? ' is-out' : '' ) }>
+						{ sprintf( /* translators: generations left */ __( '%d generations left', 'inspiro-starter-sites' ), left ) }
+					</span>
+				) }
+				<Button icon="no-alt" label={ __( 'Close', 'inspiro-starter-sites' ) } onClick={ onClose } disabled={ busy } />
+			</header>
+			{ ! connected ? (
+				<ConnectPanel onDone={ () => { setConnected( true ); } } />
+			) : (
+				<div className="iss-pb-layout">
+					<aside className="iss-pb-side">
+						<section className="iss-pb-block">
+							<h3 className="iss-pb-h">{ __( '1. What kind of page?', 'inspiro-starter-sites' ) }</h3>
+							<PresetGrid value={ preset ? preset.key : '' } onPick={ pickPreset } />
+						</section>
 
-			{ ( step === 'plan' || step === 'building' ) && plan && (
-				<div className="iss-pb-plan">
-					<div className="iss-pb-plan__head">
-						<div>
-							<h3>{ plan.title || __( 'Your page', 'inspiro-starter-sites' ) }</h3>
-							{ plan.requirements && plan.requirements.length > 0 && (
-								<p className="iss-pb-reqs">
-									{ __( 'Understood:', 'inspiro-starter-sites' ) } { plan.requirements.join( ' · ' ) }
-								</p>
-							) }
-						</div>
-						<Button variant="secondary" size="compact" onClick={ () => doPlan( plan.sections.map( ( s ) => s.id ) ) } disabled={ busy }>
-							{ __( 'Try a different plan', 'inspiro-starter-sites' ) }
-						</Button>
-					</div>
-
-					<ol className="iss-pb-rows">
-						{ plan.sections.map( ( s, i ) => (
-							<li key={ s.id } className="iss-pb-row">
-								<RowPreview markup={ previews[ s.id ] } css={ previewCss } />
-								<div className="iss-pb-row__body">
-									<span className="iss-pb-row__role">{ roleLabel( s.role ) }<em>{ s.tone }</em></span>
-									<TextControl
-										className="iss-pb-row__headline"
-										value={ s.headline }
-										onChange={ ( v ) => setHeadline( i, v ) }
-										placeholder={ __( 'Headline', 'inspiro-starter-sites' ) }
-										disabled={ busy }
+						{ preset && (
+							<>
+								<section className="iss-pb-block">
+									<h3 className="iss-pb-h">
+										{ __( '2. Tell the AI about it', 'inspiro-starter-sites' ) }
+										<small>{ __( 'Optional, but the more specific, the better the copy.', 'inspiro-starter-sites' ) }</small>
+									</h3>
+									<TextareaControl
+										value={ brief }
+										onChange={ onBrief }
+										rows={ 4 }
+										placeholder={ preset.placeholder }
+										__nextHasNoMarginBottom
 									/>
-									<p className="iss-pb-row__brief">{ s.brief || s.description }</p>
-								</div>
-								<div className="iss-pb-row__actions">
-									<Button icon="randomize" label={ __( 'Swap for another layout', 'inspiro-starter-sites' ) } onClick={ () => swap( i ) } disabled={ busy } />
-									<Button icon="arrow-up-alt2" label={ __( 'Move up', 'inspiro-starter-sites' ) } onClick={ () => move( i, -1 ) } disabled={ busy || i === 0 } />
-									<Button icon="arrow-down-alt2" label={ __( 'Move down', 'inspiro-starter-sites' ) } onClick={ () => move( i, 1 ) } disabled={ busy || i === plan.sections.length - 1 } />
-									<Button icon="no-alt" label={ __( 'Remove', 'inspiro-starter-sites' ) } onClick={ () => remove( i ) } disabled={ busy || plan.sections.length <= 1 } />
-								</div>
-							</li>
-						) ) }
-					</ol>
+									{ config.siteName && (
+										<p className="iss-pb-muted">
+											{ sprintf( /* translators: site name */ __( 'Written for %s, in your site language.', 'inspiro-starter-sites' ), config.siteName ) }
+										</p>
+									) }
+								</section>
 
-					<div className="iss-pb-add">
-						<TextControl
-							placeholder={ __( 'Add a section: type a role (team, pricing, FAQ…) or a word from its description', 'inspiro-starter-sites' ) }
-							value={ search }
-							onChange={ setSearch }
-							disabled={ busy }
-						/>
-						{ searchResults.length > 0 && (
-							<div className="iss-pb-strip">
-								{ searchResults.map( ( s ) => (
-									<SectionCard key={ s.id } section={ s } pinned={ false } onToggle={ () => add( s ) } compact />
+								<section className="iss-pb-block">
+									<h3 className="iss-pb-h">
+										{ __( '3. Sections', 'inspiro-starter-sites' ) }
+										<small>{ __( 'Toggle what belongs on the page. Reorder on the canvas.', 'inspiro-starter-sites' ) }</small>
+									</h3>
+									<RoleToggles roles={ allRoles } selected={ roles } onToggle={ toggleRole } />
+								</section>
+
+								<section className="iss-pb-block">
+									<h3 className="iss-pb-h">{ __( '4. Style', 'inspiro-starter-sites' ) }</h3>
+									<StyleSwatches value={ style } onChange={ changeStyle } />
+								</section>
+							</>
+						) }
+
+						<div className="iss-pb-side__foot">
+							{ error && <Notice status="error" onRemove={ () => setError( '' ) }>{ error }</Notice> }
+							<QuotaLine quota={ quota } />
+							<div className="iss-pb-cta">
+								<Button
+									variant="primary"
+									size="large"
+									onClick={ build }
+									isBusy={ building > 0 }
+									disabled={ busy || exhausted || ! rows.length }
+								>
+									{ building ? __( 'Building…', 'inspiro-starter-sites' ) : __( 'Build & insert page', 'inspiro-starter-sites' ) }
+								</Button>
+								<Button
+									variant="secondary"
+									size="large"
+									onClick={ refine }
+									isBusy={ ai.status === 'working' }
+									disabled={ busy || ! rows.length }
+								>
+									{ ai.status === 'working'
+										? __( 'Thinking…', 'inspiro-starter-sites' )
+										: planned
+											? __( 'Rethink with AI', 'inspiro-starter-sites' )
+											: __( 'Refine with AI', 'inspiro-starter-sites' ) }
+								</Button>
+							</div>
+							<p className="iss-pb-muted">
+								{ planned
+									? __( 'Headlines are the AI\'s; edit them on the canvas. Build writes the full copy and adds photos.', 'inspiro-starter-sites' )
+									: __( 'Refine lets the AI pick headlines and tune the sections before you build.', 'inspiro-starter-sites' ) }
+							</p>
+						</div>
+					</aside>
+
+					<main className="iss-pb-canvas" ref={ canvasRef }>
+						{ building > 0 && <BuildProgress startedAt={ building } /> }
+						{ ! rows.length ? (
+							<div className="iss-pb-empty">
+								<div className="iss-pb-empty__art"><i /><i /><i /><i /></div>
+								<h2>{ __( 'Pick a page type to start', 'inspiro-starter-sites' ) }</h2>
+								<p>{ __( 'A complete page appears here instantly, built from sections designed for Inspiro. Then change anything you like.', 'inspiro-starter-sites' ) }</p>
+							</div>
+						) : (
+							<div className={ 'iss-pb-page' + ( building ? ' is-building' : '' ) }>
+								{ ai.status !== 'idle' && (
+									<div className={ 'iss-pb-aibar iss-pb-aibar--' + ai.status }>
+										{ ai.status === 'working' && <><Spinner />{ __( 'The AI is reading your brief and tuning the page…', 'inspiro-starter-sites' ) }</> }
+										{ ai.status === 'done' && ai.requirements.length > 0 && <><Dashicon icon="yes-alt" size={ 16 } />{ __( 'Understood:', 'inspiro-starter-sites' ) } { ai.requirements.join( ' · ' ) }</> }
+										{ ai.status === 'stale' && <><Dashicon icon="info-outline" size={ 16 } />{ __( 'You changed the page since the AI pass. Build as is, or rethink.', 'inspiro-starter-sites' ) }</> }
+									</div>
+								) }
+								{ ai.title && <h2 className="iss-pb-page__title">{ ai.title }</h2> }
+								<div className="iss-pb-addbetween iss-pb-addbetween--top">
+									<AddBetween onAdd={ ( role ) => addAfter( -1, role ) } disabled={ busy } roles={ allRoles } />
+								</div>
+								{ rows.map( ( row, i ) => (
+									<Frame
+										key={ row.id + i }
+										row={ row }
+										markup={ previews[ row.id ] }
+										css={ css }
+										index={ i }
+										count={ rows.length }
+										planned={ planned }
+										busy={ busy }
+										failed={ !! failed[ row.id ] }
+										onSwap={ () => swap( i ) }
+										onMove={ ( dir ) => move( i, dir ) }
+										onRemove={ () => remove( i ) }
+										onHeadline={ ( v ) => setHeadline( i, v ) }
+										onAddAfter={ ( role ) => addAfter( i, role ) }
+									/>
 								) ) }
 							</div>
 						) }
-					</div>
-
-					<QuotaCard quota={ quota } onConnect={ () => { returnTo.current = 'plan'; setStep( 'connect' ); } } />
-
-					<div className="iss-pb-actions">
-						<Button variant="primary" onClick={ doBuild } isBusy={ busy } disabled={ busy || exhausted || ! plan.sections.length }>
-							{ busy ? progress : __( 'Build and insert this page', 'inspiro-starter-sites' ) }
-						</Button>
-						<Button variant="tertiary" onClick={ () => setStep( 'describe' ) } disabled={ busy }>{ __( 'Back', 'inspiro-starter-sites' ) }</Button>
-					</div>
+					</main>
 				</div>
 			) }
+			</div>
 		</Modal>
 	);
 }
@@ -572,8 +779,6 @@ export default function PageBuilderModal( { onClose } ) {
 /**
  * Put the catalog stylesheet into the editor (the page and the editor
  * canvas iframe), so the inserted sections look right before reload.
- *
- * @param {string} css Stylesheet.
  */
 function injectCss( css ) {
 	if ( ! css ) {
@@ -594,5 +799,3 @@ function injectCss( css ) {
 		el.textContent = css;
 	} );
 }
-
-export { createBlock };

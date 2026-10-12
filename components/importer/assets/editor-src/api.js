@@ -12,8 +12,8 @@ const config = window.inspiroStarterSitesPageBuilder || {};
  * POST an admin-ajax action.
  *
  * @param {string} action Action name without the wp_ajax_ prefix.
- * @param {Object} data   Fields; arrays and objects are JSON-encoded unless
- *                        they are arrays of scalars (sent as name[]).
+ * @param {Object} data   Fields; arrays of scalars go as name[], other
+ *                        arrays and objects are JSON-encoded.
  * @return {Promise<Object>} The `data` of a wp_send_json_success payload.
  *                          Rejects with { code, message } on error.
  */
@@ -57,7 +57,7 @@ export async function ajax( action, data = {} ) {
 export const api = {
 	catalog: () => ajax( 'inspiro_starter_sites_ai_page_catalog' ),
 	quota: () => ajax( 'inspiro_starter_sites_ai_page_quota' ),
-	preview: ( ids ) => ajax( 'inspiro_starter_sites_ai_page_preview', { ids } ),
+	preview: ( ids, headlines = {} ) => ajax( 'inspiro_starter_sites_ai_page_preview', { ids, headlines } ),
 	plan: ( input ) => ajax( 'inspiro_starter_sites_ai_page_plan', input ),
 	build: ( plan, postId ) => ajax( 'inspiro_starter_sites_ai_page_build', { plan, post_id: postId } ),
 	connect: ( email, consent ) => ajax( 'inspiro_starter_sites_ai_connect', { email, consent: consent ? 1 : 0 } ),

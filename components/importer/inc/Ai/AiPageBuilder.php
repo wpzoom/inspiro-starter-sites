@@ -162,10 +162,16 @@ class AiPageBuilder {
 		if ( ! $ids ) {
 			wp_send_json_error( array( 'message' => esc_html__( 'Nothing to preview.', 'inspiro-starter-sites' ) ) );
 		}
+		// Planned headlines (id => text) show in the preview in place of the demo's.
+		$headlines = array();
+		$raw       = isset( $_POST['headlines'] ) ? json_decode( wp_unslash( $_POST['headlines'] ), true ) : null; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- sanitized below.
+		foreach ( is_array( $raw ) ? $raw : array() as $id => $text ) {
+			$headlines[ sanitize_key( (string) $id ) ] = trim( mb_substr( sanitize_text_field( (string) $text ), 0, 160 ) );
+		}
 
 		wp_send_json_success(
 			array(
-				'markup' => $this->preview_markup( $ids ),
+				'markup' => $this->preview_markup( $ids, $headlines ),
 				'css'    => $this->css(),
 			)
 		);
@@ -174,10 +180,11 @@ class AiPageBuilder {
 	/**
 	 * Section id => block markup rendered with example content.
 	 *
-	 * @param string[] $ids Catalog ids.
+	 * @param string[] $ids       Catalog ids.
+	 * @param array    $headlines Optional id => headline to show instead of the demo's.
 	 * @return array
 	 */
-	public function preview_markup( array $ids ) {
+	public function preview_markup( array $ids, array $headlines = array() ) {
 		$full = Catalog\Catalog::sections( $ids );
 		if ( ! $full ) {
 			return array();
@@ -199,9 +206,16 @@ class AiPageBuilder {
 		);
 		$out = array();
 		foreach ( $ids as $id ) {
-			if ( isset( $full[ $id ] ) ) {
-				$out[ $id ] = $renderer->render( $full[ $id ], $this->example_content( (array) $full[ $id ]['fields'] ) );
+			if ( ! isset( $full[ $id ] ) ) {
+				continue;
 			}
+			$section = $full[ $id ];
+			$content = $this->example_content( (array) $section['fields'] );
+			if ( ! empty( $headlines[ $id ] ) && isset( $section['fields']['heading'] )
+				&& ( empty( $section['fields']['heading']['words'] ) || (int) $section['fields']['heading']['words'] <= 16 ) ) {
+				$content['heading'] = $headlines[ $id ];
+			}
+			$out[ $id ] = $renderer->render( $section, $content );
 		}
 		return $out;
 	}
@@ -486,29 +500,43 @@ class AiPageBuilder {
 			'sections'         => $schemas,
 		);
 
+		// Copy in parallel: two sections per call, so a six-section page
+		// waits for the slowest of three short calls instead of one long
+		// one. Sections still missing get one combined retry.
 		$content_by_id = array();
-		for ( $attempt = 0; $attempt < 2 && count( $content_by_id ) < count( $schemas ); $attempt++ ) {
-			if ( $attempt ) {
-				$copy_vars['sections'] = array_values(
-					array_filter(
-						$schemas,
-						static function ( $schema ) use ( $content_by_id ) {
-							return ! isset( $content_by_id[ $schema['id'] ] );
-						}
-					)
-				);
-			}
-			$text = $this->proxy->claude_task( 'page-copy', $copy_vars, $heartbeat );
+		$last_error    = null;
+		$tasks         = array();
+		foreach ( array_chunk( $schemas, 2 ) as $k => $chunk ) {
+			$tasks[ $k ] = array(
+				'task' => 'page-copy',
+				'vars' => array_merge( $copy_vars, array( 'sections' => $chunk ) ),
+			);
+		}
+		foreach ( $this->proxy->claude_tasks_parallel( $tasks, $heartbeat ) as $text ) {
 			if ( is_wp_error( $text ) ) {
-				if ( ! $content_by_id && $attempt ) {
-					return $text;
-				}
+				$last_error = $text;
 				continue;
 			}
 			$content_by_id += $this->parse_copy( $text );
 		}
+		$missing = array_values(
+			array_filter(
+				$schemas,
+				static function ( $schema ) use ( $content_by_id ) {
+					return ! isset( $content_by_id[ $schema['id'] ] );
+				}
+			)
+		);
+		if ( $missing ) {
+			$text = $this->proxy->claude_task( 'page-copy', array_merge( $copy_vars, array( 'sections' => $missing ) ), $heartbeat );
+			if ( is_wp_error( $text ) ) {
+				$last_error = $text;
+			} else {
+				$content_by_id += $this->parse_copy( $text );
+			}
+		}
 		if ( ! $content_by_id ) {
-			return new \WP_Error( 'ai_parse_error', __( 'The AI returned a malformed response. Please try again.', 'inspiro-starter-sites' ) );
+			return $last_error ? $last_error : new \WP_Error( 'ai_parse_error', __( 'The AI returned a malformed response. Please try again.', 'inspiro-starter-sites' ) );
 		}
 
 		// Render with the site's palette, this site's pages as link targets
@@ -771,42 +799,118 @@ class AiPageBuilder {
 	 * ------------------------------------------------------------------ */
 
 	/**
-	 * The theme's accent color: Inspiro Premium's "color-accent" mod or
-	 * Lite's color scheme, falling back to the demos' teal.
+	 * The site's own primary and secondary colors.
+	 *
+	 * Inspiro Lite and Premium name them the other way round: Lite's primary
+	 * is the near-black and its secondary the teal; Premium's primary is the
+	 * teal and its secondary the near-black. A palette edited in Global
+	 * Styles ("custom") wins over the theme's defaults.
+	 *
+	 * @return array [ 'primary' => hex, 'secondary' => hex, 'premium' => bool ]
+	 */
+	public function site_colors() {
+		$premium = AiDemoGenerator::is_premium_inspiro();
+		$colors  = $premium
+			? array( 'primary' => '#0bb4aa', 'secondary' => '#101010' )
+			: array( 'primary' => '#101010', 'secondary' => '#0bb4aa' );
+
+		$palette = function_exists( 'wp_get_global_settings' ) ? wp_get_global_settings( array( 'color', 'palette' ) ) : array();
+		foreach ( array( 'theme', 'custom' ) as $origin ) {
+			foreach ( ( is_array( $palette ) && ! empty( $palette[ $origin ] ) ) ? (array) $palette[ $origin ] : array() as $entry ) {
+				if ( isset( $entry['slug'], $entry['color'] ) && isset( $colors[ $entry['slug'] ] ) ) {
+					$hex = sanitize_hex_color( (string) $entry['color'] );
+					if ( $hex ) {
+						$colors[ $entry['slug'] ] = strtolower( $hex );
+					}
+				}
+			}
+		}
+
+		// The Customizer's brand color, when the user set one: Premium's
+		// accent replaces its primary, Lite's color scheme its secondary.
+		if ( $premium ) {
+			$mod = sanitize_hex_color( (string) get_theme_mod( 'color-accent', '' ) );
+			if ( $mod ) {
+				$colors['primary'] = strtolower( $mod );
+			}
+		} else {
+			$mod = function_exists( 'inspiro_get_theme_mod' ) ? inspiro_get_theme_mod( 'colorscheme_hex' ) : get_theme_mod( 'colorscheme_hex', '' );
+			$mod = sanitize_hex_color( (string) $mod );
+			if ( $mod && 'custom' === get_theme_mod( 'colorscheme', '' ) ) {
+				$colors['secondary'] = strtolower( $mod );
+			}
+		}
+
+		$colors['premium'] = $premium;
+		return $colors;
+	}
+
+	/**
+	 * The color sections call "accent" (tints, accent bands, filled
+	 * buttons): the site's primary color — near-black on Inspiro Lite, the
+	 * brand teal on Inspiro Premium.
 	 *
 	 * @return string Hex.
 	 */
 	public function accent() {
-		if ( AiDemoGenerator::is_premium_inspiro() ) {
-			$hex = get_theme_mod( 'color-accent', '#0bb4aa' );
-		} else {
-			$hex = function_exists( 'inspiro_get_theme_mod' ) ? inspiro_get_theme_mod( 'colorscheme_hex' ) : get_theme_mod( 'colorscheme_hex', '' );
-		}
-		$hex = sanitize_hex_color( (string) $hex );
-		return $hex ? strtolower( $hex ) : '#0bb4aa';
+		$colors = $this->site_colors();
+		return $colors['primary'];
 	}
 
 	private function palette() {
-		return Catalog\Catalog::palette( $this->accent() );
+		$colors = $this->site_colors();
+		$dark   = Catalog\Catalog::mix( $colors['primary'], '#000000', 0 );
+		// The darker of the two site colors carries dark sections and text.
+		if ( $this->luminance( $colors['secondary'] ) < $this->luminance( $colors['primary'] ) ) {
+			$dark = $colors['secondary'];
+		}
+		return Catalog\Catalog::palette( $colors['primary'], $dark );
+	}
+
+	private function luminance( $hex ) {
+		$hex = ltrim( (string) $hex, '#' );
+		if ( 3 === strlen( $hex ) ) {
+			$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+		}
+		return 0.2126 * hexdec( substr( $hex, 0, 2 ) ) + 0.7152 * hexdec( substr( $hex, 2, 2 ) ) + 0.0722 * hexdec( substr( $hex, 4, 2 ) );
 	}
 
 	/**
-	 * The catalog stylesheet for this site, rebuilt when the accent changes.
+	 * The catalog stylesheet for this site, rebuilt when its colors change.
+	 *
+	 * The demo generator repaints whole demo sites, so its stylesheet
+	 * overrides the preset colors inside every section. Here the sections
+	 * join an existing site: they keep the site's palette. Only sections
+	 * extracted from the OTHER theme's demos are remapped, because the two
+	 * themes swap primary and secondary (see site_colors()).
 	 *
 	 * @return string
 	 */
 	public function css() {
-		$accent = $this->accent();
+		$colors = $this->site_colors();
+		$key    = md5( wp_json_encode( $colors ) . '|' . INSPIRO_STARTER_SITES_VERSION );
 		$stored = get_option( self::CSS_OPTION, array() );
-		if ( is_array( $stored ) && isset( $stored['accent'], $stored['css'] ) && $stored['accent'] === $accent && '' !== $stored['css'] ) {
+		if ( is_array( $stored ) && isset( $stored['key'], $stored['css'] ) && $stored['key'] === $key && '' !== $stored['css'] ) {
 			return (string) $stored['css'];
 		}
-		$css = Catalog\Catalog::css( Catalog\Catalog::palette( $accent ) );
+
+		$css = Catalog\Catalog::css( $this->palette() );
+		// Drop the demo generator's per-theme preset overrides…
+		$css = preg_replace( '/\.iss-ai-cs--(?:lite|premium)\{[^}]*\}/', '', $css );
+		// …and swap primary/secondary for sections from the other theme.
+		$foreign = $colors['premium'] ? 'lite' : 'premium';
+		$swap    = '--wp--preset--color--primary:' . $colors['secondary'] . ';--wp--preset--color--secondary:' . $colors['primary'];
+		if ( ! $colors['premium'] ) {
+			// Premium demos also use these two named colors, which Lite lacks.
+			$swap .= ';--wp--preset--color--green:' . $colors['secondary'] . ';--wp--preset--color--brown:' . $colors['secondary'];
+		}
+		$css = '.iss-ai-cs--' . $foreign . '{' . $swap . '}' . $css;
+
 		update_option(
 			self::CSS_OPTION,
 			array(
-				'accent' => $accent,
-				'css'    => $css,
+				'key' => $key,
+				'css' => $css,
 			),
 			false
 		);
@@ -1070,6 +1174,7 @@ class AiPageBuilder {
 				'connected'    => $this->proxy->is_connected() || '' !== AiProxyClient::premium_license(),
 				'email'        => $this->proxy->connected_email(),
 				'siteName'     => get_bloginfo( 'name' ),
+				'tagline'      => get_bloginfo( 'description' ),
 				'accent'       => $this->accent(),
 				'upgradeUrl'   => 'https://www.wpzoom.com/themes/inspiro-lite/upgrade/?utm_source=wpadmin&utm_medium=ai-page&utm_campaign=ai-quota-upsell',
 				'licenseUrl'   => admin_url( 'admin.php?page=wpzoom_license#license' ),
@@ -1109,14 +1214,21 @@ class AiPageBuilder {
 	 * @return array
 	 */
 	private function error_payload( \WP_Error $error ) {
-		$code = $error->get_error_code();
+		$code    = $error->get_error_code();
+		$message = $error->get_error_message();
 		if ( 'ai_registration_required' === $code ) {
 			$this->proxy->disconnect();
 			$code = 'registration_required';
 		}
+		// Transport failures (timeouts, connection resets) carry cURL's own
+		// wording; users get a plain sentence, the log keeps the detail.
+		if ( 'ai_proxy_error' === $code && preg_match( '/timed out|curl|could not resolve|connection|Proxy request failed/i', $message ) ) {
+			error_log( '[inspiro-starter-sites AI] page builder transport error: ' . $message ); // phpcs:ignore
+			$message = __( 'The AI service took too long to answer. Your generation was not used — please try again.', 'inspiro-starter-sites' );
+		}
 		return array(
 			'code'    => $code,
-			'message' => $error->get_error_message(),
+			'message' => $message,
 		);
 	}
 }
