@@ -472,6 +472,12 @@ class AiProxyClient {
 				$msg = isset( $raw['message'] ) ? $raw['message'] : ( isset( $raw['data']['error']['message'] ) ? $raw['data']['error']['message'] : '' );
 			}
 			error_log( '[inspiro-starter-sites AI] proxy error (HTTP ' . $code . '): ' . ( $msg ? $msg : substr( (string) $result['body'], 0, 500 ) ) ); // phpcs:ignore
+			// The task gate's own verdicts keep their code, so callers that
+			// run a task without a quota call first (the page planner) can
+			// still send the user to the connect step.
+			if ( is_array( $raw ) && isset( $raw['code'] ) && 'registration_required' === $raw['code'] ) {
+				return new WP_Error( 'ai_registration_required', __( 'Connect with your email to use free AI generations.', 'inspiro-starter-sites' ) );
+			}
 			return new WP_Error( 'ai_proxy_error', $msg ? $msg : ( 'HTTP ' . $code ) );
 		}
 
@@ -774,8 +780,10 @@ class AiProxyClient {
 	 * @return array|WP_Error [ 'used' => int, 'limit' => int, 'remaining' => int, 'allowed' => bool ].
 	 *                        Error code `ai_registration_required` means the site
 	 *                        must (re)connect with an email first.
+	 * @param string $feature Quota feature slug (default: the demo generator's).
 	 */
-	public function quota( $action ) {
+	public function quota( $action, $feature = self::FEATURE ) {
+		$feature  = sanitize_key( (string) $feature ) ?: self::FEATURE;
 		$response = wp_remote_post(
 			$this->endpoint( 'ai-quota' ),
 			array(
@@ -783,7 +791,7 @@ class AiProxyClient {
 				'body'    => wp_json_encode(
 					array(
 						'action'      => $action,
-						'feature'     => self::FEATURE,
+						'feature'     => $feature,
 						'site_key'    => (string) get_option( self::SITE_KEY_OPTION, '' ),
 						// A verified premium license raises the limit
 						// server-side; invalid ones silently fall back to

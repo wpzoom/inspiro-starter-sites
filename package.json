@@ -3,6 +3,8 @@
   "type": "module",
   "private": true,
   "devDependencies": {
+    "@babel/runtime": "^8.0.7",
+    "@wordpress/scripts": "^30.0.0",
     "gulp": "^4.0.2",
     "gulp-autoprefixer": "^9.0.0",
     "gulp-cached": "^1.1.1",
@@ -24,7 +26,9 @@
     "build": "node ./node_modules/gulp/bin/gulp.js build",
     "css": "node ./node_modules/gulp/bin/gulp.js css",
     "js": "node ./node_modules/gulp/bin/gulp.js js",
-    "pot": "node ./node_modules/gulp/bin/gulp.js pot"
+    "pot": "node ./node_modules/gulp/bin/gulp.js pot",
+    "build:editor": "wp-scripts build --config webpack.editor.config.cjs --webpack-src-dir=components/importer/assets/editor-src --output-path=components/importer/assets/editor",
+    "start:editor": "wp-scripts start --config webpack.editor.config.cjs --webpack-src-dir=components/importer/assets/editor-src --output-path=components/importer/assets/editor"
   },
   "browserslist": [
     "last 2 versions"
