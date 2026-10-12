@@ -58,6 +58,8 @@ export const api = {
 	catalog: () => ajax( 'inspiro_starter_sites_ai_page_catalog' ),
 	quota: () => ajax( 'inspiro_starter_sites_ai_page_quota' ),
 	preview: ( ids, headlines = {} ) => ajax( 'inspiro_starter_sites_ai_page_preview', { ids, headlines } ),
+	pool: () => ajax( 'inspiro_starter_sites_ai_page_pool' ),
+	instant: ( ids, headlines, postId ) => ajax( 'inspiro_starter_sites_ai_page_instant', { ids, headlines, post_id: postId } ),
 	plan: ( input ) => ajax( 'inspiro_starter_sites_ai_page_plan', input ),
 	build: ( plan, postId ) => ajax( 'inspiro_starter_sites_ai_page_build', { plan, post_id: postId } ),
 	connect: ( email, consent ) => ajax( 'inspiro_starter_sites_ai_connect', { email, consent: consent ? 1 : 0 } ),

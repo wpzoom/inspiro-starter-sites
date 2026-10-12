@@ -1,10 +1,11 @@
 /**
  * The page builder: a brief on the left, a live page canvas on the right.
  *
- * Picking a preset puts real catalog sections on the canvas at once; the
- * AI then refines them (headlines, briefs, better picks) in the background.
- * The canvas is the plan: swap, reorder, remove and add sections there,
- * then build and insert.
+ * Picking a preset puts real catalog sections on the canvas at once.
+ * Without a description, "Insert page" inserts them as shown (sample copy,
+ * placeholder photos, no AI). With one, "Generate with AI" writes the copy
+ * and picks photos, shows the result on the canvas, and inserting that is
+ * instant. The canvas is always exactly what gets inserted.
  */
 
 import { __, sprintf } from '@wordpress/i18n';
@@ -12,60 +13,99 @@ import { useState, useEffect, useMemo, useRef, useCallback } from '@wordpress/el
 import { useSelect, useDispatch } from '@wordpress/data';
 import { parse } from '@wordpress/blocks';
 import { BlockPreview } from '@wordpress/block-editor';
-import { Modal, Button, TextareaControl, TextControl, CheckboxControl, Spinner, Notice, Dashicon, Popover } from '@wordpress/components';
+import { Modal, Button, TextareaControl, TextControl, CheckboxControl, Spinner, Notice, Popover } from '@wordpress/components';
 
 import { api, config } from './api';
 import { PRESETS, ROLE_META, STYLES, composeRows, pickSection, toRow, availableRoles } from './presets';
 import { rolesFor } from './matcher';
 
 const BUILD_STEPS = [
-	{ at: 0, label: __( 'Writing the copy', 'inspiro-starter-sites' ) },
+	{ at: 0, label: __( 'Reading your description', 'inspiro-starter-sites' ) },
+	{ at: 7, label: __( 'Writing the copy', 'inspiro-starter-sites' ) },
 	{ at: 18, label: __( 'Finding photos', 'inspiro-starter-sites' ) },
-	{ at: 40, label: __( 'Laying out the sections', 'inspiro-starter-sites' ) },
 ];
 
 const roleLabel = ( role ) => ( ROLE_META[ role ] ? ROLE_META[ role ].label : role );
-const roleIcon = ( role ) => ( ROLE_META[ role ] ? ROLE_META[ role ].icon : 'layout' );
+
+/**
+ * Line icons in the plugin's own style (20px grid, 1.5 stroke) — the AI demo
+ * generator draws its icons the same way; no dashicons.
+ */
+const ICONS = {
+	sparkle: <path d="M10 2.5l1.6 4.4 4.4 1.6-4.4 1.6L10 14.5l-1.6-4.4L4 8.5l4.4-1.6zM15.5 13l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" fill="currentColor" stroke="none" />,
+	shuffle: <path d="M3 6h3.2c1.3 0 2.4.7 3 1.8l1.6 3.4c.6 1.1 1.7 1.8 3 1.8H17M3 14h3.2c1 0 1.9-.4 2.5-1.2M11.3 7.2c.6-.8 1.5-1.2 2.5-1.2H17M15 4l2 2-2 2M15 11l2 2-2 2" />,
+	up: <path d="M5 12.5l5-5 5 5" />,
+	down: <path d="M5 7.5l5 5 5-5" />,
+	close: <path d="M5 5l10 10M15 5L5 15" />,
+	plus: <path d="M10 4v12M4 10h12" />,
+	check: <path d="M4.5 10.5l3.5 3.5 7.5-8" />,
+};
+
+function Icon( { name, size = 16 } ) {
+	return (
+		<svg className="iss-pb-icon" width={ size } height={ size } viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+			{ ICONS[ name ] }
+		</svg>
+	);
+}
+
+function IconButton( { icon, label, onClick, disabled } ) {
+	return (
+		<button type="button" className="iss-pb-iconbtn" onClick={ onClick } disabled={ disabled } aria-label={ label } title={ label }>
+			<Icon name={ icon } />
+		</button>
+	);
+}
 
 /* -------------------------------------------------------------------------
  * Pieces
  * ---------------------------------------------------------------------- */
 
-function PresetGrid( { value, onPick } ) {
+function Pills( { options, value, onChange, label } ) {
 	return (
-		<div className="iss-pb-presets" role="radiogroup" aria-label={ __( 'Page type', 'inspiro-starter-sites' ) }>
-			{ PRESETS.map( ( p ) => (
+		<div className="iss-pb-pills" role="radiogroup" aria-label={ label }>
+			{ options.map( ( o ) => (
 				<button
-					key={ p.key }
+					key={ o.value }
 					type="button"
 					role="radio"
-					aria-checked={ value === p.key }
-					className={ 'iss-pb-preset' + ( value === p.key ? ' is-active' : '' ) }
-					onClick={ () => onPick( p ) }
+					aria-checked={ value === o.value }
+					className={ 'iss-pb-pill' + ( value === o.value ? ' is-active' : '' ) }
+					onClick={ () => onChange( o.value ) }
+					title={ o.hint || undefined }
 				>
-					<Dashicon icon={ p.icon } />
-					<span>{ p.label }</span>
+					{ o.label }
 				</button>
 			) ) }
 		</div>
 	);
 }
 
+function PresetGrid( { value, onPick } ) {
+	return (
+		<Pills
+			label={ __( 'Page type', 'inspiro-starter-sites' ) }
+			options={ PRESETS.map( ( p ) => ( { value: p.key, label: p.label } ) ) }
+			value={ value }
+			onChange={ ( key ) => onPick( PRESETS.find( ( p ) => p.key === key ) ) }
+		/>
+	);
+}
+
 function RoleToggles( { roles, selected, onToggle } ) {
 	return (
-		<div className="iss-pb-roles">
+		<div className="iss-pb-pills">
 			{ roles.map( ( role ) => {
 				const on = selected.includes( role );
 				return (
 					<button
 						key={ role }
 						type="button"
-						className={ 'iss-pb-role' + ( on ? ' is-on' : '' ) }
+						className={ 'iss-pb-pill' + ( on ? ' is-active' : '' ) }
 						aria-pressed={ on }
 						title={ ROLE_META[ role ].hint }
 						onClick={ () => onToggle( role ) }
 					>
-						<Dashicon icon={ roleIcon( role ) } size={ 16 } />
 						{ roleLabel( role ) }
 					</button>
 				);
@@ -76,54 +116,31 @@ function RoleToggles( { roles, selected, onToggle } ) {
 
 function StyleSwatches( { value, onChange } ) {
 	return (
-		<div className="iss-pb-styles" role="radiogroup" aria-label={ __( 'Style', 'inspiro-starter-sites' ) }>
-			{ STYLES.map( ( s ) => (
-				<button
-					key={ s.value || 'any' }
-					type="button"
-					role="radio"
-					aria-checked={ value === s.value }
-					className={ 'iss-pb-style iss-pb-style--' + ( s.value || 'any' ) + ( value === s.value ? ' is-active' : '' ) }
-					onClick={ () => onChange( s.value ) }
-					title={ s.hint }
-				>
-					<span className="iss-pb-style__art" aria-hidden="true">
-						<i /><i /><i />
-					</span>
-					<span className="iss-pb-style__label">{ s.label }</span>
-				</button>
-			) ) }
-		</div>
+		<Pills
+			label={ __( 'Style', 'inspiro-starter-sites' ) }
+			options={ STYLES.map( ( st ) => ( { value: st.value, label: st.label, hint: st.hint } ) ) }
+			value={ value }
+			onChange={ onChange }
+		/>
 	);
 }
 
-function Frame( { row, markup, css, index, count, planned, busy, failed, onSwap, onMove, onRemove, onHeadline, onAddAfter } ) {
+function Frame( { row, markup, css, index, count, generated, busy, failed, onSwap, onMove, onRemove, onAddAfter } ) {
 	const blocks = useMemo( () => ( markup ? parse( markup ) : [] ), [ markup ] );
 	return (
-		<div className={ 'iss-pb-frame iss-pb-frame--' + ( row.tone || 'light' ) }>
+		<div className={ 'iss-pb-frame iss-pb-frame--' + ( row.tone || 'light' ) + ( generated ? ' is-generated' : '' ) }>
 			<div className="iss-pb-frame__bar">
-				<span className="iss-pb-frame__role">
-					<Dashicon icon={ roleIcon( row.role ) } size={ 14 } />
-					{ roleLabel( row.role ) }
-				</span>
-				{ planned ? (
-					<input
-						type="text"
-						className="iss-pb-frame__headline"
-						value={ row.headline }
-						placeholder={ __( 'Headline', 'inspiro-starter-sites' ) }
-						onChange={ ( e ) => onHeadline( e.target.value ) }
-						disabled={ busy }
-						aria-label={ __( 'Section headline', 'inspiro-starter-sites' ) }
-					/>
+				<span className="iss-pb-frame__role">{ roleLabel( row.role ) }</span>
+				{ generated ? (
+					<span className="iss-pb-frame__chip"><Icon name="sparkle" size={ 12 } />{ __( 'Written for you', 'inspiro-starter-sites' ) }</span>
 				) : (
 					<span className="iss-pb-frame__desc">{ row.description }</span>
 				) }
 				<span className="iss-pb-frame__tools">
-					<Button icon="randomize" size="small" label={ __( 'Try another layout', 'inspiro-starter-sites' ) } onClick={ onSwap } disabled={ busy } />
-					<Button icon="arrow-up-alt2" size="small" label={ __( 'Move up', 'inspiro-starter-sites' ) } onClick={ () => onMove( -1 ) } disabled={ busy || index === 0 } />
-					<Button icon="arrow-down-alt2" size="small" label={ __( 'Move down', 'inspiro-starter-sites' ) } onClick={ () => onMove( 1 ) } disabled={ busy || index === count - 1 } />
-					<Button icon="no-alt" size="small" label={ __( 'Remove', 'inspiro-starter-sites' ) } onClick={ onRemove } disabled={ busy || count <= 1 } />
+					<IconButton icon="shuffle" label={ __( 'Try another layout', 'inspiro-starter-sites' ) } onClick={ onSwap } disabled={ busy } />
+					<IconButton icon="up" label={ __( 'Move up', 'inspiro-starter-sites' ) } onClick={ () => onMove( -1 ) } disabled={ busy || index === 0 } />
+					<IconButton icon="down" label={ __( 'Move down', 'inspiro-starter-sites' ) } onClick={ () => onMove( 1 ) } disabled={ busy || index === count - 1 } />
+					<IconButton icon="close" label={ __( 'Remove', 'inspiro-starter-sites' ) } onClick={ onRemove } disabled={ busy || count <= 1 } />
 				</span>
 			</div>
 			<div className="iss-pb-frame__preview">
@@ -131,14 +148,12 @@ function Frame( { row, markup, css, index, count, planned, busy, failed, onSwap,
 					<BlockPreview blocks={ blocks } viewportWidth={ 1280 } additionalStyles={ css ? [ { css } ] : [] } />
 				) : failed ? (
 					<div className="iss-pb-nopreview">
-						<Dashicon icon={ roleIcon( row.role ) } size={ 24 } />
 						<span>{ row.description }</span>
 					</div>
 				) : (
 					<div className="iss-pb-skeleton"><span /><span /><span /></div>
 				) }
 			</div>
-			{ planned && row.brief && <p className="iss-pb-frame__brief">{ row.brief }</p> }
 			<AddBetween onAdd={ onAddAfter } disabled={ busy } />
 		</div>
 	);
@@ -150,15 +165,14 @@ function AddBetween( { onAdd, disabled, roles } ) {
 	return (
 		<div className="iss-pb-addbetween">
 			<button type="button" ref={ ref } className="iss-pb-addbetween__btn" onClick={ () => setOpen( ! open ) } disabled={ disabled } aria-label={ __( 'Add a section here', 'inspiro-starter-sites' ) }>
-				<Dashicon icon="plus-alt2" size={ 14 } />
+				<Icon name="plus" size={ 14 } />
 				<span>{ __( 'Add section', 'inspiro-starter-sites' ) }</span>
 			</button>
 			{ open && (
 				<Popover anchor={ ref.current } placement="bottom" onClose={ () => setOpen( false ) } className="iss-pb-rolepop">
 					<div className="iss-pb-rolepop__grid">
 						{ ( roles || window.issPbRoles || [] ).map( ( role ) => (
-							<button key={ role } type="button" className="iss-pb-role" onClick={ () => { setOpen( false ); onAdd( role ); } }>
-								<Dashicon icon={ roleIcon( role ) } size={ 16 } />
+							<button key={ role } type="button" className="iss-pb-pill" onClick={ () => { setOpen( false ); onAdd( role ); } }>
 								{ roleLabel( role ) }
 							</button>
 						) ) }
@@ -200,7 +214,7 @@ function ConnectPanel( { onDone } ) {
 
 	return (
 		<div className="iss-pb-connect">
-			<Dashicon icon="superhero" size={ 40 } />
+			<p className="iss-pb-kicker"><Icon name="sparkle" size={ 14 } />{ __( 'AI page builder', 'inspiro-starter-sites' ) }</p>
 			<h2>{ __( 'Build pages with AI, free', 'inspiro-starter-sites' ) }</h2>
 			<p>{ __( 'Your free page generations are tied to your email. We send a one-time code to confirm it, then you are in.', 'inspiro-starter-sites' ) }</p>
 			{ error && <Notice status="error" isDismissible={ false }>{ error }</Notice> }
@@ -271,12 +285,12 @@ function BuildProgress( { startedAt } ) {
 			<ol className="iss-pb-progress__steps">
 				{ BUILD_STEPS.map( ( s, i ) => (
 					<li key={ s.label } className={ i < stepIndex ? 'is-done' : i === stepIndex ? 'is-active' : '' }>
-						{ i < stepIndex ? <Dashicon icon="yes" size={ 14 } /> : i === stepIndex ? <Spinner /> : <span className="iss-pb-progress__dot" /> }
+						{ i < stepIndex ? <Icon name="check" size={ 14 } /> : i === stepIndex ? <Spinner /> : <span className="iss-pb-progress__dot" /> }
 						{ s.label }
 					</li>
 				) ) }
 			</ol>
-			<p>{ __( 'Usually under a minute. The page lands in your editor as blocks you can edit.', 'inspiro-starter-sites' ) }</p>
+			<p>{ __( 'Usually about half a minute. You will see the page here before anything is inserted.', 'inspiro-starter-sites' ) }</p>
 		</div>
 	);
 }
@@ -299,6 +313,9 @@ export default function PageBuilderModal( { onClose } ) {
 	const [ css, setCss ] = useState( '' );
 	const [ ai, setAi ] = useState( { status: 'idle', title: '', requirements: [], language: '', pageType: '' } );
 	const [ building, setBuilding ] = useState( 0 );
+	const [ inserting, setInserting ] = useState( false );
+	const [ generated, setGenerated ] = useState( {} ); // section id => markup written by the AI
+	const [ genBrief, setGenBrief ] = useState( null ); // the description that markup was written from
 	const [ error, setError ] = useState( '' );
 	const canvasRef = useRef();
 
@@ -310,7 +327,7 @@ export default function PageBuilderModal( { onClose } ) {
 		title: select( 'core/editor' ).getEditedPostAttribute( 'title' ),
 	} ), [] );
 
-	const busy = ai.status === 'working' || building > 0;
+	const busy = ai.status === 'working' || building > 0 || inserting;
 	const pageType = preset ? preset.pageType : 'auto';
 	const allRoles = useMemo( () => availableRoles( index ), [ index ] );
 	window.issPbRoles = allRoles;
@@ -325,6 +342,9 @@ export default function PageBuilderModal( { onClose } ) {
 		}
 		api.catalog().then( ( data ) => setIndex( data.sections || [] ) ).catch( ( e ) => setError( e.message ) );
 		refreshQuota();
+		// Import the generic placeholder photos now, so inserting without AI
+		// doesn't wait for downloads (a no-op once the site has them).
+		api.pool().catch( () => {} );
 	}, [ connected ] );
 
 	// Previews: deduped across calls, missing ones retried (the server
@@ -406,8 +426,7 @@ export default function PageBuilderModal( { onClose } ) {
 	const applyRoles = ( nextRoles, nextStyle = style, nextPreset = preset ) => {
 		const next = composeRows( nextRoles, index, rows, { pageType: nextPreset ? nextPreset.pageType : 'auto', style: nextStyle, seeds } );
 		setRows( next );
-		setAi( ( a ) => ( a.status === 'done' ? { ...a, status: 'stale' } : a ) );
-		loadPreviews( next );
+				loadPreviews( next );
 		const named = openerHeadlines( next, nextPreset );
 		if ( Object.keys( named ).length ) {
 			loadPreviews( Object.keys( named ), named );
@@ -431,8 +450,7 @@ export default function PageBuilderModal( { onClose } ) {
 		// Re-pick every section for the new mood, keeping the order.
 		const next = composeRows( rows.map( ( r ) => r.role ), index, [], { pageType, style: value, seeds } );
 		setRows( next );
-		setAi( ( a ) => ( a.status === 'done' ? { ...a, status: 'stale' } : a ) );
-		loadPreviews( next );
+				loadPreviews( next );
 	};
 
 	// Typing roles into the brief ("team", "faq") adds them to the page.
@@ -451,8 +469,6 @@ export default function PageBuilderModal( { onClose } ) {
 
 	/* Canvas edits ----------------------------------------------------- */
 
-	const markStale = () => setAi( ( a ) => ( a.status === 'done' ? { ...a, status: 'stale' } : a ) );
-
 	const swap = ( i ) => {
 		const row = rows[ i ];
 		const seed = ( seeds[ row.role ] || 0 ) + 1;
@@ -461,6 +477,12 @@ export default function PageBuilderModal( { onClose } ) {
 			return;
 		}
 		setSeeds( { ...seeds, [ row.role ]: seed } );
+		// A new layout has no AI copy yet: it shows (and inserts) sample text.
+		setGenerated( ( g ) => {
+			const copy = { ...g };
+			delete copy[ row.id ];
+			return copy;
+		} );
 		const next = rows.map( ( r, k ) => ( k === i ? toRow( picked, { headline: r.headline, brief: r.brief } ) : r ) );
 		setRows( next );
 		loadPreviews( [ next[ i ] ], next[ i ].headline ? { [ next[ i ].id ]: next[ i ].headline } : {} );
@@ -478,9 +500,7 @@ export default function PageBuilderModal( { onClose } ) {
 		const next = rows.filter( ( _, k ) => k !== i );
 		setRows( next );
 		setRoles( next.map( ( r ) => r.role ).filter( ( v, k, a ) => a.indexOf( v ) === k ) );
-		markStale();
 	};
-	const setHeadline = ( i, headline ) => setRows( rows.map( ( r, k ) => ( k === i ? { ...r, headline } : r ) ) );
 	const addAfter = ( i, role ) => {
 		const picked = pickSection( role, index, { pageType, style, seed: seeds[ role ] || 0, exclude: rows.map( ( r ) => r.id ), prevTone: i >= 0 ? rows[ i ].tone : '' } );
 		if ( ! picked ) {
@@ -494,98 +514,100 @@ export default function PageBuilderModal( { onClose } ) {
 		if ( ! roles.includes( role ) ) {
 			setRoles( [ ...roles, role ] );
 		}
-		markStale();
 		loadPreviews( [ row ] );
 	};
 
-	/* AI --------------------------------------------------------------- */
+	/* AI and insert ---------------------------------------------------- */
 
-	// The placeholder is an example, never the user's facts: with no brief,
-	// say only what kind of page this is and whose site it is.
+	// Only what the user wrote: the placeholder is an example, not their facts.
 	const describe = () => {
-		let text = brief.trim();
-		if ( ! text ) {
-			const site = config.siteName || __( 'this website', 'inspiro-starter-sites' );
-			const kind = preset && preset.key !== 'custom' ? preset.label : __( 'A', 'inspiro-starter-sites' );
-			text = sprintf( /* translators: 1: page kind, 2: site name */ __( '%1$s page for %2$s.', 'inspiro-starter-sites' ), kind, site );
-			if ( config.tagline ) {
-				text += ' ' + config.tagline;
-			}
-		}
+		const text = brief.trim();
 		const wanted = rows.map( ( r ) => roleLabel( r.role ) ).join( ', ' );
 		return wanted ? text + '\n\n' + sprintf( /* translators: section list */ __( 'Sections, in order: %s.', 'inspiro-starter-sites' ), wanted ) : text;
 	};
 
-	const refine = async () => {
-		if ( ! rows.length && ! brief.trim() ) {
-			return null;
-		}
-		setAi( ( a ) => ( { ...a, status: 'working' } ) );
+	const hasBrief = brief.trim().length > 0;
+	const generatedNow = ai.status === 'done' && genBrief === brief.trim();
+	const needsAI = hasBrief && ! generatedNow;
+
+	/**
+	 * Generate with AI: plan around the canvas sections, write the copy and
+	 * find photos, then show the result on the canvas. Nothing is inserted
+	 * yet; inserting what the canvas shows is instant.
+	 */
+	const generate = async () => {
 		setError( '' );
+		setAi( ( a ) => ( { ...a, status: 'working' } ) );
+		setBuilding( Date.now() );
 		try {
 			const plan = await api.plan( { description: describe(), page_type: pageType, style, pinned: rows.map( ( r ) => r.id ), avoid: [] } );
-			const next = plan.sections.map( ( s ) => ( { ...s } ) );
+			const result = await api.build( plan, config.postId );
+			const next = ( result.plan && result.plan.sections ? result.plan.sections : plan.sections ).map( ( r ) => ( { ...r } ) );
 			setRows( next );
 			setRoles( next.map( ( r ) => r.role ).filter( ( v, k, a ) => a.indexOf( v ) === k ) );
+			setGenerated( result.parts || {} );
+			setGenBrief( brief.trim() );
+			if ( result.css ) {
+				setCss( result.css );
+			}
 			// The section list sent for ordering comes back as "requirements"
 			// ("Testimonials", "Call to action"): keep only the user's wishes.
 			const labels = Object.keys( ROLE_META ).flatMap( ( r ) => [ r, ROLE_META[ r ].label ] ).map( ( l ) => l.toLowerCase().replace( /[^a-z]/g, '' ) );
-			const wishes = ( plan.requirements || [] ).filter( ( q ) => ! labels.includes( q.toLowerCase().replace( /[^a-z]/g, '' ) ) && ! /^sections/i.test( q ) );
-			setAi( { status: 'done', title: plan.title, requirements: wishes, language: plan.language, pageType: plan.page_type } );
-			const headlines = {};
-			next.forEach( ( r ) => {
-				if ( r.headline ) {
-					headlines[ r.id ] = r.headline;
-				}
-			} );
-			// Headlines change the preview: refresh the rows that got one,
-			// and fetch any section the AI swapped in.
-			loadPreviews( next, headlines );
-			return { ...plan, sections: next };
-		} catch ( e ) {
-			setAi( ( a ) => ( { ...a, status: a.title ? 'stale' : 'idle' } ) );
-			handleError( e );
-			return null;
-		}
-	};
-
-	const planObject = ( current ) => ( {
-		description: describe(),
-		page_type: ai.pageType || ( pageType === 'auto' ? 'inner' : pageType ),
-		language: ai.language || '',
-		title: ai.title || ( preset && preset.key !== 'custom' ? preset.label : '' ),
-		requirements: ai.requirements || [],
-		sections: current,
-	} );
-
-	const build = async () => {
-		setError( '' );
-		let current = rows;
-		let plan = null;
-		if ( ai.status !== 'done' && ai.status !== 'stale' ) {
-			// First pass: let the AI write headlines and briefs before building.
-			plan = await refine();
-			if ( ! plan ) {
-				return;
-			}
-			current = plan.sections;
-		}
-		setBuilding( Date.now() );
-		try {
-			const result = await api.build( plan ? plan : planObject( current ), config.postId );
-			insertResult( result );
+			const bare = ( q ) => q.toLowerCase().replace( /\bsections?\b/g, '' ).replace( /[^a-z]/g, '' );
+			const wishes = ( plan.requirements || [] ).filter( ( q ) => ! labels.includes( bare( q ) ) && ! /^sections/i.test( q ) );
+			setAi( { status: 'done', title: result.title || plan.title, requirements: wishes, language: plan.language, pageType: plan.page_type } );
 			if ( result.quota ) {
 				setQuota( ( q ) => ( { ...( q || {} ), connected: true, ...result.quota } ) );
 			}
+			loadPreviews( next );
+			if ( canvasRef.current ) {
+				canvasRef.current.scrollTop = 0;
+			}
+		} catch ( e ) {
+			setAi( ( a ) => ( { ...a, status: a.title ? 'done' : 'idle' } ) );
+			handleError( e );
+		}
+		setBuilding( 0 );
+	};
+
+	/**
+	 * Insert exactly what the canvas shows: sections the AI wrote as they
+	 * are, every other section with its sample copy and the site's
+	 * placeholder photos.
+	 */
+	const insert = async () => {
+		setError( '' );
+		setInserting( true );
+		try {
+			const plain = rows.filter( ( r ) => ! generated[ r.id ] );
+			let parts = {};
+			let sheet = css;
+			if ( plain.length ) {
+				const headlines = { ...openerHeadlines( plain ) };
+				plain.forEach( ( r ) => {
+					if ( r.headline ) {
+						headlines[ r.id ] = r.headline;
+					}
+				} );
+				const res = await api.instant( plain.map( ( r ) => r.id ), headlines, config.postId );
+				parts = res.parts || {};
+				sheet = res.css || sheet;
+			}
+			const markup = rows.map( ( r ) => generated[ r.id ] || parts[ r.id ] || '' ).filter( Boolean ).join( '\n\n' );
+			insertResult( {
+				markup,
+				css: sheet,
+				title: ai.title || ( preset && preset.key !== 'custom' ? preset.label : '' ),
+			} );
 			createSuccessNotice(
-				sprintf( /* translators: section count */ __( 'Your page is in: %d sections. Review the copy and photos, then publish.', 'inspiro-starter-sites' ), ( result.sections || [] ).length ),
+				sprintf( /* translators: section count */ __( 'Page inserted: %d sections. Edit any text or photo right in the editor.', 'inspiro-starter-sites' ), rows.length ),
 				{ type: 'snackbar' }
 			);
 			onClose();
 		} catch ( e ) {
 			handleError( e );
 		}
-		setBuilding( 0 );
+		setInserting( false );
 	};
 
 	const handleError = ( e ) => {
@@ -602,7 +624,7 @@ export default function PageBuilderModal( { onClose } ) {
 	const insertResult = ( result ) => {
 		const newBlocks = parse( result.markup || '' );
 		if ( ! newBlocks.length ) {
-			throw { code: 'empty', message: __( 'The AI returned no usable blocks.', 'inspiro-starter-sites' ) };
+			throw { code: 'empty', message: __( 'There was nothing to insert. Please try again.', 'inspiro-starter-sites' ) };
 		}
 		injectCss( result.css );
 		const emptyEditor = blocks.length === 0 || ( blocks.length === 1 && blocks[ 0 ].name === 'core/paragraph' && ! ( blocks[ 0 ].attributes.content || '' ).toString().trim() );
@@ -619,9 +641,7 @@ export default function PageBuilderModal( { onClose } ) {
 	/* Render ----------------------------------------------------------- */
 
 	const exhausted = quota && quota.connected && quota.limit > 0 && quota.remaining <= 0;
-	const planned = ai.status === 'done' || ai.status === 'stale';
 
-	const left = quota && quota.connected && quota.limit > 0 ? quota.remaining : null;
 
 	return (
 		<Modal
@@ -633,26 +653,23 @@ export default function PageBuilderModal( { onClose } ) {
 			shouldCloseOnClickOutside={ false }
 		>
 			<div className="iss-pb-shell">
-			<header className="iss-pb-top">
-				<span className="iss-pb-top__logo" aria-hidden="true"><Dashicon icon="superhero" /></span>
-				<div className="iss-pb-top__title">
-					<strong>{ __( 'AI page builder', 'inspiro-starter-sites' ) }</strong>
-					<span>{ __( 'Pages composed from Inspiro\'s designed sections', 'inspiro-starter-sites' ) }</span>
-				</div>
-				{ left !== null && (
-					<span className={ 'iss-pb-top__pill' + ( left <= 0 ? ' is-out' : '' ) }>
-						{ sprintf( /* translators: generations left */ __( '%d generations left', 'inspiro-starter-sites' ), left ) }
-					</span>
-				) }
-				<Button icon="no-alt" label={ __( 'Close', 'inspiro-starter-sites' ) } onClick={ onClose } disabled={ busy } />
-			</header>
+			<button type="button" className="iss-pb-close" onClick={ onClose } disabled={ busy } aria-label={ __( 'Close', 'inspiro-starter-sites' ) }>
+				<Icon name="close" size={ 18 } />
+			</button>
 			{ ! connected ? (
 				<ConnectPanel onDone={ () => { setConnected( true ); } } />
 			) : (
 				<div className="iss-pb-layout">
 					<aside className="iss-pb-side">
+							<header className="iss-pb-side__head">
+								<h2>
+									{ __( 'Generate a page with AI', 'inspiro-starter-sites' ) }
+									<span className="iss-pb-badge">{ __( 'Beta', 'inspiro-starter-sites' ) }</span>
+								</h2>
+								<p>{ __( 'Pick a page type and the sections you want. Describe your business and AI writes the copy and finds photos.', 'inspiro-starter-sites' ) }</p>
+							</header>
 						<section className="iss-pb-block">
-							<h3 className="iss-pb-h">{ __( '1. What kind of page?', 'inspiro-starter-sites' ) }</h3>
+							<h3 className="iss-pb-h">{ __( 'Page type', 'inspiro-starter-sites' ) }</h3>
 							<PresetGrid value={ preset ? preset.key : '' } onPick={ pickPreset } />
 						</section>
 
@@ -660,8 +677,8 @@ export default function PageBuilderModal( { onClose } ) {
 							<>
 								<section className="iss-pb-block">
 									<h3 className="iss-pb-h">
-										{ __( '2. Tell the AI about it', 'inspiro-starter-sites' ) }
-										<small>{ __( 'Optional, but the more specific, the better the copy.', 'inspiro-starter-sites' ) }</small>
+										{ __( 'Describe your page', 'inspiro-starter-sites' ) }
+										<small>{ __( 'Optional. Leave it empty to insert the sections with sample text.', 'inspiro-starter-sites' ) }</small>
 									</h3>
 									<TextareaControl
 										value={ brief }
@@ -679,14 +696,14 @@ export default function PageBuilderModal( { onClose } ) {
 
 								<section className="iss-pb-block">
 									<h3 className="iss-pb-h">
-										{ __( '3. Sections', 'inspiro-starter-sites' ) }
-										<small>{ __( 'Toggle what belongs on the page. Reorder on the canvas.', 'inspiro-starter-sites' ) }</small>
+										{ __( 'Sections', 'inspiro-starter-sites' ) }
+										<small>{ __( 'Reorder, swap or remove them on the preview.', 'inspiro-starter-sites' ) }</small>
 									</h3>
 									<RoleToggles roles={ allRoles } selected={ roles } onToggle={ toggleRole } />
 								</section>
 
 								<section className="iss-pb-block">
-									<h3 className="iss-pb-h">{ __( '4. Style', 'inspiro-starter-sites' ) }</h3>
+									<h3 className="iss-pb-h">{ __( 'Style', 'inspiro-starter-sites' ) }</h3>
 									<StyleSwatches value={ style } onChange={ changeStyle } />
 								</section>
 							</>
@@ -695,34 +712,41 @@ export default function PageBuilderModal( { onClose } ) {
 						<div className="iss-pb-side__foot">
 							{ error && <Notice status="error" onRemove={ () => setError( '' ) }>{ error }</Notice> }
 							<QuotaLine quota={ quota } />
+								{ quota && quota.connected && quota.limit > 0 && (
+									<p className="iss-pb-quota">
+										{ quota.email ? sprintf( /* translators: email */ __( 'Connected as %s', 'inspiro-starter-sites' ), quota.email ) : null }
+										{ quota.email ? <br /> : null }
+										{ sprintf( /* translators: 1: used, 2: limit */ __( '%1$d of %2$d AI page generations used', 'inspiro-starter-sites' ), quota.used, quota.limit ) }
+									</p>
+								) }
 							<div className="iss-pb-cta">
 								<Button
 									variant="primary"
 									size="large"
-									onClick={ build }
-									isBusy={ building > 0 }
-									disabled={ busy || exhausted || ! rows.length }
+									onClick={ needsAI ? generate : insert }
+									isBusy={ building > 0 || inserting }
+									disabled={ busy || ! rows.length || ( needsAI && exhausted ) }
 								>
-									{ building ? __( 'Building…', 'inspiro-starter-sites' ) : __( 'Build & insert page', 'inspiro-starter-sites' ) }
-								</Button>
-								<Button
-									variant="secondary"
-									size="large"
-									onClick={ refine }
-									isBusy={ ai.status === 'working' }
-									disabled={ busy || ! rows.length }
-								>
-									{ ai.status === 'working'
-										? __( 'Thinking…', 'inspiro-starter-sites' )
-										: planned
-											? __( 'Rethink with AI', 'inspiro-starter-sites' )
-											: __( 'Refine with AI', 'inspiro-starter-sites' ) }
+									{ building
+										? __( 'Generating…', 'inspiro-starter-sites' )
+										: inserting
+											? __( 'Inserting…', 'inspiro-starter-sites' )
+											: needsAI
+												? ( ai.status === 'done' ? __( 'Update with AI', 'inspiro-starter-sites' ) : __( 'Generate with AI', 'inspiro-starter-sites' ) )
+												: __( 'Insert page', 'inspiro-starter-sites' ) }
 								</Button>
 							</div>
+							{ needsAI && rows.length > 0 && (
+								<Button variant="link" className="iss-pb-alt" onClick={ insert } disabled={ busy }>
+									{ ai.status === 'done' ? __( 'Insert the page as shown', 'inspiro-starter-sites' ) : __( 'Insert without AI (sample text)', 'inspiro-starter-sites' ) }
+								</Button>
+							) }
 							<p className="iss-pb-muted">
-								{ planned
-									? __( 'Headlines are the AI\'s; edit them on the canvas. Build writes the full copy and adds photos.', 'inspiro-starter-sites' )
-									: __( 'Refine lets the AI pick headlines and tune the sections before you build.', 'inspiro-starter-sites' ) }
+								{ ! hasBrief
+									? __( 'Inserts these sections right away, with sample text and photos you can replace. Describe your page above to have the AI write it for you.', 'inspiro-starter-sites' )
+									: needsAI
+										? __( 'The AI writes your copy and picks photos, in about half a minute. You see the result here before anything is inserted.', 'inspiro-starter-sites' )
+										: __( 'What you see is what gets inserted. You can still change sections, or edit text and photos in the editor afterwards.', 'inspiro-starter-sites' ) }
 							</p>
 						</div>
 					</aside>
@@ -737,11 +761,13 @@ export default function PageBuilderModal( { onClose } ) {
 							</div>
 						) : (
 							<div className={ 'iss-pb-page' + ( building ? ' is-building' : '' ) }>
-								{ ai.status !== 'idle' && (
-									<div className={ 'iss-pb-aibar iss-pb-aibar--' + ai.status }>
-										{ ai.status === 'working' && <><Spinner />{ __( 'The AI is reading your brief and tuning the page…', 'inspiro-starter-sites' ) }</> }
-										{ ai.status === 'done' && ai.requirements.length > 0 && <><Dashicon icon="yes-alt" size={ 16 } />{ __( 'Understood:', 'inspiro-starter-sites' ) } { ai.requirements.join( ' · ' ) }</> }
-										{ ai.status === 'stale' && <><Dashicon icon="info-outline" size={ 16 } />{ __( 'You changed the page since the AI pass. Build as is, or rethink.', 'inspiro-starter-sites' ) }</> }
+								{ ai.status === 'done' && (
+									<div className={ 'iss-pb-aibar iss-pb-aibar--' + ( generatedNow ? 'done' : 'stale' ) }>
+										{ generatedNow ? (
+											<><Icon name="sparkle" size={ 14 } />{ ai.requirements.length ? __( 'Written from your description:', 'inspiro-starter-sites' ) + ' ' + ai.requirements.join( ' · ' ) : __( 'Written from your description.', 'inspiro-starter-sites' ) }</>
+										) : (
+											<>{ __( 'Your description changed. Update with AI to rewrite the page, or insert it as shown.', 'inspiro-starter-sites' ) }</>
+										) }
 									</div>
 								) }
 								{ ai.title && <h2 className="iss-pb-page__title">{ ai.title }</h2> }
@@ -752,17 +778,16 @@ export default function PageBuilderModal( { onClose } ) {
 									<Frame
 										key={ row.id + i }
 										row={ row }
-										markup={ previews[ row.id ] }
+										markup={ generated[ row.id ] || previews[ row.id ] }
 										css={ css }
 										index={ i }
 										count={ rows.length }
-										planned={ planned }
+										generated={ !! generated[ row.id ] }
 										busy={ busy }
 										failed={ !! failed[ row.id ] }
 										onSwap={ () => swap( i ) }
 										onMove={ ( dir ) => move( i, dir ) }
 										onRemove={ () => remove( i ) }
-										onHeadline={ ( v ) => setHeadline( i, v ) }
 										onAddAfter={ ( role ) => addAfter( i, role ) }
 									/>
 								) ) }

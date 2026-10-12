@@ -15,11 +15,16 @@ import PageBuilderModal from './modal';
 import { config } from './api';
 import './style.scss';
 
+// The button can be re-mounted when the editor re-renders its header;
+// the "New page with AI" auto-open must still happen only once.
+let autoOpened = false;
+
 function App() {
 	const [ open, setOpen ] = useState( false );
 
 	useEffect( () => {
-		if ( config.autoOpen ) {
+		if ( config.autoOpen && ! autoOpened ) {
+			autoOpened = true;
 			setOpen( true );
 		}
 	}, [] );
@@ -28,11 +33,11 @@ function App() {
 		<>
 			<Button
 				className="iss-pb-toolbar-button"
-				variant="secondary"
-				size="compact"
-				icon="superhero"
 				onClick={ () => setOpen( true ) }
 			>
+				<svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+					<path d="M10 2.5l1.6 4.4 4.4 1.6-4.4 1.6L10 14.5l-1.6-4.4L4 8.5l4.4-1.6zM15.5 13l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" fill="currentColor" />
+				</svg>
 				{ __( 'Generate with AI', 'inspiro-starter-sites' ) }
 			</Button>
 			{ open && <PageBuilderModal onClose={ () => setOpen( false ) } /> }
@@ -42,42 +47,52 @@ function App() {
 
 const MOUNT_ID = 'inspiro-starter-sites-page-builder-mount';
 
+// One node and one React root for the page's lifetime.
+let node = null;
+let scheduled = false;
+
 /**
- * The header toolbar renders after the editor boots; keep looking until
- * it is there (and come back if the editor re-renders it).
+ * Put the button at the end of the header's left tool group (after the
+ * inserter, undo/redo and list view), where the Inspiro Patterns button
+ * sits too. The editor re-renders that group now and then and drops
+ * foreign nodes; the same, already-rendered node is put back, so the
+ * button never re-paints (a fresh root would render a frame later and
+ * blink).
  */
-function mount() {
-	if ( document.getElementById( MOUNT_ID ) ) {
-		return true;
+function attach() {
+	scheduled = false;
+	const group = document.querySelector( '.editor-document-tools__left, .edit-post-header-toolbar__left' );
+	if ( ! group ) {
+		return;
 	}
-	const toolbar = document.querySelector( '.editor-header__toolbar, .edit-post-header-toolbar, .editor-header__center' );
-	if ( ! toolbar ) {
-		return false;
+	if ( ! node ) {
+		node = document.createElement( 'div' );
+		node.id = MOUNT_ID;
+		node.className = 'iss-pb-mount';
+		group.appendChild( node );
+		createRoot( node ).render( <App /> );
+		return;
 	}
-	const node = document.createElement( 'div' );
-	node.id = MOUNT_ID;
-	node.className = 'iss-pb-mount';
-	// After the document tools (inserter, undo, redo, list view), like other
-	// plugins' header buttons; appended last when that group is not there.
-	const tools = toolbar.querySelector( '.editor-document-tools, .edit-post-header-toolbar__left' );
-	if ( tools && tools.parentNode === toolbar ) {
-		tools.insertAdjacentElement( 'afterend', node );
-	} else {
-		toolbar.appendChild( node );
+	if ( node.parentNode !== group ) {
+		group.appendChild( node );
 	}
-	createRoot( node ).render( <App /> );
-	return true;
+}
+
+// Mutations come in bursts while the editor boots or re-renders: check at
+// most once per ~frame. (A timer, not requestAnimationFrame, which never
+// fires in a background tab.)
+function schedule() {
+	if ( scheduled ) {
+		return;
+	}
+	if ( node && node.isConnected && node.parentNode && node.parentNode.matches( '.editor-document-tools__left, .edit-post-header-toolbar__left' ) ) {
+		return;
+	}
+	scheduled = true;
+	window.setTimeout( attach, 16 );
 }
 
 domReady( () => {
-	if ( mount() ) {
-		return;
-	}
-	const observer = new MutationObserver( () => {
-		if ( mount() ) {
-			observer.disconnect();
-		}
-	} );
-	observer.observe( document.body, { childList: true, subtree: true } );
-	setTimeout( () => observer.disconnect(), 30000 );
+	attach();
+	new MutationObserver( schedule ).observe( document.body, { childList: true, subtree: true } );
 } );

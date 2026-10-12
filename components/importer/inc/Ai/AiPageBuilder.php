@@ -48,6 +48,20 @@ class AiPageBuilder {
 	/** Most unique photo downloads per build; later slots reuse earlier photos. */
 	const MAX_PHOTOS = 12;
 
+	/** Option: generic placeholder photos (attachment ids by orientation) for pages inserted without AI. */
+	const POOL_OPTION = 'inspiro_starter_sites_ai_placeholder_pool';
+
+	/**
+	 * Neutral stock-photo searches for the placeholder pool: calm, generic
+	 * images that sit well in any business's layout until the owner swaps
+	 * them for their own.
+	 */
+	const POOL_QUERIES = array(
+		'landscape' => array( 'minimal modern interior with daylight', 'team working together in bright office', 'calm nature landscape soft light' ),
+		'portrait'  => array( 'portrait of a smiling professional', 'minimal architecture detail' ),
+		'square'    => array( 'portrait of a smiling woman', 'portrait of a smiling man' ),
+	);
+
 	/** Section needs this site can satisfy, resolved once per request. */
 	private $has = null;
 
@@ -70,6 +84,8 @@ class AiPageBuilder {
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_page_catalog', array( $this, 'ajax_catalog' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_page_quota', array( $this, 'ajax_quota' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_page_preview', array( $this, 'ajax_preview' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_page_pool', array( $this, 'ajax_pool' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_page_instant', array( $this, 'ajax_instant' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_page_plan', array( $this, 'ajax_plan' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_page_build', array( $this, 'ajax_build' ) );
 
@@ -151,6 +167,53 @@ class AiPageBuilder {
 	}
 
 	/**
+	 * Make sure the placeholder photo pool exists. The modal calls this as
+	 * it opens, so the first "Insert page" doesn't wait for downloads.
+	 */
+	public function ajax_pool() {
+		Helpers::verify_ajax_call();
+		$pool = $this->placeholder_pool( true );
+		wp_send_json_success( array( 'photos' => array_sum( array_map( 'count', $pool ) ) ) );
+	}
+
+	/**
+	 * Insert without AI: the sections exactly as previewed — the demos'
+	 * example copy, the site's colors, generic photos from the pool. No AI
+	 * call, nothing metered.
+	 */
+	public function ajax_instant() {
+		Helpers::verify_ajax_call();
+
+		$ids = isset( $_POST['ids'] ) ? $this->clean_ids( (array) wp_unslash( $_POST['ids'] ), 12 ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- sanitized by clean_ids().
+		if ( ! $ids ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'Add at least one section first.', 'inspiro-starter-sites' ) ) );
+		}
+		$headlines = array();
+		$raw       = isset( $_POST['headlines'] ) ? json_decode( wp_unslash( $_POST['headlines'] ), true ) : null; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- sanitized below.
+		foreach ( is_array( $raw ) ? $raw : array() as $id => $text ) {
+			$headlines[ sanitize_key( (string) $id ) ] = trim( mb_substr( sanitize_text_field( (string) $text ), 0, 160 ) );
+		}
+
+		$this->placeholder_pool( true );
+		$parts = $this->preview_markup( $ids, $headlines );
+		if ( ! $parts ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'The section catalog is unavailable. Please try again later.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$post_id = isset( $_POST['post_id'] ) ? (int) $_POST['post_id'] : 0;
+		if ( $post_id && current_user_can( 'edit_post', $post_id ) ) {
+			$this->mark_page( $post_id );
+		}
+
+		wp_send_json_success(
+			array(
+				'parts' => $parts,
+				'css'   => $this->css(),
+			)
+		);
+	}
+
+	/**
 	 * Preview markup for plan rows: each section rendered with the demo's
 	 * own example copy and placeholder photos, for BlockPreview in the
 	 * editor. Nothing is sideloaded or metered.
@@ -193,13 +256,7 @@ class AiPageBuilder {
 			array(
 				'palette'        => $this->palette(),
 				'links'          => array( 'home' => home_url( '/' ) ),
-				'resolve_image'  => static function ( $query, $orientation ) {
-					$size = 'portrait' === $orientation ? '800/1000' : ( 'square' === $orientation ? '900/900' : '1200/800' );
-					return array(
-						'id'  => 0,
-						'url' => 'https://picsum.photos/seed/' . substr( md5( (string) $query ), 0, 10 ) . '/' . $size,
-					);
-				},
+				'resolve_image'  => $this->pool_resolver(),
 				'fallback_query' => 'placeholder',
 				'form_id'        => $this->first_form_id(),
 			)
@@ -555,6 +612,7 @@ class AiPageBuilder {
 
 		$markup   = '';
 		$rendered = array();
+		$parts    = array();
 		foreach ( $plan['sections'] as $item ) {
 			if ( ! isset( $full[ $item['id'] ] ) ) {
 				continue;
@@ -569,8 +627,9 @@ class AiPageBuilder {
 			}
 			$piece = $renderer->render( $section, $fields );
 			if ( '' !== trim( $piece ) ) {
-				$markup    .= $piece . "\n\n";
-				$rendered[] = $item['id'];
+				$markup             .= $piece . "\n\n";
+				$rendered[]          = $item['id'];
+				$parts[ $item['id'] ] = $piece;
 			}
 			call_user_func( $tick );
 		}
@@ -581,10 +640,12 @@ class AiPageBuilder {
 
 		return array(
 			'title'    => $plan['title'],
+			'parts'    => $parts,
 			'markup'   => trim( $markup ),
 			'css'      => $this->css(),
 			'images'   => $images,
 			'sections' => $rendered,
+			'plan'     => $plan,
 		);
 	}
 
@@ -1012,6 +1073,153 @@ class AiPageBuilder {
 	/* ---------------------------------------------------------------------
 	 * Photos and assets
 	 * ------------------------------------------------------------------ */
+
+	/**
+	 * The placeholder photo pool: generic stock photos imported once per
+	 * site and reused by every page inserted without AI.
+	 *
+	 * @param bool $create Download the missing photos now.
+	 * @return array orientation => [ [ id, url ], ... ]
+	 */
+	public function placeholder_pool( $create = false ) {
+		$stored = get_option( self::POOL_OPTION, array() );
+		$pool   = array();
+		foreach ( array_keys( self::POOL_QUERIES ) as $orientation ) {
+			$pool[ $orientation ] = array();
+			foreach ( ( is_array( $stored ) && isset( $stored[ $orientation ] ) ) ? (array) $stored[ $orientation ] : array() as $id ) {
+				$url = wp_get_attachment_image_url( (int) $id, 'full' );
+				if ( $url ) {
+					$pool[ $orientation ][] = array(
+						'id'  => (int) $id,
+						'url' => $url,
+					);
+				}
+			}
+		}
+		if ( ! $create || ! array_filter( self::POOL_QUERIES, function ( $queries, $orientation ) use ( $pool ) {
+			return count( $pool[ $orientation ] ) < count( $queries );
+		}, ARRAY_FILTER_USE_BOTH ) ) {
+			return $pool;
+		}
+
+		// One search per missing photo, then all downloads at once.
+		$wanted = array();
+		foreach ( self::POOL_QUERIES as $orientation => $queries ) {
+			foreach ( array_slice( $queries, count( $pool[ $orientation ] ) ) as $query ) {
+				$photos = $this->proxy->pexels_photos( $query, 1, $orientation );
+				if ( ! empty( $photos[0]['url'] ) ) {
+					$wanted[] = array( 'orientation' => $orientation, 'query' => $query, 'photo' => $photos[0] );
+				}
+			}
+		}
+		foreach ( $this->sideload_many( $wanted ) as $k => $image ) {
+			if ( $image ) {
+				$pool[ $wanted[ $k ]['orientation'] ][] = $image;
+			}
+		}
+
+		update_option(
+			self::POOL_OPTION,
+			array_map(
+				static function ( $images ) {
+					return wp_list_pluck( $images, 'id' );
+				},
+				$pool
+			),
+			false
+		);
+		return $pool;
+	}
+
+	/**
+	 * Image resolver for previews and pages inserted without AI: cycles
+	 * through the pool by orientation; picsum stand-ins until the pool
+	 * exists (previews only).
+	 *
+	 * @return callable
+	 */
+	private function pool_resolver() {
+		$pool    = $this->placeholder_pool( false );
+		$cursors = array();
+		return static function ( $query, $orientation ) use ( $pool, &$cursors ) {
+			$list = ! empty( $pool[ $orientation ] ) ? $pool[ $orientation ] : array_merge( $pool['landscape'], $pool['portrait'], $pool['square'] );
+			if ( ! $list ) {
+				$size = 'portrait' === $orientation ? '800/1000' : ( 'square' === $orientation ? '900/900' : '1200/800' );
+				return array(
+					'id'  => 0,
+					'url' => 'https://picsum.photos/seed/' . substr( md5( (string) $query ), 0, 10 ) . '/' . $size,
+				);
+			}
+			$key             = isset( $cursors[ $orientation ] ) ? $cursors[ $orientation ] : 0;
+			$cursors[ $orientation ] = $key + 1;
+			return $list[ $key % count( $list ) ];
+		};
+	}
+
+	/**
+	 * Download several Pexels photos in parallel, then add each to the
+	 * media library (without generating the unused crop sizes).
+	 *
+	 * @param array[] $wanted [ [ 'query' => ..., 'photo' => [ id, url, alt ] ], ... ]
+	 * @return array Same keys => [ id, url, photo_id ] or null.
+	 */
+	private function sideload_many( array $wanted ) {
+		$out = array();
+		if ( ! $wanted ) {
+			return $out;
+		}
+		if ( ! function_exists( 'media_handle_sideload' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/media.php';
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			require_once ABSPATH . 'wp-admin/includes/image.php';
+		}
+		$requests = array();
+		foreach ( $wanted as $k => $w ) {
+			$requests[ $k ] = array(
+				'url'     => $w['photo']['url'],
+				'type'    => 'GET',
+				'options' => array( 'timeout' => 30 ),
+			);
+		}
+		$class     = class_exists( '\WpOrg\Requests\Requests' ) ? '\WpOrg\Requests\Requests' : '\Requests';
+		$responses = call_user_func( array( $class, 'request_multiple' ), $requests );
+
+		add_filter( 'intermediate_image_sizes_advanced', '__return_empty_array', 100 );
+		foreach ( $wanted as $k => $w ) {
+			$out[ $k ] = null;
+			$res       = isset( $responses[ $k ] ) ? $responses[ $k ] : null;
+			if ( ! is_object( $res ) || empty( $res->success ) || 200 !== (int) $res->status_code || '' === (string) $res->body ) {
+				continue;
+			}
+			$tmp = wp_tempnam( 'iss-ai-photo' );
+			if ( ! $tmp || false === file_put_contents( $tmp, $res->body ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+				continue;
+			}
+			$id = media_handle_sideload(
+				array(
+					'name'     => sanitize_file_name( 'pexels-' . (int) $w['photo']['id'] . '.jpg' ),
+					'tmp_name' => $tmp,
+				),
+				0,
+				sanitize_text_field( $w['query'] )
+			);
+			if ( is_wp_error( $id ) ) {
+				@unlink( $tmp ); // phpcs:ignore
+				continue;
+			}
+			update_post_meta( $id, self::PHOTO_META_KEY, (int) $w['photo']['id'] );
+			if ( ! empty( $w['photo']['alt'] ) ) {
+				update_post_meta( $id, '_wp_attachment_image_alt', sanitize_text_field( (string) $w['photo']['alt'] ) );
+			}
+			$out[ $k ] = array(
+				'id'       => (int) $id,
+				'url'      => wp_get_attachment_image_url( $id, 'full' ),
+				'photo_id' => (int) $w['photo']['id'],
+			);
+		}
+		remove_filter( 'intermediate_image_sizes_advanced', '__return_empty_array', 100 );
+		return $out;
+	}
 
 	/**
 	 * Photo resolver for one build: unique Pexels downloads up to the
