@@ -1405,9 +1405,12 @@ class AiPageBuilder {
 		if ( ! $screen || 'page' !== $screen->post_type || ! current_user_can( 'import' ) || ! current_user_can( 'edit_pages' ) ) {
 			return;
 		}
-		$url   = esc_url( admin_url( 'post-new.php?post_type=page&iss_ai=1' ) );
-		$label = esc_js( __( 'New page with AI', 'inspiro-starter-sites' ) );
-		echo '<script>document.addEventListener("DOMContentLoaded",function(){var a=document.querySelector(".wrap .page-title-action");if(!a)return;var b=document.createElement("a");b.className="page-title-action";b.href="' . $url . '";b.textContent="' . $label . '";a.insertAdjacentElement("afterend",b);});</script>' . "\n";
+		// A JS string, not HTML: JSON-encode the raw URL (esc_url() would turn
+		// "&" into "&#038;", and the browser would read "#038;iss_ai=1" as
+		// a fragment, so the editor would never see the flag).
+		$url   = wp_json_encode( esc_url_raw( admin_url( 'post-new.php?post_type=page&iss_ai=1' ) ) );
+		$label = wp_json_encode( __( 'New page with AI', 'inspiro-starter-sites' ) );
+		echo '<script>document.addEventListener("DOMContentLoaded",function(){var a=document.querySelector(".wrap .page-title-action");if(!a)return;var b=document.createElement("a");b.className="page-title-action";b.href=' . $url . ';b.textContent=' . $label . ';a.insertAdjacentElement("afterend",b);});</script>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput -- JSON-encoded values.
 	}
 
 	/* ---------------------------------------------------------------------
