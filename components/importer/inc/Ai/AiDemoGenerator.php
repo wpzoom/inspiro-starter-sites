@@ -26,6 +26,8 @@ class AiDemoGenerator {
 	const GENERATED_META_KEY    = '_inspiro_starter_sites_ai_demo';
 	const NATIVE_GRID_META_KEY  = '_inspiro_starter_sites_ai_native_grids';
 	const DEMOS_OPTION          = 'inspiro_starter_sites_ai_demos';
+	// Post meta that marks content an AI demo or a starter site import made.
+	const DEMO_CONTENT_META_KEYS = array( self::GENERATED_META_KEY, '_inspiro_starter_sites_importer_imported_post', '_wpzoom_demo_importer_imported_post' );
 
 	const MAX_PAGES             = 6;
 	const MAX_REVIEW_PAGES      = 5;
@@ -478,6 +480,21 @@ class AiDemoGenerator {
 					'replace_notice_unnamed' => __( 'Generating a new demo will permanently delete the %s previously generated AI page(s) — including any changes you made to them.', 'inspiro-starter-sites' ),
 					'replace_checkbox' => __( 'Delete the previous demo when generating the new one', 'inspiro-starter-sites' ),
 					'replace_keep_hint'=> __( 'Uncheck to keep the old content — it will remain published alongside the new demo.', 'inspiro-starter-sites' ),
+					'keep_title'       => __( 'This site already has content of its own', 'inspiro-starter-sites' ),
+					/* translators: %s: page title */
+					'keep_front'       => __( 'Homepage: %s', 'inspiro-starter-sites' ),
+					/* translators: %s: menu name */
+					'keep_menu'        => __( 'Menu: %s', 'inspiro-starter-sites' ),
+					/* translators: %s: number of pages */
+					'keep_pages'       => __( '%s pages', 'inspiro-starter-sites' ),
+					/* translators: %s: number of posts */
+					'keep_posts'       => __( '%s posts', 'inspiro-starter-sites' ),
+					'keep_checkbox'    => __( 'Keep my homepage, menu and design — add the new pages as drafts', 'inspiro-starter-sites' ),
+					'keep_hint'        => __( 'Nothing on your live site changes: review the drafts and publish the ones you like. Uncheck to make the AI demo your new homepage, menu and design.', 'inspiro-starter-sites' ),
+					'success_title_kept' => __( 'Your new pages are ready!', 'inspiro-starter-sites' ),
+					'success_text_kept'  => __( 'The AI created these pages as drafts — your live site is unchanged. Preview them, then publish the ones you want and add them to your menu.', 'inspiro-starter-sites' ),
+					'view_site_kept'   => __( 'Preview new homepage', 'inspiro-starter-sites' ),
+					'edit_pages_kept'  => __( 'Review drafts', 'inspiro-starter-sites' ),
 					'replace_title_classic' => __( 'You already have an imported demo', 'inspiro-starter-sites' ),
 					/* translators: %s: imported demo name */
 					'replace_notice_classic' => __( 'The previously imported “%s” demo was detected. Generating an AI demo will permanently delete its content (pages, posts, images, menus) — including any changes you made.', 'inspiro-starter-sites' ),
@@ -641,7 +658,7 @@ class AiDemoGenerator {
 		// exception: the server accepts it as the identity (and registers
 		// the site with the purchaser email itself), so ask it directly.
 		if ( ! $this->proxy->is_connected() && '' === AiProxyClient::premium_license() ) {
-			wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'demo_pages' => $this->demo_pages_for_picker() ) ) );
+			wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'own' => $this->own_site_info(), 'demo_pages' => $this->demo_pages_for_picker() ) ) );
 		}
 
 		$quota = $this->proxy->quota( 'check' );
@@ -652,12 +669,12 @@ class AiDemoGenerator {
 				// or the license did not verify — forget the key so the user
 				// can (re)connect with an email.
 				$this->proxy->disconnect();
-				wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'demo_pages' => $this->demo_pages_for_picker() ) ) );
+				wp_send_json_success( array_merge( $this->quota_payload( null ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'own' => $this->own_site_info(), 'demo_pages' => $this->demo_pages_for_picker() ) ) );
 			}
 			wp_send_json_error( array( 'message' => $quota->get_error_message() ) );
 		}
 
-		wp_send_json_success( array_merge( $this->quota_payload( $quota ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'demo_pages' => $this->demo_pages_for_picker() ) ) );
+		wp_send_json_success( array_merge( $this->quota_payload( $quota ), array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'own' => $this->own_site_info(), 'demo_pages' => $this->demo_pages_for_picker() ) ) );
 	}
 
 	/**
@@ -906,6 +923,107 @@ class AiDemoGenerator {
 	}
 
 	/**
+	 * The owner's own content — anything neither an AI demo nor a starter
+	 * site import created: a static homepage, a primary menu, real pages or
+	 * posts. When it exists the generator offers (checked) to leave the site
+	 * as it is and add the new pages as drafts, so a real business site is
+	 * never taken over by a demo.
+	 *
+	 * @return array|null Null when the site has no content of its own.
+	 */
+	public function own_site_info() {
+		$not_demo = array( 'relation' => 'AND' );
+		foreach ( self::DEMO_CONTENT_META_KEYS as $key ) {
+			$not_demo[] = array(
+				'key'     => $key,
+				'compare' => 'NOT EXISTS',
+			);
+		}
+
+		$front_title = '';
+		$front_id    = 'page' === get_option( 'show_on_front' ) ? (int) get_option( 'page_on_front' ) : 0;
+		if ( $front_id && 'publish' === get_post_status( $front_id ) && $this->is_own_content( $front_id ) ) {
+			$front_title = get_the_title( $front_id );
+		}
+
+		$menu_name = '';
+		$locations = get_nav_menu_locations();
+		$menu      = ! empty( $locations['primary'] ) ? wp_get_nav_menu_object( $locations['primary'] ) : null;
+		if ( $menu && ! $this->is_demo_menu( $menu ) && wp_get_nav_menu_items( $menu->term_id ) ) {
+			$menu_name = $menu->name;
+		}
+
+		$query = array(
+			'post_status' => 'publish',
+			'numberposts' => 20,
+			'fields'      => 'ids',
+			'meta_query'  => $not_demo, // phpcs:ignore WordPress.DB.SlowDBQuery
+		);
+		$pages = array_filter(
+			get_posts( array_merge( $query, array( 'post_type' => 'page' ) ) ),
+			function ( $id ) {
+				return (int) get_option( 'wp_page_for_privacy_policy' ) !== (int) $id && ! Helpers::is_default_post( $id );
+			}
+		);
+		$posts = array_filter(
+			get_posts( array_merge( $query, array( 'post_type' => 'post' ) ) ),
+			function ( $id ) {
+				return ! Helpers::is_default_post( $id );
+			}
+		);
+
+		if ( '' === $front_title && '' === $menu_name && count( $pages ) < 2 && count( $posts ) < 2 ) {
+			return null;
+		}
+
+		return array(
+			'front_title' => $front_title,
+			'menu_name'   => $menu_name,
+			'page_count'  => count( $pages ),
+			'post_count'  => count( $posts ),
+		);
+	}
+
+	/**
+	 * @param int $post_id Post ID.
+	 * @return bool Whether no demo (AI or imported) created the post.
+	 */
+	private function is_own_content( $post_id ) {
+		foreach ( self::DEMO_CONTENT_META_KEYS as $key ) {
+			if ( metadata_exists( 'post', $post_id, $key ) ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * @param \WP_Term $menu Nav menu.
+	 * @return bool Whether an AI demo or a starter site import created it.
+	 */
+	private function is_demo_menu( $menu ) {
+		$demos = get_option( self::DEMOS_OPTION, array() );
+		foreach ( is_array( $demos ) ? $demos : array() as $record ) {
+			if ( ! empty( $record['menu_id'] ) && (int) $record['menu_id'] === (int) $menu->term_id ) {
+				return true;
+			}
+		}
+		return metadata_exists( 'term', $menu->term_id, '_inspiro_starter_sites_importer_imported_term' )
+			|| metadata_exists( 'term', $menu->term_id, '_wpzoom_demo_importer_imported_term' );
+	}
+
+	/**
+	 * Status for a newly built demo page: drafts when the run keeps the
+	 * owner's site as it is.
+	 *
+	 * @param array $state Plan state or demo record.
+	 * @return string
+	 */
+	private static function page_status( array $state ) {
+		return empty( $state['keep'] ) ? 'publish' : 'draft';
+	}
+
+	/**
 	 * Delete a previously imported classic demo — the counterpart of
 	 * delete_previous_ai_demos() for starter-site imports. Runs only in the
 	 * replace flow, after the user saw the explicit warning checkbox.
@@ -1040,7 +1158,7 @@ class AiDemoGenerator {
 
 		wp_send_json_success( array_merge(
 			$this->quota_payload( is_wp_error( $quota ) ? array() : $quota ),
-			array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'demo_pages' => $this->demo_pages_for_picker() )
+			array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'own' => $this->own_site_info(), 'demo_pages' => $this->demo_pages_for_picker() )
 		) );
 	}
 
@@ -1081,7 +1199,7 @@ class AiDemoGenerator {
 
 		wp_send_json_success( array_merge(
 			$this->quota_payload( is_wp_error( $quota ) ? array() : $quota ),
-			array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'demo_pages' => $this->demo_pages_for_picker() )
+			array( 'previous' => $this->previous_demo_info(), 'classic' => $this->classic_demo_info(), 'own' => $this->own_site_info(), 'demo_pages' => $this->demo_pages_for_picker() )
 		) );
 	}
 
@@ -1775,7 +1893,7 @@ class AiDemoGenerator {
 				wp_slash(
 					array(
 						'post_type'    => 'page',
-						'post_status'  => 'publish',
+						'post_status'  => self::page_status( $record ),
 						'post_title'   => $page['title'],
 						'post_name'    => $page['slug'],
 						'post_content' => $content,
@@ -1945,6 +2063,10 @@ class AiDemoGenerator {
 			$variant_seed = strtolower( wp_generate_password( 12, false, false ) );
 		}
 
+		// "Keep my site": the owner's homepage, menu and design stay as they
+		// are and the new pages are added as drafts.
+		$keep = isset( $_POST['keep'] ) && '1' === $_POST['keep'];
+
 		// Pages the user approved in the review step (before this call).
 		$approved_raw   = isset( $_POST['pages'] ) ? json_decode( wp_unslash( $_POST['pages'] ), true ) : null; // phpcs:ignore WordPress.Security.ValidatedSanitized
 		$approved_pages = $this->sanitize_review_pages( $approved_raw );
@@ -2013,7 +2135,7 @@ class AiDemoGenerator {
 				// Families the theme can load itself are handed to its
 				// typography options in finalize() — no need to duplicate
 				// ~25KB of @font-face rules inside the demo stylesheet.
-				if ( $this->theme_knows_font( $family ) ) {
+				if ( ! $keep && $this->theme_knows_font( $family ) ) {
 					continue;
 				}
 				if ( isset( $whitelist[ $family ] ) ) {
@@ -2037,6 +2159,20 @@ class AiDemoGenerator {
 		// (the UI shows an explicit, checked-by-default warning checkbox).
 		$replace = ! isset( $_POST['replace'] ) || '0' !== $_POST['replace'];
 
+		// The kept site has its own blog: no Blog page (it would never become
+		// the posts page) and no dummy posts mixed into the real ones.
+		if ( $keep ) {
+			$plan['pages'] = array_values(
+				array_filter(
+					$plan['pages'],
+					static function ( $page ) {
+						return empty( $page['is_blog'] );
+					}
+				)
+			);
+			$plan['blog']['needed'] = false;
+		}
+
 		// Sweep image-budget counters orphaned by generations that died before
 		// finalize. They are raw options (needed for the atomic increment),
 		// not transients, so they never expire on their own. Safe here: the
@@ -2053,10 +2189,16 @@ class AiDemoGenerator {
 		// Sample-content and previous-demo cleanup happen NOW — after the plan
 		// succeeded (a failed generation never deletes anything) and before
 		// the page builds, which run in parallel and in no guaranteed order.
-		Helpers::delete_default_posts();
+		if ( ! $keep ) {
+			Helpers::delete_default_posts();
+		}
 		if ( $replace ) {
 			$this->delete_previous_ai_demos( $plan_id );
-			$this->delete_classic_demo();
+			// An imported starter site may be what the owner built their
+			// site from: a kept site keeps it.
+			if ( ! $keep ) {
+				$this->delete_classic_demo();
+			}
 		}
 		$stream->tick();
 
@@ -2069,6 +2211,7 @@ class AiDemoGenerator {
 				'design_level'   => $design_level,
 				'engine'         => $engine,
 				'replace'        => $replace,
+				'keep'           => $keep,
 				'created_pages'  => array(), // page index => post ID
 				'used_photo_ids' => array(),
 				'created_at'     => time(),
@@ -2447,7 +2590,7 @@ class AiDemoGenerator {
 			wp_slash(
 				array(
 					'post_type'    => 'page',
-					'post_status'  => 'publish',
+					'post_status'  => self::page_status( $state ),
 					'post_title'   => $page['title'],
 					'post_name'    => $page['slug'],
 					'post_content' => $content,
@@ -2505,7 +2648,7 @@ class AiDemoGenerator {
 			wp_slash(
 				array(
 					'post_type'    => 'page',
-					'post_status'  => 'publish',
+					'post_status'  => self::page_status( $state ),
 					'post_title'   => $page['title'],
 					'post_name'    => $page['slug'],
 					'post_content' => '',
@@ -2784,12 +2927,20 @@ class AiDemoGenerator {
 		$stream = new StreamingResponse();
 		$stream->begin();
 
-		$this->create_portfolio_items( $state, $plan_id, $stream );
+		// A kept site: the new pages are drafts next to the owner's content —
+		// no sample projects or posts mixed into their real ones, and none of
+		// the site-wide setup below (homepage, menu location, theme design,
+		// footer).
+		$keep = ! empty( $state['keep'] );
+
+		if ( ! $keep ) {
+			$this->create_portfolio_items( $state, $plan_id, $stream );
+		}
 
 		// Demos with a news/blog facet but no dedicated Blog page still need
 		// the posts their recent-posts Query Loops display. Idempotent — a
 		// built blog page already created them.
-		if ( ! empty( $state['plan']['blog']['needed'] ) ) {
+		if ( ! $keep && ! empty( $state['plan']['blog']['needed'] ) ) {
 			$this->create_dummy_posts( $state, $plan_id, $stream );
 		}
 
@@ -2881,10 +3032,14 @@ class AiDemoGenerator {
 				}
 			}
 
-			$locations            = get_theme_mod( 'nav_menu_locations', array() );
-			$locations            = is_array( $locations ) ? $locations : array();
-			$locations['primary'] = $menu_id;
-			set_theme_mod( 'nav_menu_locations', $locations );
+			// A kept site keeps its own menu; the demo menu stays ready under
+			// Appearance → Menus.
+			if ( ! $keep ) {
+				$locations            = get_theme_mod( 'nav_menu_locations', array() );
+				$locations            = is_array( $locations ) ? $locations : array();
+				$locations['primary'] = $menu_id;
+				set_theme_mod( 'nav_menu_locations', $locations );
+			}
 		}
 
 		// Homepage = the page the plan flagged as 'home' (fallback: first page).
@@ -2897,6 +3052,86 @@ class AiDemoGenerator {
 		}
 		$front_id = isset( $created_pages[ $front_index ] ) ? (int) $created_pages[ $front_index ] : (int) reset( $created_pages );
 
+		$footer_widget_ids = array();
+		if ( ! $keep ) {
+			$footer_widget_ids = $this->apply_site_setup( $state, $pages, $created_pages, $front_id );
+		}
+
+		// Record the generation so the content can be identified (and cleaned
+		// up) later. Post meta on each page carries the same plan ID.
+		$demos = get_option( self::DEMOS_OPTION, array() );
+		$demos = is_array( $demos ) ? $demos : array();
+
+		$demos[ $plan_id ] = array(
+			'site_title'  => $state['plan']['site_title'],
+			'description' => $state['description'],
+			// What the run was built from. Kept on the record (the plan
+			// transient is deleted a few lines below) so a later feedback
+			// submission can be read against the demo it is about.
+			'context'     => array(
+				'design_level'  => isset( $state['design_level'] ) ? $state['design_level'] : '',
+				'palette'       => isset( $state['palette'] ) ? $state['palette'] : '',
+				'art_direction' => isset( $state['plan']['art_direction'] ) ? $state['plan']['art_direction'] : '',
+				'theme'         => isset( $state['plan']['theme'] ) ? $state['plan']['theme'] : array(),
+				'page_count'    => count( $created_pages ),
+				'premium'       => class_exists( 'WPZOOM' ),
+			),
+			// Context for post-finalize page operations (add / regenerate).
+			'tagline'     => isset( $state['plan']['tagline'] ) ? $state['plan']['tagline'] : '',
+			'language'    => isset( $state['plan']['language'] ) ? $state['plan']['language'] : '',
+			'brand'       => isset( $state['plan']['brand'] ) ? $state['plan']['brand'] : array(),
+			// Kept apart so the CSS editor can round-trip the design rules
+			// without re-sanitizing (and mangling) the font-file URLs.
+			'css'         => isset( $state['plan']['css'] ) ? trim( $state['plan']['css'] ) : '',
+			'font_css'    => ! empty( $state['plan']['font_css'] ) ? trim( $state['plan']['font_css'] ) : '',
+			'pages'       => array_values( $created_pages ),
+			'posts'       => isset( $state['created_posts'] ) ? array_values( $state['created_posts'] ) : array(),
+			// Whether this demo shows its work through the portfolio grid, so
+			// a page regenerated later keeps the grid instead of losing it.
+			'portfolio'   => ! empty( $state['plan']['portfolio']['needed'] ) && ! empty( $state['plan']['portfolio']['items'] ),
+			'menu_id'     => $menu_id && ! is_wp_error( $menu_id ) ? (int) $menu_id : 0,
+			'widgets'     => $footer_widget_ids,
+			// Pages added to this demo later are drafts too.
+			'keep'        => $keep,
+			'created_at'  => current_time( 'mysql' ),
+		);
+
+		update_option( self::DEMOS_OPTION, $demos, false );
+
+		delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id );
+		delete_option( self::PLAN_TRANSIENT_PREFIX . $plan_id . '_imgs' );
+		foreach ( array_keys( $pages ) as $i ) {
+			delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id . '_p' . $i );
+		}
+
+		// Fresh permalinks for the new pages.
+		flush_rewrite_rules();
+
+		$stream->finish_success(
+			array(
+				// A kept site's new homepage is a draft: open its preview.
+				'view_url'   => $keep && $front_id ? get_preview_post_link( $front_id ) : home_url( '/' ),
+				'pages_url'  => admin_url( $keep ? 'edit.php?post_type=page&post_status=draft' : 'edit.php?post_type=page' ),
+				'kept'       => $keep,
+				// So the regenerate picker is populated even if the modal is
+				// never closed between generation and page tools.
+				'demo_pages' => $this->demo_pages_for_picker(),
+			)
+		);
+	}
+
+	/**
+	 * The site-wide half of finalize: homepage, posts page, theme fonts,
+	 * colors, header/footer options and footer widgets. Skipped when the
+	 * run keeps the owner's site as it is.
+	 *
+	 * @param array $state         Plan state.
+	 * @param array $pages         Plan pages.
+	 * @param array $created_pages Page index => post ID.
+	 * @param int   $front_id      The demo's homepage.
+	 * @return array Footer widget IDs.
+	 */
+	private function apply_site_setup( array $state, array $pages, array $created_pages, $front_id ) {
 		if ( $front_id ) {
 			update_option( 'show_on_front', 'page' );
 			update_option( 'page_on_front', $front_id );
@@ -2962,65 +3197,7 @@ class AiDemoGenerator {
 
 		// Footer content goes into the theme's real footer widget areas —
 		// generated pages never carry their own footer.
-		$footer_widget_ids = $this->populate_footer_widgets( $state['plan'] );
-
-		// Record the generation so the content can be identified (and cleaned
-		// up) later. Post meta on each page carries the same plan ID.
-		$demos = get_option( self::DEMOS_OPTION, array() );
-		$demos = is_array( $demos ) ? $demos : array();
-
-		$demos[ $plan_id ] = array(
-			'site_title'  => $state['plan']['site_title'],
-			'description' => $state['description'],
-			// What the run was built from. Kept on the record (the plan
-			// transient is deleted a few lines below) so a later feedback
-			// submission can be read against the demo it is about.
-			'context'     => array(
-				'design_level'  => isset( $state['design_level'] ) ? $state['design_level'] : '',
-				'palette'       => isset( $state['palette'] ) ? $state['palette'] : '',
-				'art_direction' => isset( $state['plan']['art_direction'] ) ? $state['plan']['art_direction'] : '',
-				'theme'         => isset( $state['plan']['theme'] ) ? $state['plan']['theme'] : array(),
-				'page_count'    => count( $created_pages ),
-				'premium'       => class_exists( 'WPZOOM' ),
-			),
-			// Context for post-finalize page operations (add / regenerate).
-			'tagline'     => isset( $state['plan']['tagline'] ) ? $state['plan']['tagline'] : '',
-			'language'    => isset( $state['plan']['language'] ) ? $state['plan']['language'] : '',
-			'brand'       => isset( $state['plan']['brand'] ) ? $state['plan']['brand'] : array(),
-			// Kept apart so the CSS editor can round-trip the design rules
-			// without re-sanitizing (and mangling) the font-file URLs.
-			'css'         => isset( $state['plan']['css'] ) ? trim( $state['plan']['css'] ) : '',
-			'font_css'    => ! empty( $state['plan']['font_css'] ) ? trim( $state['plan']['font_css'] ) : '',
-			'pages'       => array_values( $created_pages ),
-			'posts'       => isset( $state['created_posts'] ) ? array_values( $state['created_posts'] ) : array(),
-			// Whether this demo shows its work through the portfolio grid, so
-			// a page regenerated later keeps the grid instead of losing it.
-			'portfolio'   => ! empty( $state['plan']['portfolio']['needed'] ) && ! empty( $state['plan']['portfolio']['items'] ),
-			'menu_id'     => $menu_id && ! is_wp_error( $menu_id ) ? (int) $menu_id : 0,
-			'widgets'     => $footer_widget_ids,
-			'created_at'  => current_time( 'mysql' ),
-		);
-
-		update_option( self::DEMOS_OPTION, $demos, false );
-
-		delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id );
-		delete_option( self::PLAN_TRANSIENT_PREFIX . $plan_id . '_imgs' );
-		foreach ( array_keys( $pages ) as $i ) {
-			delete_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id . '_p' . $i );
-		}
-
-		// Fresh permalinks for the new pages.
-		flush_rewrite_rules();
-
-		$stream->finish_success(
-			array(
-				'view_url'   => home_url( '/' ),
-				'pages_url'  => admin_url( 'edit.php?post_type=page' ),
-				// So the regenerate picker is populated even if the modal is
-				// never closed between generation and page tools.
-				'demo_pages' => $this->demo_pages_for_picker(),
-			)
-		);
+		return $this->populate_footer_widgets( $state['plan'] );
 	}
 
 	/**
@@ -4042,7 +4219,7 @@ class AiDemoGenerator {
 			wp_slash(
 				array(
 					'post_type'    => 'page',
-					'post_status'  => 'publish',
+					'post_status'  => self::page_status( $state ),
 					'post_title'   => $page['title'],
 					'post_name'    => $page['slug'],
 					'post_content' => trim( $content ),

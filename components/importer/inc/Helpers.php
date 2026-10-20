@@ -654,17 +654,40 @@ class Helpers {
 	}
 
 	/**
-	 * Delete default post and page
+	 * Delete default post and page — only while they are still WordPress's
+	 * untouched samples: IDs 1 and 2 are often an owner's real first post
+	 * or a Sample Page turned into their About page.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return mixed
+	 * @return void
 	 */
 	public static function delete_default_posts() {
-		
-		$hello_world = wp_delete_post( 1, true ); // 'Hello World!' post.
-		$sample_page = wp_delete_post( 2, true ); // 'Sample page' page.
+		foreach ( array( 1, 2 ) as $post_id ) {
+			if ( self::is_default_post( $post_id ) ) {
+				wp_delete_post( $post_id, true );
+			}
+		}
+	}
 
+	/**
+	 * Whether a post is WordPress's untouched "Hello world!" post or
+	 * "Sample Page" (same ID, slug and type as on install, never edited).
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	public static function is_default_post( $post_id ) {
+		$defaults = array(
+			1 => array( 'post', 'hello-world' ),
+			2 => array( 'page', 'sample-page' ),
+		);
+		$post     = isset( $defaults[ (int) $post_id ] ) ? get_post( $post_id ) : null;
+
+		return $post
+			&& $defaults[ $post->ID ][0] === $post->post_type
+			&& $defaults[ $post->ID ][1] === $post->post_name
+			&& $post->post_modified_gmt === $post->post_date_gmt;
 	}
 
 

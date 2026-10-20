@@ -469,6 +469,12 @@ jQuery( function ( $ ) {
 
 						// Step: input.
 						'<div class="iss-ai-step iss-ai-step-input is-active" data-step="input">' +
+							'<div class="iss-ai-keep-notice js-iss-ai-keep-notice" hidden>' +
+								'<strong>' + esc( t.keep_title || '' ) + '</strong>' +
+								'<p class="iss-ai-keep-found js-iss-ai-keep-found"></p>' +
+								'<label class="iss-ai-replace-check"><input type="checkbox" class="js-iss-ai-keep"> <span>' + esc( t.keep_checkbox || '' ) + '</span></label>' +
+								'<p class="iss-ai-keep-hint">' + esc( t.keep_hint || '' ) + '</p>' +
+							'</div>' +
 							'<div class="iss-ai-replace-notice js-iss-ai-replace-notice" hidden>' +
 								'<strong>' + esc( t.replace_title || '' ) + '</strong>' +
 								'<p class="js-iss-ai-replace-text"></p>' +
@@ -575,11 +581,11 @@ jQuery( function ( $ ) {
 								'</svg>' +
 							'</div>' +
 							'<h3 class="js-iss-ai-success-title">' + esc( t.success_title || '' ) + '</h3>' +
-							'<p>' + esc( t.success_text || '' ) + '</p>' +
+							'<p class="js-iss-ai-success-text">' + esc( t.success_text || '' ) + '</p>' +
 							'<ul class="iss-ai-page-list js-iss-ai-page-list"></ul>' +
 							'<div class="iss-ai-actions">' +
 								'<a href="' + esc( config.site_url || '#' ) + '" target="_blank" rel="noopener" class="button button-primary js-iss-ai-view-site">' + esc( t.view_site || '' ) + '</a>' +
-								'<a href="' + esc( config.pages_url || '#' ) + '" class="button">' + esc( t.edit_pages || '' ) + '</a>' +
+								'<a href="' + esc( config.pages_url || '#' ) + '" class="button js-iss-ai-edit-pages">' + esc( t.edit_pages || '' ) + '</a>' +
 							'</div>' +
 
 							// Survey. Every answer is optional — Send stays
@@ -1204,6 +1210,7 @@ jQuery( function ( $ ) {
 		renderQuota();
 		renderDesignLevels();
 		renderArtDirection();
+		renderKeepNotice( data.own, data.classic );
 		renderReplaceNotice( data.previous, data.classic );
 
 		if ( ! connected ) {
@@ -1224,6 +1231,55 @@ jQuery( function ( $ ) {
 		} else {
 			$chip.attr( 'hidden', 'hidden' );
 		}
+	}
+
+	// The site has content of its own (a homepage, menu, pages or posts no
+	// demo created): offer — checked — to leave it as it is and add the new
+	// pages as drafts. Also offered, unchecked, over an imported starter
+	// site, which may be what the owner built their site from.
+	function renderKeepNotice( own, classic ) {
+		var $notice = $root.find( '.js-iss-ai-keep-notice' );
+
+		if ( ! own && ! classic ) {
+			$notice.attr( 'hidden', 'hidden' );
+			$root.find( '.js-iss-ai-keep' ).prop( 'checked', false );
+			syncKeep();
+			return;
+		}
+
+		var found = [];
+		if ( own && own.front_title ) {
+			found.push( sprintf( t.keep_front || '', own.front_title ) );
+		}
+		if ( own && own.menu_name ) {
+			found.push( sprintf( t.keep_menu || '', own.menu_name ) );
+		}
+		if ( own && own.page_count ) {
+			found.push( sprintf( t.keep_pages || '', own.page_count ) );
+		}
+		if ( own && own.post_count ) {
+			found.push( sprintf( t.keep_posts || '', own.post_count ) );
+		}
+		$notice.find( '.js-iss-ai-keep-found' ).text( found.join( ' · ' ) ).toggle( found.length > 0 );
+
+		// Checked by default only when the content is the owner's own; the
+		// user's choice survives later state refreshes.
+		if ( ! $notice.data( 'touched' ) ) {
+			$root.find( '.js-iss-ai-keep' ).prop( 'checked', !! own );
+		}
+		$notice.removeAttr( 'hidden' );
+		syncKeep();
+	}
+
+	function keepSite() {
+		var $keep = $root.find( '.js-iss-ai-keep' );
+		return $keep.length && ! $keep.closest( '.js-iss-ai-keep-notice' ).attr( 'hidden' ) && $keep.is( ':checked' );
+	}
+
+	// Keeping the site keeps an imported starter site too: its deletion
+	// warning only applies when the AI demo takes the site over.
+	function syncKeep() {
+		$root.find( '.js-iss-ai-replace-notice' ).toggleClass( 'is-kept-classic', !! ( keepSite() && $root.find( '.js-iss-ai-replace-notice' ).data( 'classic-only' ) ) );
 	}
 
 	// Prominent warning when a previous demo exists — an AI-generated one OR
@@ -1259,7 +1315,9 @@ jQuery( function ( $ ) {
 		// Both actions operate on an AI demo — hide them when the warning is
 		// about a classic starter-site import instead.
 		$notice.find( '.iss-ai-replace-actions' ).toggle( !! ( previous && previous.page_count ) );
+		$notice.data( 'classic-only', ! ( previous && previous.page_count ) );
 		$notice.removeAttr( 'hidden' );
+		syncKeep();
 	}
 
 	function renderQuota() {
@@ -1417,6 +1475,7 @@ jQuery( function ( $ ) {
 		ajax( 'inspiro_starter_sites_ai_generate', {
 			description: description,
 			replace:     replace,
+			keep:        keepSite() ? '1' : '0',
 			style:       $root.find( '.js-iss-ai-style .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
 			palette:     $root.find( '.js-iss-ai-palette .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
 			typography:  $root.find( '.js-iss-ai-typography .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
@@ -1586,8 +1645,14 @@ jQuery( function ( $ ) {
 					);
 				} );
 
-				if ( planState.site_title ) {
-					$root.find( '.js-iss-ai-success-title' ).text( ( t.success_title || '' ) + ' — ' + planState.site_title );
+				var kept = !! response.data.kept;
+				var title = kept ? ( t.success_title_kept || '' ) : ( t.success_title || '' );
+				$root.find( '.js-iss-ai-success-title' ).text( planState.site_title ? title + ' — ' + planState.site_title : title );
+				$root.find( '.js-iss-ai-success-text' ).text( kept ? ( t.success_text_kept || '' ) : ( t.success_text || '' ) );
+				$root.find( '.js-iss-ai-view-site' ).text( kept ? ( t.view_site_kept || '' ) : ( t.view_site || '' ) );
+				$root.find( '.js-iss-ai-edit-pages' ).text( kept ? ( t.edit_pages_kept || '' ) : ( t.edit_pages || '' ) );
+				if ( response.data.pages_url ) {
+					$root.find( '.js-iss-ai-edit-pages' ).attr( 'href', response.data.pages_url );
 				}
 				if ( response.data.demo_pages ) {
 					config.demo_pages = response.data.demo_pages;
@@ -1775,6 +1840,11 @@ jQuery( function ( $ ) {
 			$toggle.attr( 'aria-expanded', 'false' ).html( '&#128161; ' + esc( t.ideas_show || '' ) );
 		}
 	}
+
+	$root.on( 'change', '.js-iss-ai-keep', function () {
+		$root.find( '.js-iss-ai-keep-notice' ).data( 'touched', true );
+		syncKeep();
+	} );
 
 	$root.on( 'click', '.js-iss-ai-ideas-toggle', function () {
 		toggleIdeas( $root.find( '.js-iss-ai-ideas' ).attr( 'hidden' ) !== undefined );
