@@ -475,6 +475,12 @@ jQuery( function ( $ ) {
 								'<label class="iss-ai-replace-check"><input type="checkbox" class="js-iss-ai-keep"> <span>' + esc( t.keep_checkbox || '' ) + '</span></label>' +
 								'<p class="iss-ai-keep-hint">' + esc( t.keep_hint || '' ) + '</p>' +
 							'</div>' +
+							( config.rebuild
+								? '<button type="button" class="iss-ai-rebuild-entry js-iss-ai-rebuild-open">' +
+									'<strong>' + esc( t.rebuild_entry_title || '' ) + ' <span class="iss-ai-rb-badge">Premium</span></strong>' +
+									'<span>' + esc( t.rebuild_entry_hint || '' ) + '</span>' +
+								'</button>'
+								: '' ) +
 							'<div class="iss-ai-replace-notice js-iss-ai-replace-notice" hidden>' +
 								'<strong>' + esc( t.replace_title || '' ) + '</strong>' +
 								'<p class="js-iss-ai-replace-text"></p>' +
@@ -668,6 +674,27 @@ jQuery( function ( $ ) {
 								'<a class="button js-iss-ai-pt-view" target="_blank" rel="noopener" hidden>' + esc( t.view_page || '' ) + '</a>' +
 								'<a class="button js-iss-ai-pt-edit" hidden>' + esc( t.edit_page || '' ) + '</a>' +
 								'<button type="button" class="button js-iss-ai-pt-back">' + esc( t.back || '' ) + '</button>' +
+							'</div>' +
+						'</div>' +
+
+						// Step: rebuild an existing website (Premium) — read it first.
+						'<div class="iss-ai-step iss-ai-step-rebuild" data-step="rebuild">' +
+							'<h3>' + esc( t.rebuild_entry_title || '' ) + '</h3>' +
+							'<p class="iss-ai-css-intro">' + esc( t.rebuild_intro || '' ) + '</p>' +
+							'<div class="js-iss-ai-rb-form">' +
+								'<p class="iss-ai-field-label">' + esc( t.rebuild_url_label || '' ) + '</p>' +
+								'<input type="url" class="iss-ai-input js-iss-ai-rb-url" maxlength="300" placeholder="' + esc( t.rebuild_url_ph || '' ) + '" />' +
+								'<label class="iss-ai-replace-check iss-ai-rb-consent"><input type="checkbox" class="js-iss-ai-rb-consent"> <span>' + esc( t.rebuild_consent || '' ) + '</span></label>' +
+							'</div>' +
+							'<div class="iss-ai-pt-working js-iss-ai-rb-working" hidden>' +
+								'<span class="spinner is-active"></span> ' + esc( t.rebuild_reading || '' ) +
+							'</div>' +
+							'<p class="iss-ai-error js-iss-ai-rb-error" hidden></p>' +
+							'<div class="iss-ai-site-card js-iss-ai-rb-card" hidden></div>' +
+							'<div class="iss-ai-actions">' +
+								'<button type="button" class="button button-primary js-iss-ai-rb-read">' + esc( t.rebuild_read || '' ) + '</button>' +
+								'<button type="button" class="button js-iss-ai-rb-again" hidden>' + esc( t.rebuild_again || '' ) + '</button>' +
+								'<button type="button" class="button js-iss-ai-rb-back">' + esc( t.back || '' ) + '</button>' +
 							'</div>' +
 						'</div>' +
 
@@ -1962,6 +1989,152 @@ jQuery( function ( $ ) {
 				$button.prop( 'disabled', false ).text( t.edit_css_save || '' );
 			} );
 	} );
+
+	/* -----------------------------------------------------------------
+	 * Rebuild my website (Premium): read the site, show what was found
+	 * -------------------------------------------------------------- */
+
+	$root.on( 'click', '.js-iss-ai-rebuild-open', function () {
+		showStep( 'rebuild' );
+		$root.find( '.js-iss-ai-rb-url' ).trigger( 'focus' );
+	} );
+
+	$root.on( 'click', '.js-iss-ai-rb-back', function () {
+		if ( ! running ) {
+			showStep( 'input' );
+		}
+	} );
+
+	$root.on( 'click', '.js-iss-ai-rb-read, .js-iss-ai-rb-again', function () {
+		readSite( $( this ).hasClass( 'js-iss-ai-rb-again' ) );
+	} );
+
+	$root.on( 'keydown', '.js-iss-ai-rb-url', function ( e ) {
+		if ( 13 === e.which ) {
+			e.preventDefault();
+			readSite( false );
+		}
+	} );
+
+	function readSite( fresh ) {
+		var url     = $.trim( $root.find( '.js-iss-ai-rb-url' ).val() || '' );
+		var $error  = $root.find( '.js-iss-ai-rb-error' );
+		var $button = $root.find( '.js-iss-ai-rb-read, .js-iss-ai-rb-again' );
+
+		if ( running ) {
+			return;
+		}
+		if ( ! url ) {
+			$error.text( t.rebuild_no_url || '' ).removeAttr( 'hidden' );
+			return;
+		}
+		if ( ! $root.find( '.js-iss-ai-rb-consent' ).is( ':checked' ) ) {
+			$error.text( t.rebuild_no_consent || '' ).removeAttr( 'hidden' );
+			return;
+		}
+
+		running = true;
+		$error.attr( 'hidden', 'hidden' );
+		$button.prop( 'disabled', true );
+		$root.find( '.js-iss-ai-rb-card' ).attr( 'hidden', 'hidden' );
+		$root.find( '.js-iss-ai-rb-working' ).removeAttr( 'hidden' );
+
+		ajax( 'inspiro_starter_sites_ai_site_read', { url: url, consent: '1', fresh: fresh ? '1' : '0' }, 180000 )
+			.done( function ( response ) {
+				if ( ! response || ! response.success || ! response.data ) {
+					$error.text( responseMessage( response ) ).removeAttr( 'hidden' );
+					return;
+				}
+				renderSiteCard( response.data );
+			} )
+			.fail( function ( xhr ) {
+				$error.text( responseMessage( xhr && xhr.responseJSON ? xhr.responseJSON : null ) ).removeAttr( 'hidden' );
+			} )
+			.always( function () {
+				running = false;
+				$button.prop( 'disabled', false );
+				$root.find( '.js-iss-ai-rb-working' ).attr( 'hidden', 'hidden' );
+			} );
+	}
+
+	// What was read, for the owner to check before anything is built: the
+	// facts exactly as their website states them, and what it doesn't say.
+	function renderSiteCard( site ) {
+		var $card = $root.find( '.js-iss-ai-rb-card' ).empty();
+		var $head = $( '<div class="iss-ai-site-card__head">' );
+
+		if ( site.logo ) {
+			$head.append( $( '<img alt="" class="iss-ai-site-card__logo">' ).attr( 'src', site.logo ) );
+		}
+		$head.append(
+			$( '<div>' )
+				.append( $( '<strong>' ).text( site.name || site.host ) )
+				.append( $( '<span class="iss-ai-site-card__kind">' ).text( [ site.kind, site.host ].filter( Boolean ).join( ' · ' ) ) )
+		);
+		$card.append( $head );
+
+		if ( site.summary ) {
+			$card.append( $( '<p class="iss-ai-site-card__summary">' ).text( site.summary ) );
+		}
+
+		var $facts = $( '<dl class="iss-ai-site-card__facts">' );
+		function fact( label, values ) {
+			values = $.isArray( values ) ? values : ( values ? [ values ] : [] );
+			if ( values.length ) {
+				var $dd = $( '<dd>' );
+				$.each( values, function ( i, value ) {
+					$dd.append( $( '<span>' ).text( value ) );
+				} );
+				$facts.append( $( '<dt>' ).text( label ) ).append( $dd );
+			}
+		}
+		fact( t.rebuild_address || '', site.address );
+		fact( t.rebuild_phone || '', site.phones );
+		fact( t.rebuild_email || '', site.emails );
+		fact( t.rebuild_hours || '', site.hours );
+		fact( t.rebuild_locations || '', $.map( site.locations || [], function ( location ) {
+			return [ [ location.name, location.address ].filter( Boolean ).join( ', ' ), ( location.hours || [] ).join( '; ' ) ].filter( Boolean ).join( ' — ' );
+		} ) );
+		$card.append( $facts );
+
+		var $pages = $( '<ul class="iss-ai-site-card__pages">' );
+		$.each( site.pages || [], function ( i, page ) {
+			$pages.append(
+				$( '<li>' ).toggleClass( 'is-skipped', ! page.keep )
+					.append( $( '<span>' ).text( page.label ) )
+					.append( page.keep ? '' : $( '<em>' ).text( t.rebuild_page_skip || '' ) )
+			);
+		} );
+		$card.append( $( '<p class="iss-ai-field-label">' ).text( t.rebuild_pages || '' ) ).append( $pages );
+
+		var counts = site.counts || {};
+		var chips  = [];
+		$.each( [ 'photos', 'offerings', 'testimonials', 'team' ], function ( i, key ) {
+			if ( counts[ key ] ) {
+				chips.push( sprintf( t[ 'rebuild_' + key ] || '', counts[ key ] ) );
+			}
+		} );
+		if ( chips.length ) {
+			$card.append( $( '<p class="iss-ai-site-card__counts">' ).text( chips.join( ' · ' ) ) );
+		}
+
+		if ( site.gaps && site.gaps.length ) {
+			$card.append( $( '<p class="iss-ai-site-card__note">' ).text( sprintf( t.rebuild_gaps || '', $.map( site.gaps, function ( gap ) {
+				return t[ 'gap_' + gap ] || gap;
+			} ).join( ', ' ) ) ) );
+		}
+		if ( site.thin ) {
+			$card.append( $( '<p class="iss-ai-site-card__note">' ).text( t.rebuild_thin || '' ) );
+		}
+		if ( site.legal && site.legal.length ) {
+			$card.append( $( '<p class="iss-ai-site-card__note is-quiet">' ).text( sprintf( t.rebuild_legal || '', site.legal.join( ', ' ) ) ) );
+		}
+		$card.append( $( '<p class="iss-ai-site-card__next">' ).text( t.rebuild_next || '' ) );
+
+		$card.removeAttr( 'hidden' );
+		$root.find( '.js-iss-ai-rb-read' ).attr( 'hidden', 'hidden' );
+		$root.find( '.js-iss-ai-rb-again' ).removeAttr( 'hidden' );
+	}
 
 	$root.on( 'click', '.js-iss-ai-css-back', function () {
 		showStep( 'input' );
