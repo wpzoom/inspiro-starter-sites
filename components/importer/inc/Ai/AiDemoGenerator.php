@@ -316,6 +316,8 @@ class AiDemoGenerator {
 				'code_editor' => $code_editor ? $code_editor : null,
 				'pages_url'   => admin_url( 'edit.php?post_type=page' ),
 				'site_url'    => home_url( '/' ),
+				// "My real business" starts from the site's own name (not WordPress' default).
+				'site_name'   => 'My WordPress Website' === get_bloginfo( 'name' ) ? '' : get_bloginfo( 'name' ),
 				'upgrade_url' => 'https://www.wpzoom.com/themes/inspiro-lite/upgrade/?utm_source=wpadmin&utm_medium=ai-demo&utm_campaign=ai-quota-upsell',
 				// Premium theme without an activated license: the exhausted-
 				// quota card asks to activate instead of upselling.
@@ -500,6 +502,16 @@ class AiDemoGenerator {
 					'content_demo_hint' => __( 'AI writes realistic example text, names and prices for you to replace later.', 'inspiro-starter-sites' ),
 					'content_real'     => __( 'My real business', 'inspiro-starter-sites' ),
 					'content_real_hint' => __( 'Nothing made up: only what you write. Missing details (phone, opening hours, reviews) appear as [placeholders] to fill in.', 'inspiro-starter-sites' ),
+					'details_title'    => __( 'Your details', 'inspiro-starter-sites' ),
+					'details_hint'     => __( 'Optional. They appear exactly as you type them; anything left empty becomes a [placeholder].', 'inspiro-starter-sites' ),
+					'details_name'     => __( 'Business name', 'inspiro-starter-sites' ),
+					'details_phone'    => __( 'Phone', 'inspiro-starter-sites' ),
+					'details_email'    => __( 'Email', 'inspiro-starter-sites' ),
+					'details_address'  => __( 'Address', 'inspiro-starter-sites' ),
+					'details_hours'    => __( 'Opening hours', 'inspiro-starter-sites' ),
+					'details_hours_ph' => __( "Mon–Fri: 9:00–18:00\nSat: 10:00–14:00", 'inspiro-starter-sites' ),
+					'details_people'   => __( 'People', 'inspiro-starter-sites' ),
+					'details_people_ph' => __( "Anna Weber — Owner\nTom Klein — Head chef", 'inspiro-starter-sites' ),
 					'replace_title_classic' => __( 'You already have an imported demo', 'inspiro-starter-sites' ),
 					/* translators: %s: imported demo name */
 					'replace_notice_classic' => __( 'The previously imported “%s” demo was detected. Generating an AI demo will permanently delete its content (pages, posts, images, menus) — including any changes you made.', 'inspiro-starter-sites' ),
@@ -1746,6 +1758,7 @@ class AiDemoGenerator {
 			array(
 				'description'      => isset( $record['description'] ) ? $record['description'] : '',
 				'content_mode'     => isset( $record['content_mode'] ) ? $record['content_mode'] : '',
+				'business_details' => isset( $record['business_details'] ) ? $record['business_details'] : array(),
 				'site_title'       => isset( $record['site_title'] ) ? $record['site_title'] : '',
 				'tagline'          => isset( $record['tagline'] ) ? $record['tagline'] : '',
 				'language'         => isset( $record['language'] ) ? $record['language'] : '',
@@ -2092,6 +2105,7 @@ class AiDemoGenerator {
 			array(
 				'description'    => $description,
 				'content_mode'   => $this->requested_content_mode(),
+				'business_details' => $this->requested_business_details(),
 				'style'          => $style,
 				'typography'     => $typography,
 				'palette_colors' => $palette ? $palette_options[ $palette ]['colors'] : array(),
@@ -2134,6 +2148,8 @@ class AiDemoGenerator {
 				)
 			);
 		}
+
+		$plan = $this->apply_business_details( $plan, $this->requested_business_details(), $description );
 
 		// Load the chosen Google Fonts locally (GDPR-safe) via the theme's
 		// WPTT webfont loader and bake the @font-face rules into the demo
@@ -2229,6 +2245,7 @@ class AiDemoGenerator {
 				'keep'           => $keep,
 				// Real business or sample content, for the page builds.
 				'content_mode'   => $this->requested_content_mode(),
+				'business_details' => $this->requested_business_details(),
 				'created_pages'  => array(), // page index => post ID
 				'used_photo_ids' => array(),
 				'created_at'     => time(),
@@ -2291,6 +2308,7 @@ class AiDemoGenerator {
 			array(
 				'description'  => $description,
 				'content_mode' => $this->requested_content_mode(),
+				'business_details' => $this->requested_business_details(),
 			)
 		);
 
@@ -2339,6 +2357,7 @@ class AiDemoGenerator {
 				'description'  => $description,
 				'max_pages'    => self::MAX_REVIEW_PAGES,
 				'content_mode' => $this->requested_content_mode(),
+				'business_details' => $this->requested_business_details(),
 			)
 		);
 
@@ -2492,6 +2511,7 @@ class AiDemoGenerator {
 			array(
 				'description'      => $state['description'],
 				'content_mode'     => isset( $state['content_mode'] ) ? $state['content_mode'] : '',
+				'business_details' => isset( $state['business_details'] ) ? $state['business_details'] : array(),
 				'site_title'       => $state['plan']['site_title'],
 				'tagline'          => $state['plan']['tagline'],
 				'language'         => isset( $state['plan']['language'] ) ? $state['plan']['language'] : '',
@@ -3120,6 +3140,7 @@ class AiDemoGenerator {
 			'keep'        => $keep,
 			// ...and follow the same rule on invented details.
 			'content_mode' => isset( $state['content_mode'] ) ? $state['content_mode'] : '',
+			'business_details' => isset( $state['business_details'] ) ? $state['business_details'] : array(),
 			'created_at'  => current_time( 'mysql' ),
 		);
 
@@ -3767,6 +3788,74 @@ class AiDemoGenerator {
 		return in_array( $mode, array( 'real', 'demo' ), true ) ? $mode : '';
 	}
 
+	/**
+	 * The details a real business typed in (name, phone, email, address,
+	 * opening hours, people), all optional. Only for "My real business":
+	 * a sample demo's details are the AI's to invent.
+	 *
+	 * @return array Only the fields given.
+	 */
+	private function requested_business_details() {
+		if ( 'real' !== $this->requested_content_mode() || empty( $_POST['details'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			return array();
+		}
+		$raw = json_decode( wp_unslash( (string) $_POST['details'] ), true ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput
+		if ( ! is_array( $raw ) ) {
+			return array();
+		}
+
+		$lines = static function ( $value, $max ) {
+			$out = array();
+			foreach ( preg_split( '/\R/', (string) $value ) as $line ) {
+				$line = mb_substr( sanitize_text_field( $line ), 0, 160 );
+				if ( '' !== $line ) {
+					$out[] = $line;
+				}
+			}
+			return array_slice( $out, 0, $max );
+		};
+
+		$details = array(
+			'name'    => isset( $raw['name'] ) ? mb_substr( sanitize_text_field( (string) $raw['name'] ), 0, 120 ) : '',
+			'phone'   => isset( $raw['phone'] ) ? mb_substr( sanitize_text_field( (string) $raw['phone'] ), 0, 40 ) : '',
+			'email'   => isset( $raw['email'] ) && is_email( trim( (string) $raw['email'] ) ) ? sanitize_email( (string) $raw['email'] ) : '',
+			'address' => isset( $raw['address'] ) ? mb_substr( sanitize_text_field( (string) $raw['address'] ), 0, 200 ) : '',
+			'hours'   => isset( $raw['hours'] ) ? $lines( $raw['hours'], 10 ) : array(),
+			'people'  => isset( $raw['people'] ) ? $lines( $raw['people'], 12 ) : array(),
+		);
+		return array_filter( $details );
+	}
+
+	/**
+	 * The owner's own details win over anything the plan wrote: the site
+	 * title and the footer's contact lines show them exactly as typed. For
+	 * "My real business", a footer phone, email or address the owner gave
+	 * neither in the details nor in the description was made up: it goes.
+	 *
+	 * @param array  $plan        Sanitized plan.
+	 * @param array  $details     requested_business_details().
+	 * @param string $description The customer's description.
+	 * @return array
+	 */
+	private function apply_business_details( array $plan, array $details, $description ) {
+		if ( ! empty( $details['name'] ) ) {
+			$plan['site_title'] = $details['name'];
+		}
+		$squash = static function ( $text ) {
+			return mb_strtolower( preg_replace( '/[^\p{L}\p{N}@.]+/u', '', (string) $text ) );
+		};
+		foreach ( array( 'phone', 'email', 'address' ) as $key ) {
+			if ( ! empty( $details[ $key ] ) ) {
+				$plan['footer'][ $key ] = $details[ $key ];
+			} elseif ( 'real' === $this->requested_content_mode() && ! empty( $plan['footer'][ $key ] )
+				&& ! preg_match( '/^\[[^\]]+\]$/', trim( $plan['footer'][ $key ] ) ) // a [placeholder] stays
+				&& false === mb_strpos( $squash( $description ), $squash( $plan['footer'][ $key ] ) ) ) {
+				$plan['footer'][ $key ] = '';
+			}
+		}
+		return $plan;
+	}
+
 	private function requested_engine() {
 		$engine = isset( $_POST['engine'] ) ? sanitize_key( wp_unslash( $_POST['engine'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		if ( '' === $engine ) {
@@ -3791,6 +3880,7 @@ class AiDemoGenerator {
 		$vars = array(
 			'description'    => $description,
 			'content_mode'   => $this->requested_content_mode(),
+			'business_details' => $this->requested_business_details(),
 			'style'          => $style,
 			'typography'     => $typography,
 			'palette_colors' => $palette_colors,
@@ -4165,6 +4255,7 @@ class AiDemoGenerator {
 		$copy_vars = array(
 			'description'  => $state['description'],
 			'content_mode' => isset( $state['content_mode'] ) ? $state['content_mode'] : '',
+			'business_details' => isset( $state['business_details'] ) ? $state['business_details'] : array(),
 			'site_title'   => $plan['site_title'],
 			'tagline'      => $plan['tagline'],
 			'language'     => isset( $plan['language'] ) ? $plan['language'] : '',

@@ -510,6 +510,19 @@ jQuery( function ( $ ) {
 								'<label class="iss-ai-mode-option"><input type="radio" name="iss_ai_content_mode" value="real"> ' +
 									'<strong>' + esc( t.content_real || '' ) + '</strong><span>' + esc( t.content_real_hint || '' ) + '</span></label>' +
 							'</div>' +
+							// "My real business": the facts the AI must not invent, all optional.
+							'<div class="iss-ai-details js-iss-ai-details" hidden>' +
+								'<p class="iss-ai-field-label">' + esc( t.details_title || '' ) + '</p>' +
+								'<p class="iss-ai-details__hint">' + esc( t.details_hint || '' ) + '</p>' +
+								'<div class="iss-ai-details__grid">' +
+									detailField( 'name', t.details_name, 'text' ) +
+									detailField( 'phone', t.details_phone, 'tel' ) +
+									detailField( 'email', t.details_email, 'email' ) +
+									detailField( 'address', t.details_address, 'text' ) +
+									detailField( 'hours', t.details_hours, 'textarea', t.details_hours_ph ) +
+									detailField( 'people', t.details_people, 'textarea', t.details_people_ph ) +
+								'</div>' +
+							'</div>' +
 
 							lookFields +
 
@@ -1074,6 +1087,7 @@ jQuery( function ( $ ) {
 	function openModal() {
 		if ( ! built ) {
 			buildModal();
+			restoreDetails();
 		}
 		showStep( 'input' );
 		$root.removeAttr( 'hidden' ).addClass( 'is-open' );
@@ -1447,7 +1461,7 @@ jQuery( function ( $ ) {
 			showStep( 'plan' );
 		}
 
-		ajax( 'inspiro_starter_sites_ai_suggest_pages', { description: description, content_mode: contentMode() }, 90000 )
+		ajax( 'inspiro_starter_sites_ai_suggest_pages', { description: description, content_mode: contentMode(), details: JSON.stringify( collectDetails() ) }, 90000 )
 			.done( function ( response ) {
 				if ( response && response.success && response.data && response.data.pages && response.data.pages.length ) {
 					proceed( response.data.pages );
@@ -1492,6 +1506,7 @@ jQuery( function ( $ ) {
 		ajax( 'inspiro_starter_sites_ai_generate', {
 			description: description,
 			content_mode: contentMode(),
+			details:      JSON.stringify( collectDetails() ),
 			replace:     replace,
 			keep:        keepSite() ? '1' : '0',
 			style:       $root.find( '.js-iss-ai-style .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
@@ -1883,7 +1898,69 @@ jQuery( function ( $ ) {
 		$root.find( '.js-iss-ai-content-mode .iss-ai-mode-option' ).each( function () {
 			$( this ).toggleClass( 'is-active', $( this ).find( 'input' ).prop( 'checked' ) );
 		} );
+		$root.find( '.js-iss-ai-details' ).attr( 'hidden', 'real' === mode ? null : 'hidden' );
 	}
+
+	/* -----------------------------------------------------------------
+	 * The real business's details (optional)
+	 * -------------------------------------------------------------- */
+
+	var DETAILS_KEY = 'iss_ai_business_details';
+
+	function detailField( key, label, type, placeholder ) {
+		var attrs = 'class="iss-ai-input js-iss-ai-detail" data-key="' + key + '"' + ( placeholder ? ' placeholder="' + esc( placeholder ) + '"' : '' );
+		return '<label class="iss-ai-details__field">' +
+			'<span>' + esc( label || '' ) + '</span>' +
+			( 'textarea' === type
+				? '<textarea rows="3" maxlength="800" ' + attrs + '></textarea>'
+				: '<input type="' + type + '" maxlength="200" ' + attrs + '>' ) +
+			'</label>';
+	}
+
+	// Only what was filled in; nothing at all for a sample demo.
+	function collectDetails() {
+		var details = {};
+		if ( 'real' !== contentMode() ) {
+			return details;
+		}
+		$root.find( '.js-iss-ai-detail' ).each( function () {
+			var value = $.trim( $( this ).val() || '' );
+			if ( value ) {
+				details[ $( this ).data( 'key' ) ] = value;
+			}
+		} );
+		return details;
+	}
+
+	// Remembered in this browser for the next generation (a convenience:
+	// nothing breaks when storage is unavailable).
+	function restoreDetails() {
+		var saved = {};
+		try {
+			saved = JSON.parse( window.localStorage.getItem( DETAILS_KEY ) || '{}' ) || {};
+		} catch ( e ) {
+			saved = {};
+		}
+		if ( ! saved.name && config.site_name ) {
+			saved.name = config.site_name;
+		}
+		$root.find( '.js-iss-ai-detail' ).each( function () {
+			var key = $( this ).data( 'key' );
+			if ( saved[ key ] && ! $( this ).val() ) {
+				$( this ).val( saved[ key ] );
+			}
+		} );
+	}
+
+	$root.on( 'input', '.js-iss-ai-detail', function () {
+		var details = {};
+		$root.find( '.js-iss-ai-detail' ).each( function () {
+			details[ $( this ).data( 'key' ) ] = $( this ).val() || '';
+		} );
+		try {
+			window.localStorage.setItem( DETAILS_KEY, JSON.stringify( details ) );
+		} catch ( e ) {} // eslint-disable-line no-empty
+	} );
 
 	$root.on( 'input', '.js-iss-ai-description', function () {
 		if ( ! contentModeTouched ) {
@@ -2186,7 +2263,7 @@ jQuery( function ( $ ) {
 		$error.attr( 'hidden', 'hidden' );
 		$button.prop( 'disabled', true ).text( t.enhancing || '' );
 
-		ajax( 'inspiro_starter_sites_ai_enhance_prompt', { description: current, content_mode: contentMode() }, 60000 )
+		ajax( 'inspiro_starter_sites_ai_enhance_prompt', { description: current, content_mode: contentMode(), details: JSON.stringify( collectDetails() ) }, 60000 )
 			.done( function ( response ) {
 				if ( response && response.success && response.data && response.data.description ) {
 					enhanceUndoValue = current;
