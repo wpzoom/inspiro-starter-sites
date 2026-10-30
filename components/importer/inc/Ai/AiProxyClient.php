@@ -198,7 +198,8 @@ class AiProxyClient {
 		}
 
 		return array(
-			'model'      => self::MODEL,
+			// The proxy owns model choice: an unknown name maps to its default.
+			'model'      => 'proxy-default',
 			'max_tokens' => isset( $built['max_tokens'] ) ? (int) $built['max_tokens'] : 8000,
 			'stream'     => false,
 			'thinking'   => array( 'type' => 'disabled' ),

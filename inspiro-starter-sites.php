@@ -96,5 +96,9 @@ function inspiro_starter_sites_classes() {
 	// The AI page builder (single pages and sections, from the block editor).
 	require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/inc/Ai/AiPageBuilder.php';
 	\Inspiro\Starter_Sites\Ai\AiPageBuilder::get_instance();
+	// "Rebuild my website": reads an existing site into a profile (Premium).
+	require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/inc/Ai/SiteReader.php';
+	require_once INSPIRO_STARTER_SITES_PATH . 'components/importer/inc/Ai/AiSiteRebuild.php';
+	\Inspiro\Starter_Sites\Ai\AiSiteRebuild::get_instance();
 
 }

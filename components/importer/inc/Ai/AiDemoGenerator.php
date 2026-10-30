@@ -46,6 +46,17 @@ class AiDemoGenerator {
 	private $proxy;
 
 	/**
+	 * "Rebuild my website": the read site (AiSiteRebuild::read()) this
+	 * generation rebuilds, or null for a demo from a description.
+	 *
+	 * @var array|null
+	 */
+	private $rebuild = null;
+
+	/** Quota feature the current generation is metered as. */
+	private $quota_feature = AiProxyClient::FEATURE;
+
+	/**
 	 * @return AiDemoGenerator
 	 */
 	public static function get_instance() {
@@ -326,6 +337,8 @@ class AiDemoGenerator {
 				'default_engine'   => 'catalog' === apply_filters( 'inspiro_starter_sites/ai_default_engine', 'html' ) ? 'catalog' : 'html',
 				// Premium page tools also require an ACTIVE license.
 				'has_license'      => '' !== AiProxyClient::premium_license(),
+				// "Rebuild my website" (Premium; behind a switch until it ships).
+				'rebuild'          => AiSiteRebuild::enabled() && '' !== AiProxyClient::premium_license(),
 				// Pages of the active demo, for the regenerate picker (the
 				// posts page has no AI design to rebuild).
 				'demo_pages'       => $this->demo_pages_for_picker(),
@@ -495,6 +508,42 @@ class AiDemoGenerator {
 					'success_text_kept'  => __( 'The AI created these pages as drafts — your live site is unchanged. Preview them, then publish the ones you want and add them to your menu.', 'inspiro-starter-sites' ),
 					'view_site_kept'   => __( 'Preview new homepage', 'inspiro-starter-sites' ),
 					'edit_pages_kept'  => __( 'Review drafts', 'inspiro-starter-sites' ),
+					'rebuild_entry_title' => __( 'Rebuild my existing website', 'inspiro-starter-sites' ),
+					'rebuild_entry_hint'  => __( 'Enter your website address. We read your pages and rebuild them on a new design, with your own text.', 'inspiro-starter-sites' ),
+					'rebuild_intro'    => __( 'We read your homepage and the main pages of its menu, and keep your own text, contact details and photos. Nothing changes on that website.', 'inspiro-starter-sites' ),
+					'rebuild_url_label' => __( 'Website address', 'inspiro-starter-sites' ),
+					'rebuild_url_ph'   => __( 'e.g. example.com', 'inspiro-starter-sites' ),
+					'rebuild_consent'  => __( 'I own this website or have the owner\'s permission to reuse its content.', 'inspiro-starter-sites' ),
+					'rebuild_read'     => __( 'Read my website', 'inspiro-starter-sites' ),
+					'rebuild_reading'  => __( 'Reading your website… this takes about half a minute.', 'inspiro-starter-sites' ),
+					'rebuild_again'    => __( 'Read again', 'inspiro-starter-sites' ),
+					'rebuild_no_url'   => __( 'Please enter your website address.', 'inspiro-starter-sites' ),
+					'rebuild_no_consent' => __( 'Please confirm that you own this website or may reuse its content.', 'inspiro-starter-sites' ),
+					'rebuild_address'  => __( 'Address', 'inspiro-starter-sites' ),
+					'rebuild_phone'    => __( 'Phone', 'inspiro-starter-sites' ),
+					'rebuild_email'    => __( 'Email', 'inspiro-starter-sites' ),
+					'rebuild_hours'    => __( 'Opening hours', 'inspiro-starter-sites' ),
+					'rebuild_locations' => __( 'Locations', 'inspiro-starter-sites' ),
+					'rebuild_pages'    => __( 'Pages', 'inspiro-starter-sites' ),
+					'rebuild_page_skip' => __( 'not rebuilt', 'inspiro-starter-sites' ),
+					/* translators: %s: number of photos */
+					'rebuild_photos'   => __( '%s photos', 'inspiro-starter-sites' ),
+					/* translators: %s: number of products or services */
+					'rebuild_offerings' => __( '%s products or services', 'inspiro-starter-sites' ),
+					/* translators: %s: number of customer quotes */
+					'rebuild_testimonials' => __( '%s customer quotes', 'inspiro-starter-sites' ),
+					/* translators: %s: number of people */
+					'rebuild_team'     => __( '%s people', 'inspiro-starter-sites' ),
+					/* translators: %s: list of missing details, e.g. "phone number, opening hours" */
+					'rebuild_gaps'     => __( 'Not on your website: %s. The new pages show a placeholder there for you to fill in.', 'inspiro-starter-sites' ),
+					'gap_phone'        => __( 'phone number', 'inspiro-starter-sites' ),
+					'gap_email'        => __( 'email address', 'inspiro-starter-sites' ),
+					'gap_address'      => __( 'address', 'inspiro-starter-sites' ),
+					'gap_hours'        => __( 'opening hours', 'inspiro-starter-sites' ),
+					'rebuild_thin'     => __( 'We could read only part of your text: your website may load some of it with JavaScript.', 'inspiro-starter-sites' ),
+					/* translators: %s: legal page names, e.g. "Impressum, Datenschutz" */
+					'rebuild_legal'    => __( 'Your legal pages (%s) are not rebuilt: link them from the new footer as they are.', 'inspiro-starter-sites' ),
+					'rebuild_next'     => __( 'Next you choose the pages to rebuild and a look. Coming in the next update.', 'inspiro-starter-sites' ),
 					'replace_title_classic' => __( 'You already have an imported demo', 'inspiro-starter-sites' ),
 					/* translators: %s: imported demo name */
 					'replace_notice_classic' => __( 'The previously imported “%s” demo was detected. Generating an AI demo will permanently delete its content (pages, posts, images, menus) — including any changes you made.', 'inspiro-starter-sites' ),
@@ -1959,6 +2008,26 @@ class AiDemoGenerator {
 		$description = isset( $_POST['description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['description'] ) ) : '';
 		$description = trim( $description );
 
+		// Rebuild an existing website (Inspiro Premium): the read site is the
+		// content source, metered as its own feature.
+		$source = isset( $_POST['source'] ) ? sanitize_key( wp_unslash( $_POST['source'] ) ) : '';
+		if ( '' !== $source ) {
+			if ( ! AiSiteRebuild::enabled() || '' === AiProxyClient::premium_license() ) {
+				wp_send_json_error(
+					array(
+						'code'    => 'license_required',
+						'message' => esc_html__( 'Rebuilding an existing website needs Inspiro Premium with an active license.', 'inspiro-starter-sites' ),
+					)
+				);
+			}
+			$this->rebuild = AiSiteRebuild::get_instance()->load( $source );
+			if ( ! $this->rebuild ) {
+				wp_send_json_error( array( 'message' => esc_html__( 'Please read your website again: what we read expires after a day.', 'inspiro-starter-sites' ) ) );
+			}
+			$this->quota_feature = AiSiteRebuild::FEATURE;
+			$description         = AiSiteRebuild::get_instance()->describe( $this->rebuild );
+		}
+
 		if ( mb_strlen( $description ) < 12 ) {
 			wp_send_json_error( array( 'message' => esc_html__( 'Please describe your website in a bit more detail.', 'inspiro-starter-sites' ) ) );
 		}
@@ -1968,7 +2037,7 @@ class AiDemoGenerator {
 
 		// Reserve one generation before doing the expensive work. Fail closed:
 		// if the quota service is unreachable, so is the generation service.
-		$quota = $this->proxy->quota( 'consume' );
+		$quota = $this->proxy->quota( 'consume', $this->quota_feature );
 
 		if ( is_wp_error( $quota ) ) {
 			if ( 'ai_registration_required' === $quota->get_error_code() ) {
@@ -2005,7 +2074,7 @@ class AiDemoGenerator {
 		} catch ( \Throwable $e ) {
 			// An unexpected fatal after the reserve would silently burn one
 			// of the user's free generations — give the unit back first.
-			$this->proxy->quota( 'refund' );
+			$this->proxy->quota( 'refund', $this->quota_feature );
 			error_log( '[inspiro-starter-sites AI] generation failed with exception: ' . $e->getMessage() ); // phpcs:ignore
 			$stream->finish_error(
 				array(
@@ -2065,15 +2134,20 @@ class AiDemoGenerator {
 
 		// "Keep my site": the owner's homepage, menu and design stay as they
 		// are and the new pages are added as drafts.
-		$keep = isset( $_POST['keep'] ) && '1' === $_POST['keep'];
+		// A rebuilt site always lands as drafts next to the live one.
+		$keep = $this->rebuild || ( isset( $_POST['keep'] ) && '1' === $_POST['keep'] );
 
-		// Pages the user approved in the review step (before this call).
+		// Pages the user approved in the review step (before this call). A
+		// rebuild's pages each name the old page they come from.
 		$approved_raw   = isset( $_POST['pages'] ) ? json_decode( wp_unslash( $_POST['pages'] ), true ) : null; // phpcs:ignore WordPress.Security.ValidatedSanitized
-		$approved_pages = $this->sanitize_review_pages( $approved_raw );
+		$approved_pages = $this->rebuild
+			? AiSiteRebuild::get_instance()->approved_pages( $approved_raw, $this->rebuild, self::MAX_REVIEW_PAGES )
+			: $this->sanitize_review_pages( $approved_raw );
 
 		// Catalog engine: the site is composed from sections of the theme's
 		// hand-built demos. HTML engine: every page is designed as HTML.
-		$engine = $this->requested_engine();
+		// A rebuild places the old site's text in catalog sections.
+		$engine = $this->rebuild ? 'catalog' : $this->requested_engine();
 
 		$plan = 'catalog' === $engine
 			? $this->blueprint_plan( $description, $style, $typography, $palette ? $palette_options[ $palette ]['colors'] : array(), $approved_pages, $variant_seed, $stream )
@@ -2115,7 +2189,7 @@ class AiDemoGenerator {
 
 		if ( is_wp_error( $plan ) ) {
 			// The reserved unit wasn't used — give it back.
-			$this->proxy->quota( 'refund' );
+			$this->proxy->quota( 'refund', $this->quota_feature );
 			$stream->finish_error(
 				array(
 					'message' => $plan->get_error_message(),
@@ -2212,6 +2286,8 @@ class AiDemoGenerator {
 				'engine'         => $engine,
 				'replace'        => $replace,
 				'keep'           => $keep,
+				// AiSiteRebuild cache key of the site being rebuilt ('' = demo).
+				'rebuild'        => $this->rebuild ? $this->rebuild['key'] : '',
 				'created_pages'  => array(), // page index => post ID
 				'used_photo_ids' => array(),
 				'created_at'     => time(),
@@ -2900,6 +2976,7 @@ class AiDemoGenerator {
 		// writing its own transient) into the classic state shape.
 		$created_pages = isset( $state['created_pages'] ) ? $state['created_pages'] : array();
 		$created_posts = isset( $state['created_posts'] ) ? $state['created_posts'] : array();
+		$fidelity      = array(); // page ID => rebuild fidelity report
 
 		foreach ( array_keys( $pages ) as $i ) {
 			$result = get_transient( self::PLAN_TRANSIENT_PREFIX . $plan_id . '_p' . $i );
@@ -2912,6 +2989,9 @@ class AiDemoGenerator {
 			}
 			if ( ! empty( $result['post_ids'] ) && is_array( $result['post_ids'] ) ) {
 				$created_posts = array_merge( $created_posts, array_map( 'intval', $result['post_ids'] ) );
+			}
+			if ( ! empty( $result['fidelity'] ) ) {
+				$fidelity[ (int) $result['page_id'] ] = $result['fidelity'];
 			}
 		}
 
@@ -3093,6 +3173,13 @@ class AiDemoGenerator {
 			'widgets'     => $footer_widget_ids,
 			// Pages added to this demo later are drafts too.
 			'keep'        => $keep,
+			// Rebuild: the old site, which old page each new page replaces,
+			// and what the fidelity check kept and rejected per page.
+			'rebuild'     => ! empty( $state['plan']['rebuild'] ) ? array(
+				'url'      => $state['plan']['rebuild']['url'],
+				'sources'  => $this->rebuild_sources( $state['plan'], $created_pages, $pages ),
+				'fidelity' => $fidelity,
+			) : null,
 			'created_at'  => current_time( 'mysql' ),
 		);
 
@@ -3198,6 +3285,30 @@ class AiDemoGenerator {
 		// Footer content goes into the theme's real footer widget areas —
 		// generated pages never carry their own footer.
 		return $this->populate_footer_widgets( $state['plan'] );
+	}
+
+	/**
+	 * New page ID => the old page it was rebuilt from.
+	 *
+	 * @param array $plan          Plan (pages carry their source).
+	 * @param array $created_pages Page index => post ID.
+	 * @param array $pages         Plan pages.
+	 * @return array
+	 */
+	private function rebuild_sources( array $plan, array $created_pages, array $pages ) {
+		$result = AiSiteRebuild::get_instance()->load( $plan['rebuild']['key'] );
+		$urls   = array();
+		foreach ( $result ? $result['profile']['pages'] : array() as $page ) {
+			$urls[ $page['page'] ] = $page['url'];
+		}
+		$out = array();
+		foreach ( $created_pages as $i => $page_id ) {
+			$source = isset( $pages[ $i ]['source'] ) ? $pages[ $i ]['source'] : '';
+			if ( isset( $urls[ $source ] ) ) {
+				$out[ (int) $page_id ] = $urls[ $source ];
+			}
+		}
+		return $out;
 	}
 
 	/**
@@ -3763,14 +3874,28 @@ class AiDemoGenerator {
 			'caps'           => ThemeOptions::caps(),
 			'header_layouts' => ThemeOptions::header_layouts(),
 		);
-		$plan = $this->proxy->claude_task_json( 'demo-blueprint', $vars, array( $stream, 'tick' ) );
+		$task = 'demo-blueprint';
+		if ( $this->rebuild ) {
+			// The old site's pages, sections and facts instead of a description.
+			$task = 'site-blueprint';
+			$vars = AiSiteRebuild::get_instance()->blueprint_vars( $this->rebuild, $approved ) + $vars;
+			unset( $vars['description'] );
+		}
+		$plan = $this->proxy->claude_task_json( $task, $vars, array( $stream, 'tick' ) );
 
 		// A malformed reply is retried once before the generation fails.
 		if ( is_wp_error( $plan ) && 'ai_parse_error' === $plan->get_error_code() ) {
-			$plan = $this->proxy->claude_task_json( 'demo-blueprint', $vars, array( $stream, 'tick' ) );
+			$plan = $this->proxy->claude_task_json( $task, $vars, array( $stream, 'tick' ) );
 		}
 
-		return is_wp_error( $plan ) ? $plan : $this->sanitize_blueprint( $plan, $approved, $seed );
+		if ( is_wp_error( $plan ) ) {
+			return $plan;
+		}
+		$clean = $this->sanitize_blueprint( $plan, $approved, $seed );
+		if ( $this->rebuild && ! is_wp_error( $clean ) ) {
+			$clean = AiSiteRebuild::get_instance()->apply_plan( $clean, $plan, $this->rebuild, $approved );
+		}
+		return $clean;
 	}
 
 	/**
@@ -3869,12 +3994,15 @@ class AiDemoGenerator {
 		$has_portfolio = ! empty( $plan['portfolio']['needed'] ) && ! empty( $plan['portfolio']['items'] );
 		$opener        = $home ? 'hero' : 'page-header';
 
+		// A rebuild brings back all of the old page's content: more sections,
+		// and any section on any page (openers excepted, below).
+		$max  = $this->rebuild ? 14 : 10;
 		$out  = array();
 		$seen = array();
-		foreach ( array_slice( $list, 0, 12 ) as $item ) {
+		foreach ( array_slice( $list, 0, $max + 2 ) as $item ) {
 			$id      = sanitize_key( (string) ( is_array( $item ) ? ( isset( $item['id'] ) ? $item['id'] : '' ) : $item ) );
 			$section = Catalog\Catalog::get( $id );
-			if ( ! $section || isset( $seen[ $id ] ) || ! $this->section_fits( $section, $home ) ) {
+			if ( ! $section || isset( $seen[ $id ] ) || ( ! $this->rebuild && ! $this->section_fits( $section, $home ) ) ) {
 				continue;
 			}
 			$needs = isset( $section['needs'] ) ? (array) $section['needs'] : array();
@@ -3917,7 +4045,7 @@ class AiDemoGenerator {
 			}
 		}
 
-		return array_slice( $out, 0, 10 );
+		return array_slice( $out, 0, $max );
 	}
 
 	private function section_fits( array $section, $home ) {
@@ -4101,12 +4229,19 @@ class AiDemoGenerator {
 			$stream->finish_error( array( 'message' => esc_html__( 'The section catalog is unavailable. Please try again later.', 'inspiro-starter-sites' ) ) );
 		}
 
+		// A rebuild fills the sections with the old site's own text.
+		$rebuild = ! empty( $state['rebuild'] ) ? AiSiteRebuild::get_instance()->load( $state['rebuild'] ) : null;
+		if ( ! empty( $state['rebuild'] ) && ! $rebuild ) {
+			$stream->finish_error( array( 'message' => esc_html__( 'Please read your website again: what we read expires after a day.', 'inspiro-starter-sites' ) ) );
+		}
+
 		$schemas = array();
 		foreach ( $sections as $item ) {
 			if ( isset( $full[ $item['id'] ] ) ) {
 				$schemas[] = array(
 					'id'       => $item['id'],
 					'headline' => $item['headline'],
+					'refs'     => isset( $item['refs'] ) ? $item['refs'] : array(),
 				);
 			}
 		}
@@ -4135,6 +4270,12 @@ class AiDemoGenerator {
 			'sections'     => $schemas,
 		);
 
+		$copy_task = 'demo-copy';
+		if ( $rebuild ) {
+			$copy_task = 'site-copy';
+			$copy_vars = AiSiteRebuild::get_instance()->copy_vars( $plan, $page, $schemas, $rebuild );
+		}
+
 		// One JSON line per section, so a slip in one costs that section
 		// only; sections still missing get one targeted retry.
 		$content_by_id = array();
@@ -4149,7 +4290,7 @@ class AiDemoGenerator {
 					)
 				);
 			}
-			$text = $this->proxy->claude_task( 'demo-copy', $copy_vars, array( $stream, 'tick' ) );
+			$text = $this->proxy->claude_task( $copy_task, $copy_vars, array( $stream, 'tick' ) );
 			if ( is_wp_error( $text ) ) {
 				if ( ! $content_by_id && $attempt ) {
 					$stream->finish_error(
@@ -4174,6 +4315,15 @@ class AiDemoGenerator {
 
 		$build_images = array();
 		$resolver     = $this->make_image_resolver( $state, $build_images, $image_pool, $plan_id, $stream );
+
+		// The old site's own text and photos; the fidelity report records
+		// every value that was referenced, copied, newly worded or rejected.
+		$fidelity = array();
+		if ( $rebuild ) {
+			$content_by_id = AiSiteRebuild::get_instance()->resolve_copy( $content_by_id, $full, $schemas, $rebuild, $fidelity );
+			$resolver      = AiSiteRebuild::get_instance()->image_resolver( $rebuild, $plan_id, $resolver );
+		}
+
 		$renderer     = new Catalog\SectionRenderer(
 			array(
 				'palette'        => $plan['palette'],
@@ -4185,6 +4335,8 @@ class AiDemoGenerator {
 				},
 				'fallback_query' => $plan['site_title'] . ' ' . $page['title'],
 				'form_id'        => $this->first_form_id(),
+				// A rebuilt business shows its own profiles, not the demo's icons.
+				'social'         => $rebuild ? $rebuild['profile']['contact']['social'] : null,
 			)
 		);
 
@@ -4199,11 +4351,15 @@ class AiDemoGenerator {
 			// call wrote there: it is what the customer saw in the preview.
 			// Not when that "heading" is a statement paragraph set in display
 			// type (a 40-word welcome): a short headline would change the design.
-			if ( '' !== $item['headline'] && isset( $section['fields']['heading'] )
+			// (A rebuild's headline went through resolve_copy()'s checks.)
+			if ( ! $rebuild && '' !== $item['headline'] && isset( $section['fields']['heading'] )
 				&& ( empty( $section['fields']['heading']['words'] ) || (int) $section['fields']['heading']['words'] <= 16 ) ) {
 				$fields['heading'] = $item['headline'];
 			}
 			$content .= $renderer->render( $section, $fields ) . "\n\n";
+			if ( $rebuild && ! empty( $fidelity['leftover'][ $item['id'] ] ) ) {
+				$content .= AiSiteRebuild::get_instance()->leftover_blocks( $fidelity['leftover'][ $item['id'] ], $rebuild );
+			}
 			$stream->tick();
 		}
 
@@ -4243,6 +4399,7 @@ class AiDemoGenerator {
 				'page_id'   => (int) $post_id,
 				'photo_ids' => wp_list_pluck( $build_images, 'photo_id' ),
 				'images'    => $build_images,
+				'fidelity'  => $fidelity,
 			),
 			HOUR_IN_SECONDS
 		);

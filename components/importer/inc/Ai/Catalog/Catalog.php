@@ -98,7 +98,11 @@ class Catalog {
 		delete_transient( self::DOWN_TRANSIENT );
 		$response['blocks']   = $blocks;
 		$response['licensed'] = '' !== AiProxyClient::premium_license();
-		set_transient( self::META_TRANSIENT, $response, 12 * HOUR_IN_SECONDS );
+		// A key this site believes valid that the server didn't accept (it
+		// expired, or was just renewed) gets the free catalog: keep that
+		// only briefly, so the Premium sections appear soon after a renewal.
+		$premium = in_array( 'premium', array_column( $response['sections'], 'tier' ), true );
+		set_transient( self::META_TRANSIENT, $response, $response['licensed'] && ! $premium ? HOUR_IN_SECONDS : 12 * HOUR_IN_SECONDS );
 		self::$meta = $response;
 
 		return self::$meta['sections'];
