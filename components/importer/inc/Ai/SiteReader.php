@@ -65,7 +65,7 @@ class SiteReader {
 	const FOOTER_QUERY = '//*[(contains(concat(" ", normalize-space(@class), " "), " footer ") or contains(@class, "site-footer") or contains(translate(@id, "FOOTER", "footer"), "footer")) and not(ancestor::*[contains(concat(" ", normalize-space(@class), " "), " footer ") or contains(@class, "site-footer") or contains(translate(@id, "FOOTER", "footer"), "footer")])]';
 
 	/** Never text: dropped before the walk. */
-	const DROP_TAGS = array( 'script', 'style', 'noscript', 'svg', 'iframe', 'template', 'form', 'select', 'input', 'textarea', 'button', 'canvas', 'video', 'audio', 'object', 'embed', 'dialog' );
+	const DROP_TAGS = array( 'script', 'style', 'noscript', 'svg', 'iframe', 'template', 'form', 'select', 'input', 'textarea', 'canvas', 'video', 'audio', 'object', 'embed', 'dialog' );
 
 	/** Host the site lives on, without www (redirects decide it). */
 	private $host = '';
@@ -81,6 +81,7 @@ class SiteReader {
 	private $emails = array();
 	private $social = array();
 	private $jsonld = array();
+	private $maps   = array();
 	private $chars  = 0;
 	private $truncated = false;
 
@@ -185,6 +186,7 @@ class SiteReader {
 			'phones' => array_values( array_unique( $this->phones ) ),
 			'emails' => array_values( array_unique( $this->emails ) ),
 			'jsonld' => $this->jsonld,
+			'maps'   => array_values( array_unique( $this->maps ) ),
 		);
 		$site['social']    = $this->social;
 		$site['images']    = array_values( $this->images );
@@ -598,6 +600,9 @@ class SiteReader {
 	/** Code, forms, hidden elements, cookie banners and menus. */
 	private function drop_noise( \DOMXPath $xpath ) {
 		$this->remove( $xpath, '//' . implode( ' | //', self::DROP_TAGS ) );
+		// Buttons that are controls ("Menu", "Add to cart"); a button holding
+		// headings or paragraphs is content (menu apps wrap each dish in one).
+		$this->remove( $xpath, '//button[not(.//h1 | .//h2 | .//h3 | .//h4 | .//h5 | .//h6 | .//p | .//li)]' );
 		$this->remove( $xpath, '//*[contains(concat(" ", normalize-space(@class), " "), " screen-reader-text ") or contains(@class, "skip-link") or contains(concat(" ", normalize-space(@class), " "), " sr-only ") or contains(@class, "visually-hidden")]' );
 		$this->remove( $xpath, '//*[@hidden] | //*[@aria-hidden="true"] | //*[contains(translate(@style, "DISPLAYNONE ", "displaynone"), "display:none")]' );
 		$this->remove( $xpath, '//*[contains(translate(@id, "COKIENSTGDPR", "cokienstgdpr"), "cookie") or contains(translate(@class, "COKIENSTGDPR", "cokienstgdpr"), "cookie") or contains(translate(@id, "COKIENSTGDPR", "cokienstgdpr"), "consent") or contains(translate(@class, "COKIENSTGDPR", "cokienstgdpr"), "consent") or contains(@class, "gdpr") or contains(@id, "gdpr") or contains(@class, "cmplz") or contains(@id, "BorlabsCookie")]' );
@@ -861,7 +866,30 @@ class SiteReader {
 				$this->emails[] = $email;
 			}
 		} else {
-			$this->collect_social( $this->absolute( $href, $base ) );
+			$url = $this->absolute( $href, $base );
+			$this->collect_social( $url );
+			$this->collect_maps( $url );
+		}
+	}
+
+	/**
+	 * The address in a Google Maps link ("…/maps/search/?api=1&query=Str.+
+	 * Mitropolit+Petru+Movilă+14"): sites built from menu apps and widgets
+	 * often state their address only there.
+	 */
+	private function collect_maps( $url ) {
+		$parts = wp_parse_url( $url );
+		if ( empty( $parts['host'] ) || ! preg_match( '/(^|\.)google\.[a-z.]+$/i', $parts['host'] ) || empty( $parts['path'] ) || 0 !== strpos( $parts['path'], '/maps' ) || empty( $parts['query'] ) ) {
+			return;
+		}
+		parse_str( $parts['query'], $query );
+		foreach ( array( 'query', 'q', 'destination', 'daddr' ) as $key ) {
+			$address = isset( $query[ $key ] ) && is_string( $query[ $key ] ) ? $this->clean( $query[ $key ] ) : '';
+			// An address, not coordinates or a place id.
+			if ( '' !== $address && preg_match( '/\p{L}{3,}/u', $address ) && mb_strlen( $address ) <= 160 ) {
+				$this->maps[] = $address;
+				return;
+			}
 		}
 	}
 

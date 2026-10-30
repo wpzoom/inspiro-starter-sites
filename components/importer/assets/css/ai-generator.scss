@@ -1090,7 +1090,10 @@ body.iss-ai-open {
 }
 
 .iss-ai-keep-notice[hidden],
-.iss-ai-replace-notice.is-kept-classic {
+.iss-ai-replace-notice.is-kept-classic,
+.iss-ai-replace-notice.is-kept .js-iss-ai-replace-text,
+.iss-ai-replace-notice.is-kept .iss-ai-replace-check,
+.iss-ai-replace-notice.is-kept .iss-ai-replace-hint {
   display: none;
 }
 
@@ -3089,5 +3092,37 @@ select.iss-ai-input {
 @media (max-width: 600px) {
   .iss-ai-site-card__facts {
     grid-template-columns: 1fr;
+  }
+}
+
+/* A website address in the description: offer to rebuild that site instead. */
+.iss-ai-site-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1.5px solid #e4e4e7;
+  border-radius: 10px;
+  background: #f8f8f9;
+  color: #1d1d1f;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.iss-ai-site-hint[hidden] {
+  display: none;
+}
+
+.iss-ai-site-hint .iss-ai-mini-btn {
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+@media (max-width: 600px) {
+  .iss-ai-site-hint {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

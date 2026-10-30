@@ -30,6 +30,11 @@ jQuery( function ( $ ) {
 	var connected = false; // Email registration with the WPZOOM AI server.
 	var planState = null; // { plan_id, pages: [...] }
 
+	// "Rebuild my website": the read site's key and the pages to rebuild
+	// ({ source, title }), set by the summary card's button for one run.
+	var rebuildSource = '';
+	var rebuildPages  = [];
+
 	// Post-generation survey answers (reset for every run).
 	var feedbackRating = 0;
 	var feedbackKept   = '';
@@ -509,6 +514,21 @@ jQuery( function ( $ ) {
 								'<button type="button" class="iss-ai-enhance js-iss-ai-enhance">&#10024; ' + esc( t.enhance || '' ) + '</button>' +
 							'</div>' +
 							'<div class="iss-ai-ideas js-iss-ai-ideas" hidden>' + ideas + '</div>' +
+							( config.rebuild_available
+								? '<div class="iss-ai-site-hint js-iss-ai-site-hint" hidden>' +
+									'<span>' + esc( config.rebuild ? ( t.site_hint || '' ) : ( t.site_hint_premium || '' ) ) + '</span>' +
+									( config.rebuild
+										? '<button type="button" class="iss-ai-mini-btn js-iss-ai-site-hint-go">' + esc( t.site_hint_go || '' ) + '</button>'
+										: '<a class="iss-ai-mini-btn" href="' + esc( config.is_premium_theme ? ( config.license_url || '#' ) : ( config.upgrade_url || '#' ) ) + '" target="_blank" rel="noopener">' + esc( t.site_hint_upgrade || '' ) + '</a>' ) +
+								'</div>'
+								: '' ) +
+							'<p class="iss-ai-field-label">' + esc( t.content_label || '' ) + '</p>' +
+							'<div class="iss-ai-mode-choice js-iss-ai-content-mode">' +
+								'<label class="iss-ai-mode-option is-active"><input type="radio" name="iss_ai_content_mode" value="demo" checked> ' +
+									'<strong>' + esc( t.content_demo || '' ) + '</strong><span>' + esc( t.content_demo_hint || '' ) + '</span></label>' +
+								'<label class="iss-ai-mode-option"><input type="radio" name="iss_ai_content_mode" value="real"> ' +
+									'<strong>' + esc( t.content_real || '' ) + '</strong><span>' + esc( t.content_real_hint || '' ) + '</span></label>' +
+							'</div>' +
 
 							lookFields +
 
@@ -693,6 +713,7 @@ jQuery( function ( $ ) {
 							'<div class="iss-ai-site-card js-iss-ai-rb-card" hidden></div>' +
 							'<div class="iss-ai-actions">' +
 								'<button type="button" class="button button-primary js-iss-ai-rb-read">' + esc( t.rebuild_read || '' ) + '</button>' +
+								'<button type="button" class="button button-primary js-iss-ai-rb-build" hidden>' + esc( t.rebuild_build || '' ) + '</button>' +
 								'<button type="button" class="button js-iss-ai-rb-again" hidden>' + esc( t.rebuild_again || '' ) + '</button>' +
 								'<button type="button" class="button js-iss-ai-rb-back">' + esc( t.back || '' ) + '</button>' +
 							'</div>' +
@@ -1303,10 +1324,14 @@ jQuery( function ( $ ) {
 		return $keep.length && ! $keep.closest( '.js-iss-ai-keep-notice' ).attr( 'hidden' ) && $keep.is( ':checked' );
 	}
 
-	// Keeping the site keeps an imported starter site too: its deletion
-	// warning only applies when the AI demo takes the site over.
+	// Keeping the site deletes nothing — no previous AI demo, no imported
+	// starter site — so the deletion warning and its checkbox only show when
+	// the new demo takes the site over. A previous AI demo's tools stay.
 	function syncKeep() {
-		$root.find( '.js-iss-ai-replace-notice' ).toggleClass( 'is-kept-classic', !! ( keepSite() && $root.find( '.js-iss-ai-replace-notice' ).data( 'classic-only' ) ) );
+		var $notice = $root.find( '.js-iss-ai-replace-notice' );
+		var kept    = !! keepSite();
+		$notice.toggleClass( 'is-kept', kept );
+		$notice.toggleClass( 'is-kept-classic', kept && !! $notice.data( 'classic-only' ) );
 	}
 
 	// Prominent warning when a previous demo exists — an AI-generated one OR
@@ -1464,7 +1489,7 @@ jQuery( function ( $ ) {
 			showStep( 'plan' );
 		}
 
-		ajax( 'inspiro_starter_sites_ai_suggest_pages', { description: description }, 90000 )
+		ajax( 'inspiro_starter_sites_ai_suggest_pages', { description: description, content_mode: contentMode() }, 90000 )
 			.done( function ( response ) {
 				if ( response && response.success && response.data && response.data.pages && response.data.pages.length ) {
 					proceed( response.data.pages );
@@ -1481,7 +1506,7 @@ jQuery( function ( $ ) {
 
 	// Step 2 → 3: the real generation, constrained to the approved pages.
 	function startGeneration() {
-		var pages = collectPlanPages();
+		var pages = rebuildSource ? rebuildPages : collectPlanPages();
 		if ( ! pages.length ) {
 			planReviewState();
 			return;
@@ -1490,7 +1515,9 @@ jQuery( function ( $ ) {
 		var description = $.trim( $root.find( '.js-iss-ai-description' ).val() || '' );
 		var level       = currentDesignLevel();
 		var $replace    = $root.find( '.js-iss-ai-replace' );
-		var replace     = ( ! $replace.length || $replace.closest( '.js-iss-ai-replace-notice' ).attr( 'hidden' ) || $replace.is( ':checked' ) ) ? '1' : '0';
+		// A rebuild never deletes anything (it lands as drafts); the delete
+		// checkbox sits on the description step, which a rebuild skips.
+		var replace     = ! rebuildSource && ( ! $replace.length || $replace.closest( '.js-iss-ai-replace-notice' ).attr( 'hidden' ) || $replace.is( ':checked' ) ) ? '1' : '0';
 
 		running = true;
 		showStep( 'progress' );
@@ -1501,6 +1528,9 @@ jQuery( function ( $ ) {
 
 		ajax( 'inspiro_starter_sites_ai_generate', {
 			description: description,
+			// Rebuild: the read site replaces the description as the content.
+			source:      rebuildSource,
+			content_mode: rebuildSource ? 'real' : contentMode(),
 			replace:     replace,
 			keep:        keepSite() ? '1' : '0',
 			style:       $root.find( '.js-iss-ai-style .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
@@ -1794,7 +1824,7 @@ jQuery( function ( $ ) {
 		// typing there flows straight into step 1.
 		var heroText = $.trim( $( '.js-iss-ai-hero-input' ).val() || '' );
 		if ( heroText ) {
-			$root.find( '.js-iss-ai-description' ).val( heroText );
+			$root.find( '.js-iss-ai-description' ).val( heroText ).trigger( 'input' );
 		}
 	} );
 
@@ -1873,13 +1903,61 @@ jQuery( function ( $ ) {
 		syncKeep();
 	} );
 
+	/* -----------------------------------------------------------------
+	 * Real business or sample content
+	 * -------------------------------------------------------------- */
+
+	// Until the customer picks one, the choice follows what they type: a
+	// website, email or phone, or "our"/"my" in their language, means their
+	// own business.
+	var contentModeTouched = false;
+	var REAL_SIGNALS       = /(^|[\s(])(www\.)?[a-z0-9\u00c0-\u024f-]+\.(com|net|org|info|biz|de|at|ch|nl|be|fr|it|es|pt|pl|cz|sk|hu|ro|md|bg|gr|hr|si|dk|se|no|fi|ie|uk|co\.uk|eu|us|ca|au|nz|io|co|shop|store|online|site|studio|wine|cafe|restaurant|bar|hotel|app)\b|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|\+?\d[\d\s\/().-]{7,}\d|\b(our|my|mine|unser|unsere|unseren|unserem|mein|meine|meinen|notre|nos|mon|ma|nuestro|nuestra|mi|nostro|nostra|mio|mia|onze|ons|nasz|nasza|nostru|noastră|noastra|meu|mea)\b/i;
+	var DOMAIN_SIGNAL      = /(^|[\s(])((https?:\/\/)?(www\.)?[a-z0-9\u00c0-\u024f-]+\.(com|net|org|info|biz|de|at|ch|nl|be|fr|it|es|pt|pl|cz|sk|hu|ro|md|bg|gr|hr|si|dk|se|no|fi|ie|uk|co\.uk|eu|us|ca|au|nz|io|co|shop|store|online|site|studio|wine|cafe|restaurant|bar|hotel|app)(\/\S*)?)\b/i;
+
+	function contentMode() {
+		return $root.find( 'input[name="iss_ai_content_mode"]:checked' ).val() || 'demo';
+	}
+
+	function setContentMode( mode ) {
+		$root.find( 'input[name="iss_ai_content_mode"][value="' + mode + '"]' ).prop( 'checked', true );
+		$root.find( '.js-iss-ai-content-mode .iss-ai-mode-option' ).each( function () {
+			$( this ).toggleClass( 'is-active', $( this ).find( 'input' ).prop( 'checked' ) );
+		} );
+	}
+
+	function syncDescriptionHints() {
+		var text   = $root.find( '.js-iss-ai-description' ).val() || '';
+		var domain = text.match( DOMAIN_SIGNAL );
+
+		if ( ! contentModeTouched ) {
+			setContentMode( REAL_SIGNALS.test( text ) ? 'real' : 'demo' );
+		}
+		$root.find( '.js-iss-ai-site-hint' )
+			.attr( 'hidden', domain ? null : 'hidden' )
+			.data( 'url', domain ? domain[2] : '' );
+	}
+
+	$root.on( 'input', '.js-iss-ai-description', syncDescriptionHints );
+
+	$root.on( 'change', 'input[name="iss_ai_content_mode"]', function () {
+		contentModeTouched = true;
+		setContentMode( contentMode() );
+	} );
+
+	// The hint's button: the rebuild step with the address already filled in.
+	$root.on( 'click', '.js-iss-ai-site-hint-go', function () {
+		$root.find( '.js-iss-ai-rb-url' ).val( $root.find( '.js-iss-ai-site-hint' ).data( 'url' ) || '' );
+		showStep( 'rebuild' );
+		$root.find( '.js-iss-ai-rb-consent' ).trigger( 'focus' );
+	} );
+
 	$root.on( 'click', '.js-iss-ai-ideas-toggle', function () {
 		toggleIdeas( $root.find( '.js-iss-ai-ideas' ).attr( 'hidden' ) !== undefined );
 	} );
 
 	$root.on( 'click', '.js-iss-ai-idea', function () {
 		var text = $( this ).attr( 'data-text' ) || $( this ).text();
-		$root.find( '.js-iss-ai-description' ).val( text ).trigger( 'focus' );
+		$root.find( '.js-iss-ai-description' ).val( text ).trigger( 'input' ).trigger( 'focus' );
 		toggleIdeas( false );
 	} );
 
@@ -2134,7 +2212,31 @@ jQuery( function ( $ ) {
 		$card.removeAttr( 'hidden' );
 		$root.find( '.js-iss-ai-rb-read' ).attr( 'hidden', 'hidden' );
 		$root.find( '.js-iss-ai-rb-again' ).removeAttr( 'hidden' );
+
+		var pages = $.grep( site.pages || [], function ( page ) {
+			return page.keep;
+		} );
+		$root.find( '.js-iss-ai-rb-build' )
+			.data( 'source', site.key )
+			.data( 'pages', $.map( pages.slice( 0, MAX_REVIEW_PAGES ), function ( page ) {
+				return { source: page.page, title: page.label };
+			} ) )
+			.toggle( pages.length > 0 )
+			.removeAttr( 'hidden' );
 	}
+
+	// The read site goes through the regular build: plan, preview, pages,
+	// finalize. The server keeps it as drafts and checks every word.
+	$root.on( 'click', '.js-iss-ai-rb-build', function () {
+		if ( running ) {
+			return;
+		}
+		rebuildSource = String( $( this ).data( 'source' ) || '' );
+		rebuildPages  = $( this ).data( 'pages' ) || [];
+		if ( rebuildSource && rebuildPages.length ) {
+			startGeneration();
+		}
+	} );
 
 	$root.on( 'click', '.js-iss-ai-css-back', function () {
 		showStep( 'input' );
@@ -2305,11 +2407,11 @@ jQuery( function ( $ ) {
 		$error.attr( 'hidden', 'hidden' );
 		$button.prop( 'disabled', true ).text( t.enhancing || '' );
 
-		ajax( 'inspiro_starter_sites_ai_enhance_prompt', { description: current }, 60000 )
+		ajax( 'inspiro_starter_sites_ai_enhance_prompt', { description: current, content_mode: contentMode() }, 60000 )
 			.done( function ( response ) {
 				if ( response && response.success && response.data && response.data.description ) {
 					enhanceUndoValue = current;
-					$textarea.val( response.data.description ).trigger( 'focus' );
+					$textarea.val( response.data.description ).trigger( 'input' ).trigger( 'focus' );
 					$root.find( '.js-iss-ai-enhance-undo' ).removeAttr( 'hidden' );
 				} else {
 					$error.text( responseMessage( response ) ).removeAttr( 'hidden' );
@@ -2325,7 +2427,7 @@ jQuery( function ( $ ) {
 
 	$root.on( 'click', '.js-iss-ai-enhance-undo', function () {
 		if ( null !== enhanceUndoValue ) {
-			$root.find( '.js-iss-ai-description' ).val( enhanceUndoValue ).trigger( 'focus' );
+			$root.find( '.js-iss-ai-description' ).val( enhanceUndoValue ).trigger( 'input' ).trigger( 'focus' );
 			enhanceUndoValue = null;
 		}
 		$( this ).attr( 'hidden', 'hidden' );
@@ -2389,6 +2491,7 @@ jQuery( function ( $ ) {
 
 	$root.on( 'click', '.js-iss-ai-build', function () {
 		if ( ! running ) {
+			rebuildSource = '';
 			startGeneration();
 		}
 	} );

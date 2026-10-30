@@ -339,6 +339,7 @@ class AiDemoGenerator {
 				'has_license'      => '' !== AiProxyClient::premium_license(),
 				// "Rebuild my website" (Premium; behind a switch until it ships).
 				'rebuild'          => AiSiteRebuild::enabled() && '' !== AiProxyClient::premium_license(),
+				'rebuild_available' => AiSiteRebuild::enabled(),
 				// Pages of the active demo, for the regenerate picker (the
 				// posts page has no AI design to rebuild).
 				'demo_pages'       => $this->demo_pages_for_picker(),
@@ -508,6 +509,15 @@ class AiDemoGenerator {
 					'success_text_kept'  => __( 'The AI created these pages as drafts — your live site is unchanged. Preview them, then publish the ones you want and add them to your menu.', 'inspiro-starter-sites' ),
 					'view_site_kept'   => __( 'Preview new homepage', 'inspiro-starter-sites' ),
 					'edit_pages_kept'  => __( 'Review drafts', 'inspiro-starter-sites' ),
+					'content_label'    => __( 'What should the text be?', 'inspiro-starter-sites' ),
+					'content_demo'     => __( 'Sample demo content', 'inspiro-starter-sites' ),
+					'content_demo_hint' => __( 'AI writes realistic example text, names and prices for you to replace later.', 'inspiro-starter-sites' ),
+					'content_real'     => __( 'My real business', 'inspiro-starter-sites' ),
+					'content_real_hint' => __( 'Nothing made up: only what you write. Missing details (phone, opening hours, reviews) appear as [placeholders] to fill in.', 'inspiro-starter-sites' ),
+					'site_hint'        => __( 'Already have a website? Rebuild it instead, with its own text, photos and contact details.', 'inspiro-starter-sites' ),
+					'site_hint_premium' => __( 'Already have a website? Inspiro Premium rebuilds it with its own text, photos and contact details.', 'inspiro-starter-sites' ),
+					'site_hint_go'     => __( 'Rebuild my website', 'inspiro-starter-sites' ),
+					'site_hint_upgrade' => __( 'See Inspiro Premium', 'inspiro-starter-sites' ),
 					'rebuild_entry_title' => __( 'Rebuild my existing website', 'inspiro-starter-sites' ),
 					'rebuild_entry_hint'  => __( 'Enter your website address. We read your pages and rebuild them on a new design, with your own text.', 'inspiro-starter-sites' ),
 					'rebuild_intro'    => __( 'We read your homepage and the main pages of its menu, and keep your own text, contact details and photos. Nothing changes on that website.', 'inspiro-starter-sites' ),
@@ -543,7 +553,8 @@ class AiDemoGenerator {
 					'rebuild_thin'     => __( 'We could read only part of your text: your website may load some of it with JavaScript.', 'inspiro-starter-sites' ),
 					/* translators: %s: legal page names, e.g. "Impressum, Datenschutz" */
 					'rebuild_legal'    => __( 'Your legal pages (%s) are not rebuilt: link them from the new footer as they are.', 'inspiro-starter-sites' ),
-					'rebuild_next'     => __( 'Next you choose the pages to rebuild and a look. Coming in the next update.', 'inspiro-starter-sites' ),
+					'rebuild_next'     => __( 'Your pages are rebuilt as drafts next to your live site, with your own text and photos. Nothing goes live until you publish it.', 'inspiro-starter-sites' ),
+					'rebuild_build'    => __( 'Rebuild as drafts', 'inspiro-starter-sites' ),
 					'replace_title_classic' => __( 'You already have an imported demo', 'inspiro-starter-sites' ),
 					/* translators: %s: imported demo name */
 					'replace_notice_classic' => __( 'The previously imported “%s” demo was detected. Generating an AI demo will permanently delete its content (pages, posts, images, menus) — including any changes you made.', 'inspiro-starter-sites' ),
@@ -1785,6 +1796,7 @@ class AiDemoGenerator {
 			'demo-page',
 			array(
 				'description'      => isset( $record['description'] ) ? $record['description'] : '',
+				'content_mode'     => isset( $record['content_mode'] ) ? $record['content_mode'] : '',
 				'site_title'       => isset( $record['site_title'] ) ? $record['site_title'] : '',
 				'tagline'          => isset( $record['tagline'] ) ? $record['tagline'] : '',
 				'language'         => isset( $record['language'] ) ? $record['language'] : '',
@@ -2155,6 +2167,7 @@ class AiDemoGenerator {
 			'demo-plan',
 			array(
 				'description'    => $description,
+				'content_mode'   => $this->requested_content_mode(),
 				'style'          => $style,
 				'typography'     => $typography,
 				'palette_colors' => $palette ? $palette_options[ $palette ]['colors'] : array(),
@@ -2231,7 +2244,11 @@ class AiDemoGenerator {
 
 		// Whether to delete the previous AI demo before building the new one
 		// (the UI shows an explicit, checked-by-default warning checkbox).
-		$replace = ! isset( $_POST['replace'] ) || '0' !== $_POST['replace'];
+		// Never when the new pages land as drafts next to the live site (a
+		// rebuild, or "keep my site"): the previous demo may BE the live site
+		// — its homepage, menu and pages — and deleting it would leave the
+		// site without a homepage while the new one is still a draft.
+		$replace = ! $keep && ( ! isset( $_POST['replace'] ) || '0' !== $_POST['replace'] );
 
 		// The kept site has its own blog: no Blog page (it would never become
 		// the posts page) and no dummy posts mixed into the real ones.
@@ -2286,6 +2303,8 @@ class AiDemoGenerator {
 				'engine'         => $engine,
 				'replace'        => $replace,
 				'keep'           => $keep,
+				// Real business or sample content, for the page builds.
+				'content_mode'   => $this->requested_content_mode(),
 				// AiSiteRebuild cache key of the site being rebuilt ('' = demo).
 				'rebuild'        => $this->rebuild ? $this->rebuild['key'] : '',
 				'created_pages'  => array(), // page index => post ID
@@ -2345,7 +2364,13 @@ class AiDemoGenerator {
 			wp_send_json_error( array( 'message' => esc_html__( 'Type a few words about the website first.', 'inspiro-starter-sites' ) ) );
 		}
 
-		$text = $this->proxy->claude_task( 'demo-enhance', array( 'description' => $description ) );
+		$text = $this->proxy->claude_task(
+			'demo-enhance',
+			array(
+				'description'  => $description,
+				'content_mode' => $this->requested_content_mode(),
+			)
+		);
 
 		if ( is_wp_error( $text ) ) {
 			wp_send_json_error(
@@ -2389,8 +2414,9 @@ class AiDemoGenerator {
 		$result = $this->proxy->claude_task_json(
 			'demo-pages',
 			array(
-				'description' => $description,
-				'max_pages'   => self::MAX_REVIEW_PAGES,
+				'description'  => $description,
+				'max_pages'    => self::MAX_REVIEW_PAGES,
+				'content_mode' => $this->requested_content_mode(),
 			)
 		);
 
@@ -2543,6 +2569,7 @@ class AiDemoGenerator {
 			'demo-page',
 			array(
 				'description'      => $state['description'],
+				'content_mode'     => isset( $state['content_mode'] ) ? $state['content_mode'] : '',
 				'site_title'       => $state['plan']['site_title'],
 				'tagline'          => $state['plan']['tagline'],
 				'language'         => isset( $state['plan']['language'] ) ? $state['plan']['language'] : '',
@@ -3173,6 +3200,8 @@ class AiDemoGenerator {
 			'widgets'     => $footer_widget_ids,
 			// Pages added to this demo later are drafts too.
 			'keep'        => $keep,
+			// ...and follow the same rule on invented details.
+			'content_mode' => isset( $state['content_mode'] ) ? $state['content_mode'] : '',
 			// Rebuild: the old site, which old page each new page replaces,
 			// and what the fidelity check kept and rejected per page.
 			'rebuild'     => ! empty( $state['plan']['rebuild'] ) ? array(
@@ -3838,6 +3867,19 @@ class AiDemoGenerator {
 	 *
 	 * @return string 'catalog' or 'html'.
 	 */
+	/**
+	 * What the customer said the text should be: 'real' (my business —
+	 * nothing made up, placeholders for what is missing), 'demo' (sample
+	 * content the AI may invent) or '' (not chosen; the AI server decides
+	 * from the description, as before).
+	 *
+	 * @return string
+	 */
+	private function requested_content_mode() {
+		$mode = isset( $_POST['content_mode'] ) ? sanitize_key( wp_unslash( $_POST['content_mode'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		return in_array( $mode, array( 'real', 'demo' ), true ) ? $mode : '';
+	}
+
 	private function requested_engine() {
 		$engine = isset( $_POST['engine'] ) ? sanitize_key( wp_unslash( $_POST['engine'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		if ( '' === $engine ) {
@@ -3861,6 +3903,7 @@ class AiDemoGenerator {
 	private function blueprint_plan( $description, $style, $typography, array $palette_colors, array $approved, $seed, StreamingResponse $stream ) {
 		$vars = array(
 			'description'    => $description,
+			'content_mode'   => $this->requested_content_mode(),
 			'style'          => $style,
 			'typography'     => $typography,
 			'palette_colors' => $palette_colors,
@@ -4258,6 +4301,7 @@ class AiDemoGenerator {
 
 		$copy_vars = array(
 			'description'  => $state['description'],
+			'content_mode' => isset( $state['content_mode'] ) ? $state['content_mode'] : '',
 			'site_title'   => $plan['site_title'],
 			'tagline'      => $plan['tagline'],
 			'language'     => isset( $plan['language'] ) ? $plan['language'] : '',

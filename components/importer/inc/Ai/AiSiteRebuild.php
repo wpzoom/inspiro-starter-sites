@@ -168,7 +168,12 @@ class AiSiteRebuild {
 			);
 		}
 
-		$profile = $this->proxy->claude_task_json( 'site-extract', $this->task_vars( $site ), $heartbeat );
+		$vars    = $this->task_vars( $site );
+		$profile = $this->proxy->claude_task_json( 'site-extract', $vars, $heartbeat );
+		// A malformed reply is retried once, as the generator does.
+		if ( is_wp_error( $profile ) && 'ai_parse_error' === $profile->get_error_code() ) {
+			$profile = $this->proxy->claude_task_json( 'site-extract', $vars, $heartbeat );
+		}
 		if ( is_wp_error( $profile ) ) {
 			return $profile;
 		}
@@ -324,6 +329,15 @@ class AiSiteRebuild {
 			}
 		}
 
+		// The site's own links state these too: a phone it links to (tel:)
+		// and the address in its Google Maps link, when the text has none.
+		if ( ! $profile['contact']['phones'] && $site['contact']['phones'] ) {
+			$profile['contact']['phones'] = array_slice( $site['contact']['phones'], 0, 2 );
+		}
+		if ( '' === $profile['contact']['address'] && ! empty( $site['contact']['maps'] ) ) {
+			$profile['contact']['address'] = $site['contact']['maps'][0];
+		}
+
 		// Sections: ids that exist, each once, never a dropped one.
 		$dropped = array_flip( $profile['drop'] );
 		foreach ( isset( $raw['pages'] ) ? (array) $raw['pages'] : array() as $entry ) {
@@ -358,7 +372,8 @@ class AiSiteRebuild {
 				'url'      => $pages[ $id ]['url'],
 				'label'    => $pages[ $id ]['label'],
 				'purpose'  => isset( $entry['purpose'] ) ? sanitize_key( (string) $entry['purpose'] ) : 'other',
-				'keep'     => ! isset( $entry['keep'] ) || false !== $entry['keep'],
+				// The homepage is always rebuilt: it is what the site is.
+				'keep'     => 'p0' === $id || ! isset( $entry['keep'] ) || false !== $entry['keep'],
 				'sections' => $sections,
 			);
 		}
@@ -599,7 +614,7 @@ class AiSiteRebuild {
 			}
 		} else {
 			foreach ( $by_source as $id => $page ) {
-				if ( $page['keep'] && $page['sections'] && ! in_array( $page['purpose'], array( 'news', 'jobs' ), true ) ) {
+				if ( 'p0' === $id || ( $page['keep'] && $page['sections'] && ! in_array( $page['purpose'], array( 'news', 'jobs' ), true ) ) ) {
 					$wanted[] = array(
 						'source' => $id,
 						'title'  => $page['label'],
@@ -1473,6 +1488,7 @@ class AiSiteRebuild {
 		$pages = array();
 		foreach ( $profile['pages'] as $page ) {
 			$pages[] = array(
+				'page'     => $page['page'],
 				'label'    => $page['label'],
 				'url'      => $page['url'],
 				'purpose'  => $page['purpose'],
