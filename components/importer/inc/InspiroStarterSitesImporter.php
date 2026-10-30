@@ -275,6 +275,7 @@ class InspiroStarterSitesImporter {
 					'missing_plugins'  => $this->plugin_installer->get_missing_plugins(),
 					'plugin_url'       => INSPIRO_STARTER_SITES_URL . 'components/importer/',
 					'import_url'       => $this->get_plugin_settings_url( [ 'step' => 'import' ] ),
+					'delete_confirm'   => __( 'Permanently delete the imported demo content (pages, posts, images, menus and widgets), including any changes you made to it? This cannot be undone.', 'inspiro-starter-sites' ),
 					'feedback'         => array(
 						'endpoint'   => $feedback_endpoint,
 						'site'       => array(

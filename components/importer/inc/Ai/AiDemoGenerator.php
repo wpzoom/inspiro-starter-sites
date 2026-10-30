@@ -505,6 +505,10 @@ class AiDemoGenerator {
 					'replace_notice_classic' => __( 'The previously imported “%s” demo was detected. Generating an AI demo will permanently delete its content (pages, posts, images, menus) — including any changes you made.', 'inspiro-starter-sites' ),
 					'replace_notice_classic_unnamed' => __( 'A previously imported starter site was detected. Generating an AI demo will permanently delete its content (pages, posts, images, menus) — including any changes you made.', 'inspiro-starter-sites' ),
 					'delete_now'       => __( 'Delete demo now', 'inspiro-starter-sites' ),
+					/* translators: %s: what will be deleted, as the warning above the description says */
+					'replace_confirm'  => __( '%s Continue and delete it?', 'inspiro-starter-sites' ),
+					/* translators: %s: page title */
+					'regen_confirm'    => __( 'Replace the current design of "%s"? Its layout and any changes you made to it are replaced. This cannot be undone.', 'inspiro-starter-sites' ),
 					'delete_confirm'   => __( 'Permanently delete all AI-generated pages, their images, the demo menu and footer widgets? Content that existed before the AI demo is not affected. This cannot be undone.', 'inspiro-starter-sites' ),
 					'deleting'         => __( 'Deleting…', 'inspiro-starter-sites' ),
 					// Plain "&" — the modal's JS escapes strings before insertion.
@@ -759,7 +763,7 @@ class AiDemoGenerator {
 
 			$notice.on( 'click', '.js-inspiro-ai-import-notice-delete', function () {
 				var $btn = $( this );
-				if ( $btn.prop( 'disabled' ) ) {
+				if ( $btn.prop( 'disabled' ) || ! window.confirm( <?php echo wp_json_encode( __( 'Permanently delete all AI-generated pages, their images, the demo menu and footer widgets? Content that existed before the AI demo is not affected. This cannot be undone.', 'inspiro-starter-sites' ) ); ?> ) ) {
 					return;
 				}
 				$btn.prop( 'disabled', true );

@@ -1475,6 +1475,13 @@ jQuery( function ( $ ) {
 		var $replace    = $root.find( '.js-iss-ai-replace' );
 		var replace     = ( ! $replace.length || $replace.closest( '.js-iss-ai-replace-notice' ).attr( 'hidden' ) || $replace.is( ':checked' ) ) ? '1' : '0';
 
+		// Deleting the previous demo is permanent: confirm with the same
+		// words the warning above the description uses.
+		if ( '1' === replace && ! $replace.closest( '.js-iss-ai-replace-notice' ).attr( 'hidden' ) && ! $replace.closest( '.js-iss-ai-replace-notice' ).hasClass( 'is-kept' )
+			&& ! window.confirm( sprintf( t.replace_confirm || '%s', $root.find( '.js-iss-ai-replace-text' ).text() ) ) ) {
+			return;
+		}
+
 		running = true;
 		showStep( 'progress' );
 		// Clear the previous run's checklist — it would otherwise linger
@@ -2120,6 +2127,10 @@ jQuery( function ( $ ) {
 			// In append mode the description is what gets built — required.
 			if ( 'append' === mode && ! feedback ) {
 				$root.find( '.js-iss-ai-pt-feedback' ).focus();
+				return;
+			}
+			// Replacing overwrites the page, edits included: confirm first.
+			if ( 'replace' === mode && ! window.confirm( sprintf( t.regen_confirm || '', $root.find( '.js-iss-ai-pt-page-select option:selected' ).text() ) ) ) {
 				return;
 			}
 			action = 'inspiro_starter_sites_ai_regenerate_page';
