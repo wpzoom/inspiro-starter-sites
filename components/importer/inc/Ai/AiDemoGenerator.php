@@ -176,31 +176,31 @@ class AiDemoGenerator {
 				<?php esc_html_e( 'AI demo:', 'inspiro-starter-sites' ); ?>
 				<strong class="js-iss-ai-hero-existing-title"><?php echo esc_html( $previous && '' !== $previous['site_title'] ? $previous['site_title'] : __( 'active', 'inspiro-starter-sites' ) ); ?></strong>
 			</button>
-			<p class="inspiro-starter-sites-ai-hero__kicker">
-				<span aria-hidden="true">&#10024;</span>
-				<?php esc_html_e( 'AI Demo Generator', 'inspiro-starter-sites' ); ?>
-				<span class="inspiro-starter-sites-ai-hero__beta"><?php esc_html_e( 'Beta', 'inspiro-starter-sites' ); ?></span>
-			</p>
-			<h2 class="inspiro-starter-sites-ai-hero__title"><?php esc_html_e( 'What website do you need?', 'inspiro-starter-sites' ); ?></h2>
-			<p class="inspiro-starter-sites-ai-hero__sub"><?php esc_html_e( 'Describe it — AI designs and builds a complete demo with pages, photos, menu and colors in about two minutes.', 'inspiro-starter-sites' ); ?></p>
-
-			<div class="inspiro-starter-sites-ai-hero__prompt">
-				<textarea class="inspiro-starter-sites-ai-hero__input js-iss-ai-hero-input" rows="3" maxlength="1200" placeholder="<?php esc_attr_e( 'e.g. A website for a small coffee roastery in Portland that sells beans online and hosts tasting events…', 'inspiro-starter-sites' ); ?>"></textarea>
-				<div class="inspiro-starter-sites-ai-hero__actions">
-					<button type="button" class="inspiro-starter-sites-ai-hero__ideas js-iss-ai-hero-ideas">
-						<span aria-hidden="true">&#128161;</span> <?php esc_html_e( 'Need inspiration? View ideas', 'inspiro-starter-sites' ); ?>
-					</button>
-					<button type="button" class="inspiro-starter-sites-ai-hero__button js-inspiro-starter-sites-ai-generate">
-						<?php esc_html_e( 'Generate demo', 'inspiro-starter-sites' ); ?> <span aria-hidden="true">&rarr;</span>
-					</button>
-				</div>
+			<div class="inspiro-starter-sites-ai-hero__ribbons" aria-hidden="true">
+				<?php for ( $i = 0; $i < 16; $i++ ) : ?><i></i><?php endfor; ?>
 			</div>
 
-			<ul class="inspiro-starter-sites-ai-hero__badges">
-				<li><?php esc_html_e( 'Free generations included', 'inspiro-starter-sites' ); ?></li>
-				<li><?php esc_html_e( 'Ready in about 2 minutes', 'inspiro-starter-sites' ); ?></li>
-				<li><?php esc_html_e( '100% editable blocks', 'inspiro-starter-sites' ); ?></li>
-			</ul>
+			<div class="inspiro-starter-sites-ai-hero__inner">
+				<p class="inspiro-starter-sites-ai-hero__kicker">
+					<?php esc_html_e( 'AI Demo Generator', 'inspiro-starter-sites' ); ?>
+					<span class="inspiro-starter-sites-ai-hero__beta"><?php esc_html_e( 'Beta', 'inspiro-starter-sites' ); ?></span>
+				</p>
+				<h2 class="inspiro-starter-sites-ai-hero__title"><?php esc_html_e( 'What website do you need?', 'inspiro-starter-sites' ); ?></h2>
+
+				<div class="inspiro-starter-sites-ai-hero__prompt">
+					<textarea class="inspiro-starter-sites-ai-hero__input js-iss-ai-hero-input" rows="3" maxlength="1200" placeholder="<?php esc_attr_e( 'Describe it — pages, photos, menu and colors are built for you…', 'inspiro-starter-sites' ); ?>"></textarea>
+					<div class="inspiro-starter-sites-ai-hero__actions">
+						<button type="button" class="inspiro-starter-sites-ai-hero__ideas js-iss-ai-hero-ideas">
+							<svg aria-hidden="true" width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v1.5M4.5 10H3M17 10h-1.5M5.6 5.6l-1-1M14.4 5.6l1-1M7.5 14.5h5M8.5 17h3M10 6.5a3.5 3.5 0 0 1 2 6.4v1.6H8v-1.6a3.5 3.5 0 0 1 2-6.4z"/></svg>
+							<?php esc_html_e( 'Ideas', 'inspiro-starter-sites' ); ?>
+						</button>
+						<button type="button" class="inspiro-starter-sites-ai-hero__button js-inspiro-starter-sites-ai-generate">
+							<?php esc_html_e( 'Generate demo', 'inspiro-starter-sites' ); ?>
+							<svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h11M11 5l5 5-5 5"/></svg>
+						</button>
+					</div>
+				</div>
+			</div>
 		</div>
 		<?php
 	}
