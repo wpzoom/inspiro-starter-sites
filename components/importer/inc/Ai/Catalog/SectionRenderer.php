@@ -55,6 +55,9 @@ class SectionRenderer {
 	/** @var int WPZOOM Forms form ID, 0 drops the form block */
 	private $form_id;
 
+	/** @var array|null network => profile URL; null keeps the demo's social icons */
+	private $social;
+
 	/** @var array per-render state */
 	private $flat   = array();
 	private $counts = array();
@@ -67,6 +70,8 @@ class SectionRenderer {
 	 *     @type callable $resolve_image  Photo resolver.
 	 *     @type string   $fallback_query Photo query when a slot has none.
 	 *     @type int      $form_id        Form for contact sections.
+	 *     @type array    $social         Network => URL: social icons show only
+	 *                                    these (a real business; [] = none).
 	 * }
 	 */
 	public function __construct( array $args ) {
@@ -77,6 +82,7 @@ class SectionRenderer {
 		$this->resolve_asset  = isset( $args['resolve_asset'] ) ? $args['resolve_asset'] : null;
 		$this->fallback_query = isset( $args['fallback_query'] ) ? (string) $args['fallback_query'] : 'modern interior';
 		$this->form_id        = isset( $args['form_id'] ) ? (int) $args['form_id'] : 0;
+		$this->social         = isset( $args['social'] ) && is_array( $args['social'] ) ? $args['social'] : null;
 	}
 
 	/**
@@ -225,6 +231,15 @@ class SectionRenderer {
 
 		if ( 'wpzoom-forms/form-block' === $name && ! $this->form_id ) {
 			return null;
+		}
+
+		// A real business's profiles only, never the demo's icon row.
+		if ( 'core/social-link' === $name && null !== $this->social ) {
+			$service = isset( $block['attrs']['service'] ) ? (string) $block['attrs']['service'] : '';
+			if ( ! isset( $this->social[ $service ] ) ) {
+				return null;
+			}
+			$block['attrs']['url'] = $this->social[ $service ];
 		}
 
 		if ( ! empty( $block['innerBlocks'] ) ) {

@@ -350,6 +350,11 @@ jQuery( function ( $ ) {
 			return false;
 		}
 
+		// Deleting is permanent: ask once more.
+		if ( ! window.confirm( inspiro_starter_sites.delete_confirm || '' ) ) {
+			return false;
+		}
+
 		$button.addClass('inspiro-starter-sites-button-disabled');
 		// AJAX call to delete the imported content.
 

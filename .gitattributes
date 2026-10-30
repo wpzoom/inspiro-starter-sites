@@ -8,6 +8,7 @@
 # Directories
 /.wordpress-org export-ignore
 /.github export-ignore
+/components/importer/assets/editor-src export-ignore
 
 # Files
 .eslintrc.json export-ignore
@@ -18,3 +19,4 @@
 composer.json export-ignore
 composer.lock export-ignore
 phpstan.neon.dist export-ignore
+webpack.editor.config.cjs export-ignore

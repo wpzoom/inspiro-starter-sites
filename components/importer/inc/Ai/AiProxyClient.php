@@ -198,7 +198,8 @@ class AiProxyClient {
 		}
 
 		return array(
-			'model'      => self::MODEL,
+			// The proxy owns model choice: an unknown name maps to its default.
+			'model'      => 'proxy-default',
 			'max_tokens' => isset( $built['max_tokens'] ) ? (int) $built['max_tokens'] : 8000,
 			'stream'     => false,
 			'thinking'   => array( 'type' => 'disabled' ),
@@ -236,6 +237,84 @@ class AiProxyClient {
 		}
 
 		return $decoded;
+	}
+
+	/**
+	 * Run several server-defined tasks at once (curl_multi), e.g. the copy
+	 * for a page split into chunks of sections: the slowest chunk sets the
+	 * wait instead of the sum. Falls back to one after another without cURL.
+	 *
+	 * @param array[]       $tasks     [ [ 'task' => slug, 'vars' => array ], ... ] (keys kept).
+	 * @param callable|null $heartbeat Keep-alive tick, called while waiting.
+	 * @return array Same keys => text or WP_Error.
+	 */
+	public function claude_tasks_parallel( array $tasks, $heartbeat = null ) {
+		$out = array();
+		if ( ! $tasks ) {
+			return $out;
+		}
+		if ( count( $tasks ) === 1 || ! function_exists( 'curl_multi_init' ) || $this->local_task_body( 'probe', array() ) !== null ) {
+			foreach ( $tasks as $key => $t ) {
+				$out[ $key ] = $this->claude_task( $t['task'], $t['vars'], $heartbeat );
+			}
+			return $out;
+		}
+
+		$multi   = curl_multi_init();
+		$handles = array();
+		foreach ( $tasks as $key => $t ) {
+			$body = wp_json_encode(
+				array(
+					'task'        => $t['task'],
+					'vars'        => $t['vars'],
+					'stream'      => false,
+					'site_key'    => (string) get_option( self::SITE_KEY_OPTION, '' ),
+					'license_key' => self::premium_license(),
+				)
+			);
+			$ch = curl_init( $this->endpoint( 'claude' ) );
+			curl_setopt_array(
+				$ch,
+				array(
+					CURLOPT_POST           => true,
+					CURLOPT_POSTFIELDS     => $body,
+					CURLOPT_HTTPHEADER     => array( 'Content-Type: application/json' ),
+					CURLOPT_RETURNTRANSFER => true,
+					CURLOPT_TIMEOUT        => 300,
+					CURLOPT_CONNECTTIMEOUT => 30,
+				)
+			);
+			curl_multi_add_handle( $multi, $ch );
+			$handles[ $key ] = $ch;
+		}
+
+		$t0 = microtime( true );
+		do {
+			$status = curl_multi_exec( $multi, $running );
+			if ( $running ) {
+				curl_multi_select( $multi, 1.0 );
+			}
+			if ( $heartbeat ) {
+				call_user_func( $heartbeat );
+			}
+		} while ( $running && CURLM_OK === $status );
+		self::log_timing( 'claude-parallel:' . count( $handles ), $t0 );
+
+		foreach ( $handles as $key => $ch ) {
+			$body = curl_multi_getcontent( $ch );
+			$code = (int) curl_getinfo( $ch, CURLINFO_HTTP_CODE );
+			$err  = curl_error( $ch );
+			curl_multi_remove_handle( $multi, $ch );
+			curl_close( $ch );
+			if ( '' !== $err || null === $body || false === $body ) {
+				error_log( '[inspiro-starter-sites AI] proxy transport error: ' . $err ); // phpcs:ignore
+				$out[ $key ] = new WP_Error( 'ai_proxy_error', 'Proxy request failed: ' . $err );
+				continue;
+			}
+			$out[ $key ] = $this->parse_claude_result( $code, $body );
+		}
+		curl_multi_close( $multi );
+		return $out;
 	}
 
 	/**
@@ -463,8 +542,19 @@ class AiProxyClient {
 			return new WP_Error( 'ai_proxy_error', $result->get_error_message() );
 		}
 
-		$code = $result['code'];
-		$raw  = json_decode( $result['body'], true );
+		return $this->parse_claude_result( $result['code'], $result['body'] );
+	}
+
+	/**
+	 * Text of a Claude-route response, or the error it carries.
+	 *
+	 * @param int    $code HTTP status.
+	 * @param string $body Response body (keep-alive padding allowed).
+	 * @return string|WP_Error
+	 */
+	private function parse_claude_result( $code, $body ) {
+		$result = array( 'body' => $body );
+		$raw    = json_decode( trim( (string) $body ), true );
 
 		if ( $code < 200 || $code >= 300 || empty( $raw['success'] ) ) {
 			$msg = '';
@@ -472,6 +562,12 @@ class AiProxyClient {
 				$msg = isset( $raw['message'] ) ? $raw['message'] : ( isset( $raw['data']['error']['message'] ) ? $raw['data']['error']['message'] : '' );
 			}
 			error_log( '[inspiro-starter-sites AI] proxy error (HTTP ' . $code . '): ' . ( $msg ? $msg : substr( (string) $result['body'], 0, 500 ) ) ); // phpcs:ignore
+			// The task gate's own verdicts keep their code, so callers that
+			// run a task without a quota call first (the page planner) can
+			// still send the user to the connect step.
+			if ( is_array( $raw ) && isset( $raw['code'] ) && 'registration_required' === $raw['code'] ) {
+				return new WP_Error( 'ai_registration_required', __( 'Connect with your email to use free AI generations.', 'inspiro-starter-sites' ) );
+			}
 			return new WP_Error( 'ai_proxy_error', $msg ? $msg : ( 'HTTP ' . $code ) );
 		}
 
@@ -774,8 +870,10 @@ class AiProxyClient {
 	 * @return array|WP_Error [ 'used' => int, 'limit' => int, 'remaining' => int, 'allowed' => bool ].
 	 *                        Error code `ai_registration_required` means the site
 	 *                        must (re)connect with an email first.
+	 * @param string $feature Quota feature slug (default: the demo generator's).
 	 */
-	public function quota( $action ) {
+	public function quota( $action, $feature = self::FEATURE ) {
+		$feature  = sanitize_key( (string) $feature ) ?: self::FEATURE;
 		$response = wp_remote_post(
 			$this->endpoint( 'ai-quota' ),
 			array(
@@ -783,7 +881,7 @@ class AiProxyClient {
 				'body'    => wp_json_encode(
 					array(
 						'action'      => $action,
-						'feature'     => self::FEATURE,
+						'feature'     => $feature,
 						'site_key'    => (string) get_option( self::SITE_KEY_OPTION, '' ),
 						// A verified premium license raises the limit
 						// server-side; invalid ones silently fall back to

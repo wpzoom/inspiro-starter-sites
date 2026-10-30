@@ -728,15 +728,103 @@ body.iss-ai-open {
 }
 
 /* Prompt-first hero on the importer page — the AI generator's entry point.
-   Type the idea right here; it pre-fills the modal's description. */
+   Near-black, with soft vertical ribbons rising from the bottom like brushed
+   metal and breathing slowly; one headline, one prompt. Type the idea right
+   here; it pre-fills the modal's description. */
 .inspiro-starter-sites-ai-hero {
   position: relative;
   margin: 4px 0 30px;
-  padding: 42px 40px 30px;
-  background: radial-gradient(ellipse 60% 90% at 50% -20%, #2c2c31 0%, #151517 55%, #101012 100%);
-  border-radius: 8px;
+  padding: 64px 40px 56px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #050506;
   color: #ffffff;
   text-align: center;
+}
+
+.inspiro-starter-sites-ai-hero__ribbons {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* One seamless band of light and shadow across the whole width (no
+   per-ribbon edges): a wide repeating gradient that drifts sideways and
+   breathes. Rises from the bottom, fading out upward. */
+.inspiro-starter-sites-ai-hero__ribbons::before,
+.inspiro-starter-sites-ai-hero__ribbons::after {
+  content: "";
+  position: absolute;
+  left: -50%;
+  right: -50%;
+  bottom: 0;
+  height: 64%;
+  background: repeating-linear-gradient(90deg,
+    #141716 0px,
+    #2a302d 90px,
+    #5e6a64 180px,
+    #2a302d 270px,
+    #141716 360px);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 65%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 65%);
+  transform-origin: bottom;
+  animation: iss-ai-hero-drift 36s linear infinite, iss-ai-hero-breathe 10s ease-in-out infinite;
+}
+
+/* A second, wider band moving the other way, blended in for depth. */
+.inspiro-starter-sites-ai-hero__ribbons::after {
+  height: 54%;
+  background: repeating-linear-gradient(90deg,
+    rgba(20, 23, 22, 0) 0px,
+    rgba(94, 106, 100, 0.5) 260px,
+    rgba(20, 23, 22, 0) 520px);
+  mix-blend-mode: screen;
+  animation: iss-ai-hero-drift-back 48s linear infinite, iss-ai-hero-fade 9s ease-in-out infinite;
+}
+
+/* Darkens the middle so the headline and prompt sit on near-black. */
+.inspiro-starter-sites-ai-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 65% at 50% 42%, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.25) 70%, transparent 100%);
+  pointer-events: none;
+}
+
+@keyframes iss-ai-hero-breathe {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.06); }
+}
+
+@keyframes iss-ai-hero-drift {
+  0% { transform: translateX(0) scaleY(1); }
+  50% { transform: translateX(-180px) scaleY(1.05); }
+  100% { transform: translateX(-360px) scaleY(1); }
+}
+
+@keyframes iss-ai-hero-drift-back {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(520px); }
+}
+
+@keyframes iss-ai-hero-fade {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inspiro-starter-sites-ai-hero__ribbons::before,
+  .inspiro-starter-sites-ai-hero__ribbons::after {
+    animation: none;
+  }
+}
+
+.inspiro-starter-sites-ai-hero__inner {
+  position: relative;
+  z-index: 2;
+  max-width: 760px;
+  margin: 0 auto;
 }
 
 /* Collapse/expand toggle — only on the premium theme's dashboard, where the
@@ -746,17 +834,20 @@ body.iss-ai-open {
   position: absolute;
   top: 16px;
   inset-inline-end: 16px;
+  z-index: 3;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #c0c4cc;
+  background: rgba(255, 255, 255, 0.05);
+  color: #a1a1aa;
   cursor: pointer;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   transition: background 0.12s ease, color 0.12s ease;
 }
 
@@ -766,7 +857,7 @@ body.iss-ai-open {
 }
 
 .inspiro-starter-sites-ai-hero__toggle:focus-visible {
-  outline: 2px solid #59d9a6;
+  outline: 2px solid #ffffff;
   outline-offset: 2px;
 }
 
@@ -797,9 +888,8 @@ body.iss-ai-open {
   cursor: pointer;
 }
 
-.inspiro-starter-sites-ai-hero.is-collapsed .inspiro-starter-sites-ai-hero__sub,
-.inspiro-starter-sites-ai-hero.is-collapsed .inspiro-starter-sites-ai-hero__prompt,
-.inspiro-starter-sites-ai-hero.is-collapsed .inspiro-starter-sites-ai-hero__badges {
+.inspiro-starter-sites-ai-hero.is-collapsed .inspiro-starter-sites-ai-hero__ribbons,
+.inspiro-starter-sites-ai-hero.is-collapsed .inspiro-starter-sites-ai-hero__prompt {
   display: none;
 }
 
@@ -808,20 +898,23 @@ body.iss-ai-open {
   position: absolute;
   top: 16px;
   inset-inline-end: 16px;
+  z-index: 3;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   max-width: 260px;
   padding: 7px 13px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #c0c4cc;
+  background: rgba(255, 255, 255, 0.05);
+  color: #a1a1aa;
   font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   transition: background 0.12s ease, color 0.12s ease;
 }
 
@@ -843,7 +936,7 @@ body.iss-ai-open {
 
 .inspiro-starter-sites-ai-hero__existing-gear {
   flex: 0 0 auto;
-  color: #59d9a6;
+  color: #34d399;
   transition: transform 0.25s ease;
 }
 
@@ -859,59 +952,123 @@ body.iss-ai-open {
   margin: 0 0 14px;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #b9bdc6;
+  color: #71717a;
 }
 
 .inspiro-starter-sites-ai-hero__beta {
   padding: 2px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
+  color: #a1a1aa;
   letter-spacing: 0.08em;
 }
 
 .inspiro-starter-sites-ai-hero__title {
-  margin: 0 0 10px;
-  font-size: 34px;
-  line-height: 1.15;
-  font-weight: 600;
+  margin: 0 0 26px;
+  font-size: 36px;
+  line-height: 1.1;
+  font-weight: 500;
+  letter-spacing: -0.025em;
   color: #ffffff;
 }
 
-.inspiro-starter-sites-ai-hero__sub {
-  max-width: 560px;
-  margin: 0 auto 26px;
-  font-size: 14px;
-  line-height: 1.55;
-  color: #c0c4cc;
-}
-
+/* The prompt: frosted glass over the ribbons. */
 .inspiro-starter-sites-ai-hero__prompt {
-  max-width: 720px;
+  position: relative;
   margin: 0 auto;
-  padding: 16px 16px 12px;
-  background: #202023;
-  border: 1px solid #34343a;
-  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(14, 14, 15, 0.72);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
   text-align: left;
   transition: border-color 0.15s ease;
 }
 
 .inspiro-starter-sites-ai-hero__prompt:focus-within {
-  border-color: #6b7280;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+/* A thin gradient ring around the prompt: faint at rest, and while the
+   textarea is focused it brightens and the light travels around the box.
+   The angle is a registered custom property so the conic gradient can
+   animate; browsers without @property get a static ring. */
+@property --iss-ai-ring {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.inspiro-starter-sites-ai-hero__prompt::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: 17px;
+  padding: 1px;
+  background: conic-gradient(from var(--iss-ai-ring),
+    rgba(255, 255, 255, 0) 0deg,
+    rgba(167, 243, 208, 0.9) 40deg,
+    rgba(255, 255, 255, 1) 70deg,
+    rgba(11, 180, 170, 0.9) 100deg,
+    rgba(255, 255, 255, 0) 150deg,
+    rgba(255, 255, 255, 0) 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0.35;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  animation: iss-ai-hero-ring 6s linear infinite;
+}
+
+.inspiro-starter-sites-ai-hero__prompt:focus-within::before {
+  opacity: 1;
+  animation-duration: 3.5s;
+}
+
+/* The soft halo the ring casts, only while focused. */
+.inspiro-starter-sites-ai-hero__prompt::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -2;
+  border-radius: 17px;
+  box-shadow: 0 0 0 0 rgba(11, 180, 170, 0);
+  pointer-events: none;
+  transition: box-shadow 0.3s ease;
+}
+
+.inspiro-starter-sites-ai-hero__prompt:focus-within::after {
+  box-shadow: 0 0 36px 2px rgba(11, 180, 170, 0.22);
+}
+
+@keyframes iss-ai-hero-ring {
+  to { --iss-ai-ring: 360deg; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inspiro-starter-sites-ai-hero__prompt::before {
+    animation: none;
+  }
 }
 
 .inspiro-starter-sites-ai-hero__input {
   display: block;
   width: 100%;
-  min-height: 68px;
+  box-sizing: border-box;
+  min-height: 108px;
+  padding: 18px 20px 0;
   border: 0;
   background: transparent;
-  color: #f2f3f5;
-  font-size: 14px;
+  color: #f4f4f5;
+  font-size: 15px;
   line-height: 1.55;
-  resize: vertical;
+  resize: none;
 }
 
 .inspiro-starter-sites-ai-hero__input:focus {
@@ -920,82 +1077,89 @@ body.iss-ai-open {
 }
 
 .inspiro-starter-sites-ai-hero__input::placeholder {
-  color: #7d818b;
+  color: #71717a;
 }
 
 .inspiro-starter-sites-ai-hero__actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 10px;
+  padding: 10px 12px 12px 14px;
 }
 
 .inspiro-starter-sites-ai-hero__ideas {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 6px 10px;
-  border: 0;
-  border-radius: 8px;
-  background: none;
-  color: #9ea3ad;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #d4d4d8;
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: color 0.12s ease, background 0.12s ease;
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
 }
 
 .inspiro-starter-sites-ai-hero__ideas:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.08);
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.06);
 }
 
 .inspiro-starter-sites-ai-hero__button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
+  height: 38px;
+  padding: 0 18px;
   border: 0;
   border-radius: 999px;
-  background: #3858e9;
-  color: #ffffff;
+  background: #ffffff;
+  color: #0b0b0d;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.12s ease, transform 0.12s ease;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
 .inspiro-starter-sites-ai-hero__button:hover {
-  background: #2a46d4;
   transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(255, 255, 255, 0.18);
 }
 
-.inspiro-starter-sites-ai-hero__badges {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 6px 28px;
-  margin: 22px auto 0;
-  padding: 0;
-  list-style: none;
-  font-size: 12.5px;
-  color: #9ea3ad;
+.inspiro-starter-sites-ai-hero__button:focus-visible,
+.inspiro-starter-sites-ai-hero__ideas:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
 }
 
-.inspiro-starter-sites-ai-hero__badges li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-}
+@media (max-width: 600px) {
+  .inspiro-starter-sites-ai-hero {
+    padding: 60px 18px 36px;
+  }
 
-.inspiro-starter-sites-ai-hero__badges li::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #59d9a6;
+  .inspiro-starter-sites-ai-hero__title {
+    font-size: 27px;
+  }
+
+  .inspiro-starter-sites-ai-hero__input {
+    min-height: 96px;
+    padding: 16px 16px 0;
+  }
+
+  .inspiro-starter-sites-ai-hero__actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .inspiro-starter-sites-ai-hero__button,
+  .inspiro-starter-sites-ai-hero__ideas {
+    justify-content: center;
+  }
 }
 
 /* The theme's onboarding stylesheet paints every paragraph and textarea in
@@ -1003,27 +1167,30 @@ body.iss-ai-open {
    ".wpz-onboard_wrapper p { color/font-size }" and
    ".wp-core-ui .wpz-onboard_wrapper textarea { border }") — outrank those
    here, because the hero is a dark panel living inside that wrapper. */
-.wpz-onboard_wrapper p.inspiro-starter-sites-ai-hero__kicker {
-  color: #b9bdc6;
-  font-size: 11px;
+/* The notice's paragraph, inside the theme's onboarding wrapper (its
+   ".wpz-onboard_wrapper p" sets 16px and no bottom margin). */
+.wpz-onboard_wrapper p.iss-ai-import-notice__text {
   margin: 0 0 14px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #52525b;
 }
 
-.wpz-onboard_wrapper p.inspiro-starter-sites-ai-hero__sub {
-  color: #c0c4cc;
-  font-size: 14px;
-  margin: 0 auto 26px;
+.wpz-onboard_wrapper p.inspiro-starter-sites-ai-hero__kicker {
+  color: #71717a;
+  font-size: 11px;
+  margin: 0 0 14px;
 }
 
 .wp-core-ui .wpz-onboard_wrapper textarea.inspiro-starter-sites-ai-hero__input,
 .wp-core-ui .wpz-onboard_wrapper textarea.inspiro-starter-sites-ai-hero__input:hover,
 .wp-core-ui .wpz-onboard_wrapper textarea.inspiro-starter-sites-ai-hero__input:focus {
-  padding: 0;
+  padding: 18px 20px 0;
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  color: #f2f3f5;
+  color: #f4f4f5;
 }
 
 .iss-ai-error {
@@ -1075,6 +1242,47 @@ body.iss-ai-open {
   margin: 6px 0 0 !important;
   font-size: 12px !important;
   color: #9a6a1a !important;
+}
+
+/* The site has content of its own: keep it (checked) or let the demo take over. */
+.iss-ai-keep-notice {
+  margin: 0 0 20px;
+  padding: 13px 15px;
+  border: 1.5px solid #e4e4e7;
+  border-radius: 10px;
+  background: #f8f8f9;
+  color: #1d1d1f;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.iss-ai-keep-notice[hidden],
+.iss-ai-replace-notice.is-kept-classic,
+.iss-ai-replace-notice.is-kept .js-iss-ai-replace-text,
+.iss-ai-replace-notice.is-kept .iss-ai-replace-check,
+.iss-ai-replace-notice.is-kept .iss-ai-replace-hint {
+  display: none;
+}
+
+.iss-ai-keep-notice strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.iss-ai-keep-notice p {
+  margin: 0 0 8px;
+  color: inherit;
+  font-size: inherit;
+}
+
+.iss-ai-keep-found {
+  color: #52525b !important;
+}
+
+.iss-ai-keep-hint {
+  margin: 6px 0 0 !important;
+  font-size: 12px !important;
+  color: #71717a !important;
 }
 
 .iss-ai-delete-link {
@@ -2883,5 +3091,240 @@ select.iss-ai-input {
   .iss-ai-pv-actions {
     grid-column: 1 / -1;
     justify-content: flex-end;
+  }
+}
+
+/* "My real business": the owner's details, all optional. */
+.iss-ai-details {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1.5px solid #e4e4e7;
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.iss-ai-details[hidden] {
+  display: none;
+}
+
+.iss-ai-details .iss-ai-field-label {
+  margin-top: 0;
+}
+
+.iss-ai-details__hint {
+  margin: -4px 0 12px;
+  color: #71717a;
+  font-size: 12px;
+}
+
+.iss-ai-details__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+}
+
+.iss-ai-details__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.iss-ai-details__field .iss-ai-input {
+  width: 100%;
+  margin: 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.iss-ai-details__field textarea.iss-ai-input {
+  resize: vertical;
+  min-height: 68px;
+}
+
+@media (max-width: 600px) {
+  .iss-ai-details__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* "You have an AI-generated demo" above the starter sites. */
+.iss-ai-import-notice {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin: 20px 0 24px;
+  padding: 20px 22px;
+  border: 1px solid #e4e4e7;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 6px 18px rgba(16, 24, 40, 0.05);
+  color: #1d1d1f;
+}
+
+.iss-ai-import-notice__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.iss-ai-import-notice__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.iss-ai-import-notice__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #1d1d1f;
+}
+
+.iss-ai-import-notice__chip {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: #f4f4f5;
+  color: #52525b;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.iss-ai-import-notice__text {
+  max-width: 720px;
+  margin: 0 0 14px;
+  color: #52525b;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.iss-ai-import-notice__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.iss-ai-import-notice__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 16px;
+  border: 1.5px solid #e4e4e7;
+  border-radius: 8px;
+  background: #fff;
+  color: #1d1d1f;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.iss-ai-import-notice__btn:hover:not(:disabled) {
+  border-color: #1d1d1f;
+}
+
+.iss-ai-import-notice__btn.is-primary {
+  border-color: #1d1d1f;
+  background: #1d1d1f;
+  color: #fff;
+}
+
+.iss-ai-import-notice__btn.is-primary:hover:not(:disabled) {
+  background: #000;
+}
+
+.iss-ai-import-notice__btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.iss-ai-import-notice .spinner {
+  float: none;
+  margin: 0;
+}
+
+.iss-ai-import-notice__result {
+  color: #b32d2e;
+  font-size: 13px;
+}
+
+@media (max-width: 600px) {
+  .iss-ai-import-notice {
+    flex-direction: column;
+  }
+}
+
+/* "Add a page with AI": a pointer to the page builder in the editor. */
+.iss-ai-pb-promo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1.5px solid #e4e4e7;
+  border-radius: 10px;
+  background: #fafafa;
+  color: #52525b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.iss-ai-pb-promo[hidden] {
+  display: none;
+}
+
+.iss-ai-pb-promo__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #1d1d1f;
+  color: #fff;
+}
+
+.iss-ai-pb-promo__text {
+  flex: 1;
+}
+
+.iss-ai-pb-promo__text strong {
+  color: #1d1d1f;
+}
+
+.iss-ai-pb-promo .iss-ai-mini-btn {
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.iss-ai-page-upsell-alt {
+  display: inline-block;
+  margin-left: 10px;
+}
+
+.iss-ai-page-upsell-alt[hidden] {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .iss-ai-pb-promo {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

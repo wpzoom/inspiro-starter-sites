@@ -5,7 +5,7 @@ Author URI:			https://www.wpzoom.com/
 Requires at least: 	6.5
 Tested up to: 		7.1
 Requires PHP: 		7.4  
-Stable tag: 		1.3.0
+Stable tag: 		1.4.0
 License: 			GPLv2 or later  
 License URI: 		https://www.gnu.org/licenses/gpl-2.0.html
 Tags: 				starter sites, templates, demo importer, elementor, gutenberg
@@ -139,6 +139,18 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 4. Demo Imported message
 
 == Changelog ==
+
+= 1.4.0 =
+* New: Generate a page with AI in the block editor: the "Generate with AI" button in the editor toolbar, or "New page with AI" on the Pages screen. Pick a page type, preview sections from Inspiro's demos, insert them right away with sample text and photos, or let AI write the text from your description
+* New: "What should the text be?" in the AI demo generator: sample demo content, or your real business, where nothing is made up and missing details appear as [placeholders] for you to fill in
+* New: For your real business, optional details (name, phone, email, address, opening hours and people) that the demo uses exactly as you type them
+* New: When your site already has its own content, the AI demo generator can keep your homepage, menu and design and add the new pages as drafts; nothing on your live site is changed or deleted
+* New: A redesigned AI generator on the Import Demo page: dark, with a single prompt and a slow animated background
+* Improved: The "Add a page with AI" step now points to the visual page builder in the editor
+* Improved: The notice about an existing AI demo is a cleaner card, placed above the starter sites
+* Improved: Every action that deletes or replaces content now asks for confirmation first
+* Improved: Premium sections become available again within an hour after renewing your license
+* Fixed: Building a demo no longer deletes the default "Hello world!" post or "Sample Page" once you have edited them
 
 = 1.3.0 =
 * New: AI demo generator can build your site from Inspiro's hand-built demo sections ("From Inspiro demo sections"), filled with your own content

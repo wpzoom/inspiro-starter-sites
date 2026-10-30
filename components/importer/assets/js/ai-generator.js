@@ -469,6 +469,12 @@ jQuery( function ( $ ) {
 
 						// Step: input.
 						'<div class="iss-ai-step iss-ai-step-input is-active" data-step="input">' +
+							'<div class="iss-ai-keep-notice js-iss-ai-keep-notice" hidden>' +
+								'<strong>' + esc( t.keep_title || '' ) + '</strong>' +
+								'<p class="iss-ai-keep-found js-iss-ai-keep-found"></p>' +
+								'<label class="iss-ai-replace-check"><input type="checkbox" class="js-iss-ai-keep"> <span>' + esc( t.keep_checkbox || '' ) + '</span></label>' +
+								'<p class="iss-ai-keep-hint">' + esc( t.keep_hint || '' ) + '</p>' +
+							'</div>' +
 							'<div class="iss-ai-replace-notice js-iss-ai-replace-notice" hidden>' +
 								'<strong>' + esc( t.replace_title || '' ) + '</strong>' +
 								'<p class="js-iss-ai-replace-text"></p>' +
@@ -483,6 +489,7 @@ jQuery( function ( $ ) {
 								'<p class="iss-ai-premium-upsell js-iss-ai-page-upsell" hidden>' +
 									'<span class="js-iss-ai-page-upsell-text"></span> ' +
 									'<a class="js-iss-ai-page-upsell-link" href="#" target="_blank" rel="noopener"></a>' +
+									'<a class="iss-ai-page-upsell-alt js-iss-ai-page-upsell-alt" href="' + esc( config.page_builder_url || '#' ) + '" hidden>' + esc( t.pb_alt || '' ) + '</a>' +
 								'</p>' +
 							'</div>' +
 							'<p class="iss-ai-delete-result js-iss-ai-delete-result" hidden></p>' +
@@ -497,6 +504,26 @@ jQuery( function ( $ ) {
 								'<button type="button" class="iss-ai-enhance js-iss-ai-enhance">&#10024; ' + esc( t.enhance || '' ) + '</button>' +
 							'</div>' +
 							'<div class="iss-ai-ideas js-iss-ai-ideas" hidden>' + ideas + '</div>' +
+							'<p class="iss-ai-field-label">' + esc( t.content_label || '' ) + '</p>' +
+							'<div class="iss-ai-mode-choice js-iss-ai-content-mode">' +
+								'<label class="iss-ai-mode-option is-active"><input type="radio" name="iss_ai_content_mode" value="demo" checked> ' +
+									'<strong>' + esc( t.content_demo || '' ) + '</strong><span>' + esc( t.content_demo_hint || '' ) + '</span></label>' +
+								'<label class="iss-ai-mode-option"><input type="radio" name="iss_ai_content_mode" value="real"> ' +
+									'<strong>' + esc( t.content_real || '' ) + '</strong><span>' + esc( t.content_real_hint || '' ) + '</span></label>' +
+							'</div>' +
+							// "My real business": the facts the AI must not invent, all optional.
+							'<div class="iss-ai-details js-iss-ai-details" hidden>' +
+								'<p class="iss-ai-field-label">' + esc( t.details_title || '' ) + '</p>' +
+								'<p class="iss-ai-details__hint">' + esc( t.details_hint || '' ) + '</p>' +
+								'<div class="iss-ai-details__grid">' +
+									detailField( 'name', t.details_name, 'text' ) +
+									detailField( 'phone', t.details_phone, 'tel' ) +
+									detailField( 'email', t.details_email, 'email' ) +
+									detailField( 'address', t.details_address, 'text' ) +
+									detailField( 'hours', t.details_hours, 'textarea', t.details_hours_ph ) +
+									detailField( 'people', t.details_people, 'textarea', t.details_people_ph ) +
+								'</div>' +
+							'</div>' +
 
 							lookFields +
 
@@ -575,11 +602,11 @@ jQuery( function ( $ ) {
 								'</svg>' +
 							'</div>' +
 							'<h3 class="js-iss-ai-success-title">' + esc( t.success_title || '' ) + '</h3>' +
-							'<p>' + esc( t.success_text || '' ) + '</p>' +
+							'<p class="js-iss-ai-success-text">' + esc( t.success_text || '' ) + '</p>' +
 							'<ul class="iss-ai-page-list js-iss-ai-page-list"></ul>' +
 							'<div class="iss-ai-actions">' +
 								'<a href="' + esc( config.site_url || '#' ) + '" target="_blank" rel="noopener" class="button button-primary js-iss-ai-view-site">' + esc( t.view_site || '' ) + '</a>' +
-								'<a href="' + esc( config.pages_url || '#' ) + '" class="button">' + esc( t.edit_pages || '' ) + '</a>' +
+								'<a href="' + esc( config.pages_url || '#' ) + '" class="button js-iss-ai-edit-pages">' + esc( t.edit_pages || '' ) + '</a>' +
 							'</div>' +
 
 							// Survey. Every answer is optional — Send stays
@@ -632,6 +659,12 @@ jQuery( function ( $ ) {
 						'<div class="iss-ai-step iss-ai-step-pagetools" data-step="pagetools">' +
 							'<h3 class="js-iss-ai-pt-title"></h3>' +
 							'<p class="iss-ai-css-intro js-iss-ai-pt-intro"></p>' +
+							// The editor's page builder: sections to pick and preview first.
+							'<div class="iss-ai-pb-promo js-iss-ai-pt-promo" hidden>' +
+								'<span class="iss-ai-pb-promo__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 20 20"><path d="M10 2.5l1.6 4.4 4.4 1.6-4.4 1.6L10 14.5l-1.6-4.4L4 8.5l4.4-1.6zM15.5 13l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" fill="currentColor"/></svg></span>' +
+								'<span class="iss-ai-pb-promo__text"><strong>' + esc( t.pb_promo_title || '' ) + '</strong> ' + esc( t.pb_promo_text || '' ) + '</span>' +
+								'<a class="iss-ai-mini-btn" href="' + esc( config.page_builder_url || '#' ) + '">' + esc( t.pb_promo_go || '' ) + '</a>' +
+							'</div>' +
 							'<div class="js-iss-ai-pt-form">' +
 								'<div class="js-iss-ai-pt-add">' +
 									'<p class="iss-ai-field-label">' + esc( t.add_page_label || '' ) + '</p>' +
@@ -1061,6 +1094,7 @@ jQuery( function ( $ ) {
 	function openModal() {
 		if ( ! built ) {
 			buildModal();
+			restoreDetails();
 		}
 		showStep( 'input' );
 		$root.removeAttr( 'hidden' ).addClass( 'is-open' );
@@ -1204,6 +1238,7 @@ jQuery( function ( $ ) {
 		renderQuota();
 		renderDesignLevels();
 		renderArtDirection();
+		renderKeepNotice( data.own, data.classic );
 		renderReplaceNotice( data.previous, data.classic );
 
 		if ( ! connected ) {
@@ -1224,6 +1259,58 @@ jQuery( function ( $ ) {
 		} else {
 			$chip.attr( 'hidden', 'hidden' );
 		}
+	}
+
+	// The site has content of its own (a homepage, menu, pages or posts no
+	// demo created): offer — checked — to leave it as it is and add the new
+	// pages as drafts. Also offered, unchecked, over an imported starter
+	// site, which may be what the owner built their site from.
+	function renderKeepNotice( own, classic ) {
+		var $notice = $root.find( '.js-iss-ai-keep-notice' );
+
+		if ( ! own && ! classic ) {
+			$notice.attr( 'hidden', 'hidden' );
+			$root.find( '.js-iss-ai-keep' ).prop( 'checked', false );
+			syncKeep();
+			return;
+		}
+
+		var found = [];
+		if ( own && own.front_title ) {
+			found.push( sprintf( t.keep_front || '', own.front_title ) );
+		}
+		if ( own && own.menu_name ) {
+			found.push( sprintf( t.keep_menu || '', own.menu_name ) );
+		}
+		if ( own && own.page_count ) {
+			found.push( sprintf( t.keep_pages || '', own.page_count ) );
+		}
+		if ( own && own.post_count ) {
+			found.push( sprintf( t.keep_posts || '', own.post_count ) );
+		}
+		$notice.find( '.js-iss-ai-keep-found' ).text( found.join( ' · ' ) ).toggle( found.length > 0 );
+
+		// Checked by default only when the content is the owner's own; the
+		// user's choice survives later state refreshes.
+		if ( ! $notice.data( 'touched' ) ) {
+			$root.find( '.js-iss-ai-keep' ).prop( 'checked', !! own );
+		}
+		$notice.removeAttr( 'hidden' );
+		syncKeep();
+	}
+
+	function keepSite() {
+		var $keep = $root.find( '.js-iss-ai-keep' );
+		return $keep.length && ! $keep.closest( '.js-iss-ai-keep-notice' ).attr( 'hidden' ) && $keep.is( ':checked' );
+	}
+
+	// Keeping the site keeps an imported starter site too: its deletion
+	// warning only applies when the AI demo takes the site over.
+	function syncKeep() {
+		var $notice = $root.find( '.js-iss-ai-replace-notice' );
+		var kept    = !! keepSite();
+		$notice.toggleClass( 'is-kept', kept );
+		$notice.toggleClass( 'is-kept-classic', kept && !! $notice.data( 'classic-only' ) );
 	}
 
 	// Prominent warning when a previous demo exists — an AI-generated one OR
@@ -1259,7 +1346,9 @@ jQuery( function ( $ ) {
 		// Both actions operate on an AI demo — hide them when the warning is
 		// about a classic starter-site import instead.
 		$notice.find( '.iss-ai-replace-actions' ).toggle( !! ( previous && previous.page_count ) );
+		$notice.data( 'classic-only', ! ( previous && previous.page_count ) );
 		$notice.removeAttr( 'hidden' );
+		syncKeep();
 	}
 
 	function renderQuota() {
@@ -1379,7 +1468,7 @@ jQuery( function ( $ ) {
 			showStep( 'plan' );
 		}
 
-		ajax( 'inspiro_starter_sites_ai_suggest_pages', { description: description }, 90000 )
+		ajax( 'inspiro_starter_sites_ai_suggest_pages', { description: description, content_mode: contentMode(), details: JSON.stringify( collectDetails() ) }, 90000 )
 			.done( function ( response ) {
 				if ( response && response.success && response.data && response.data.pages && response.data.pages.length ) {
 					proceed( response.data.pages );
@@ -1407,6 +1496,13 @@ jQuery( function ( $ ) {
 		var $replace    = $root.find( '.js-iss-ai-replace' );
 		var replace     = ( ! $replace.length || $replace.closest( '.js-iss-ai-replace-notice' ).attr( 'hidden' ) || $replace.is( ':checked' ) ) ? '1' : '0';
 
+		// Deleting the previous demo is permanent: confirm with the same
+		// words the warning above the description uses.
+		if ( '1' === replace && ! $replace.closest( '.js-iss-ai-replace-notice' ).attr( 'hidden' ) && ! $replace.closest( '.js-iss-ai-replace-notice' ).hasClass( 'is-kept' )
+			&& ! window.confirm( sprintf( t.replace_confirm || '%s', $root.find( '.js-iss-ai-replace-text' ).text() ) ) ) {
+			return;
+		}
+
 		running = true;
 		showStep( 'progress' );
 		// Clear the previous run's checklist — it would otherwise linger
@@ -1416,7 +1512,10 @@ jQuery( function ( $ ) {
 
 		ajax( 'inspiro_starter_sites_ai_generate', {
 			description: description,
+			content_mode: contentMode(),
+			details:      JSON.stringify( collectDetails() ),
 			replace:     replace,
+			keep:        keepSite() ? '1' : '0',
 			style:       $root.find( '.js-iss-ai-style .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
 			palette:     $root.find( '.js-iss-ai-palette .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
 			typography:  $root.find( '.js-iss-ai-typography .iss-ai-chip.is-active' ).attr( 'data-value' ) || '',
@@ -1586,8 +1685,14 @@ jQuery( function ( $ ) {
 					);
 				} );
 
-				if ( planState.site_title ) {
-					$root.find( '.js-iss-ai-success-title' ).text( ( t.success_title || '' ) + ' — ' + planState.site_title );
+				var kept = !! response.data.kept;
+				var title = kept ? ( t.success_title_kept || '' ) : ( t.success_title || '' );
+				$root.find( '.js-iss-ai-success-title' ).text( planState.site_title ? title + ' — ' + planState.site_title : title );
+				$root.find( '.js-iss-ai-success-text' ).text( kept ? ( t.success_text_kept || '' ) : ( t.success_text || '' ) );
+				$root.find( '.js-iss-ai-view-site' ).text( kept ? ( t.view_site_kept || '' ) : ( t.view_site || '' ) );
+				$root.find( '.js-iss-ai-edit-pages' ).text( kept ? ( t.edit_pages_kept || '' ) : ( t.edit_pages || '' ) );
+				if ( response.data.pages_url ) {
+					$root.find( '.js-iss-ai-edit-pages' ).attr( 'href', response.data.pages_url );
 				}
 				if ( response.data.demo_pages ) {
 					config.demo_pages = response.data.demo_pages;
@@ -1702,7 +1807,7 @@ jQuery( function ( $ ) {
 		// typing there flows straight into step 1.
 		var heroText = $.trim( $( '.js-iss-ai-hero-input' ).val() || '' );
 		if ( heroText ) {
-			$root.find( '.js-iss-ai-description' ).val( heroText );
+			$root.find( '.js-iss-ai-description' ).val( heroText ).trigger( 'input' );
 		}
 	} );
 
@@ -1776,13 +1881,112 @@ jQuery( function ( $ ) {
 		}
 	}
 
+	$root.on( 'change', '.js-iss-ai-keep', function () {
+		$root.find( '.js-iss-ai-keep-notice' ).data( 'touched', true );
+		syncKeep();
+	} );
+
+	/* -----------------------------------------------------------------
+	 * Real business or sample content
+	 * -------------------------------------------------------------- */
+
+	// Until the customer picks one, the choice follows what they type: a
+	// website, email or phone, or "our"/"my" in their language, means their
+	// own business.
+	var contentModeTouched = false;
+	var REAL_SIGNALS       = /(^|[\s(])(www\.)?[a-z0-9\u00c0-\u024f-]+\.(com|net|org|info|biz|de|at|ch|nl|be|fr|it|es|pt|pl|cz|sk|hu|ro|md|bg|gr|hr|si|dk|se|no|fi|ie|uk|co\.uk|eu|us|ca|au|nz|io|co|shop|store|online|site|studio|wine|cafe|restaurant|bar|hotel|app)\b|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|\+?\d[\d\s\/().-]{7,}\d|\b(our|my|mine|unser|unsere|unseren|unserem|mein|meine|meinen|notre|nos|mon|ma|nuestro|nuestra|mi|nostro|nostra|mio|mia|onze|ons|nasz|nasza|nostru|noastră|noastra|meu|mea)\b/i;
+
+	function contentMode() {
+		return $root.find( 'input[name="iss_ai_content_mode"]:checked' ).val() || 'demo';
+	}
+
+	function setContentMode( mode ) {
+		$root.find( 'input[name="iss_ai_content_mode"][value="' + mode + '"]' ).prop( 'checked', true );
+		$root.find( '.js-iss-ai-content-mode .iss-ai-mode-option' ).each( function () {
+			$( this ).toggleClass( 'is-active', $( this ).find( 'input' ).prop( 'checked' ) );
+		} );
+		$root.find( '.js-iss-ai-details' ).attr( 'hidden', 'real' === mode ? null : 'hidden' );
+	}
+
+	/* -----------------------------------------------------------------
+	 * The real business's details (optional)
+	 * -------------------------------------------------------------- */
+
+	var DETAILS_KEY = 'iss_ai_business_details';
+
+	function detailField( key, label, type, placeholder ) {
+		var attrs = 'class="iss-ai-input js-iss-ai-detail" data-key="' + key + '"' + ( placeholder ? ' placeholder="' + esc( placeholder ) + '"' : '' );
+		return '<label class="iss-ai-details__field">' +
+			'<span>' + esc( label || '' ) + '</span>' +
+			( 'textarea' === type
+				? '<textarea rows="3" maxlength="800" ' + attrs + '></textarea>'
+				: '<input type="' + type + '" maxlength="200" ' + attrs + '>' ) +
+			'</label>';
+	}
+
+	// Only what was filled in; nothing at all for a sample demo.
+	function collectDetails() {
+		var details = {};
+		if ( 'real' !== contentMode() ) {
+			return details;
+		}
+		$root.find( '.js-iss-ai-detail' ).each( function () {
+			var value = $.trim( $( this ).val() || '' );
+			if ( value ) {
+				details[ $( this ).data( 'key' ) ] = value;
+			}
+		} );
+		return details;
+	}
+
+	// Remembered in this browser for the next generation (a convenience:
+	// nothing breaks when storage is unavailable).
+	function restoreDetails() {
+		var saved = {};
+		try {
+			saved = JSON.parse( window.localStorage.getItem( DETAILS_KEY ) || '{}' ) || {};
+		} catch ( e ) {
+			saved = {};
+		}
+		if ( ! saved.name && config.site_name ) {
+			saved.name = config.site_name;
+		}
+		$root.find( '.js-iss-ai-detail' ).each( function () {
+			var key = $( this ).data( 'key' );
+			if ( saved[ key ] && ! $( this ).val() ) {
+				$( this ).val( saved[ key ] );
+			}
+		} );
+	}
+
+	$root.on( 'input', '.js-iss-ai-detail', function () {
+		var details = {};
+		$root.find( '.js-iss-ai-detail' ).each( function () {
+			details[ $( this ).data( 'key' ) ] = $( this ).val() || '';
+		} );
+		try {
+			window.localStorage.setItem( DETAILS_KEY, JSON.stringify( details ) );
+		} catch ( e ) {} // eslint-disable-line no-empty
+	} );
+
+	$root.on( 'input', '.js-iss-ai-description', function () {
+		if ( ! contentModeTouched ) {
+			setContentMode( REAL_SIGNALS.test( $( this ).val() || '' ) ? 'real' : 'demo' );
+		}
+	} );
+
+	$root.on( 'change', 'input[name="iss_ai_content_mode"]', function () {
+		contentModeTouched = true;
+		setContentMode( contentMode() );
+	} );
+
 	$root.on( 'click', '.js-iss-ai-ideas-toggle', function () {
 		toggleIdeas( $root.find( '.js-iss-ai-ideas' ).attr( 'hidden' ) !== undefined );
 	} );
 
 	$root.on( 'click', '.js-iss-ai-idea', function () {
 		var text = $( this ).attr( 'data-text' ) || $( this ).text();
-		$root.find( '.js-iss-ai-description' ).val( text ).trigger( 'focus' );
+		$root.find( '.js-iss-ai-description' ).val( text ).trigger( 'input' ).trigger( 'focus' );
 		toggleIdeas( false );
 	} );
 
@@ -1918,6 +2122,8 @@ jQuery( function ( $ ) {
 				$upsell.find( '.js-iss-ai-page-upsell-link' ).attr( 'href', config.license_url || '#' ).text( t.license_cta || '' );
 			}
 
+			// Adding a page doesn't need Premium in the editor's page builder.
+			$upsell.find( '.js-iss-ai-page-upsell-alt' ).attr( 'hidden', 'add' === mode ? null : 'hidden' );
 			$upsell.removeAttr( 'hidden' );
 			return;
 		}
@@ -1935,6 +2141,7 @@ jQuery( function ( $ ) {
 		$root.find( '.js-iss-ai-pt-intro' ).text( 'add' === mode ? ( t.add_page_intro || '' ) : ( t.regen_intro || '' ) );
 		$root.find( '.js-iss-ai-pt-add' ).toggle( 'add' === mode );
 		$root.find( '.js-iss-ai-pt-regen' ).toggle( 'regen' === mode );
+		$root.find( '.js-iss-ai-pt-promo' ).attr( 'hidden', 'add' === mode ? null : 'hidden' );
 		$root.find( '.js-iss-ai-pt-form' ).show();
 		$root.find( '.js-iss-ai-pt-working' ).attr( 'hidden', 'hidden' );
 		$root.find( '.js-iss-ai-pt-result' ).attr( 'hidden', 'hidden' ).removeClass( 'is-error' );
@@ -2009,6 +2216,10 @@ jQuery( function ( $ ) {
 				$root.find( '.js-iss-ai-pt-feedback' ).focus();
 				return;
 			}
+			// Replacing overwrites the page, edits included: confirm first.
+			if ( 'replace' === mode && ! window.confirm( sprintf( t.regen_confirm || '', $root.find( '.js-iss-ai-pt-page-select option:selected' ).text() ) ) ) {
+				return;
+			}
 			action = 'inspiro_starter_sites_ai_regenerate_page';
 			data   = { page_id: pageId, mode: mode, feedback: feedback };
 		}
@@ -2062,11 +2273,11 @@ jQuery( function ( $ ) {
 		$error.attr( 'hidden', 'hidden' );
 		$button.prop( 'disabled', true ).text( t.enhancing || '' );
 
-		ajax( 'inspiro_starter_sites_ai_enhance_prompt', { description: current }, 60000 )
+		ajax( 'inspiro_starter_sites_ai_enhance_prompt', { description: current, content_mode: contentMode(), details: JSON.stringify( collectDetails() ) }, 60000 )
 			.done( function ( response ) {
 				if ( response && response.success && response.data && response.data.description ) {
 					enhanceUndoValue = current;
-					$textarea.val( response.data.description ).trigger( 'focus' );
+					$textarea.val( response.data.description ).trigger( 'input' ).trigger( 'focus' );
 					$root.find( '.js-iss-ai-enhance-undo' ).removeAttr( 'hidden' );
 				} else {
 					$error.text( responseMessage( response ) ).removeAttr( 'hidden' );
@@ -2082,7 +2293,7 @@ jQuery( function ( $ ) {
 
 	$root.on( 'click', '.js-iss-ai-enhance-undo', function () {
 		if ( null !== enhanceUndoValue ) {
-			$root.find( '.js-iss-ai-description' ).val( enhanceUndoValue ).trigger( 'focus' );
+			$root.find( '.js-iss-ai-description' ).val( enhanceUndoValue ).trigger( 'input' ).trigger( 'focus' );
 			enhanceUndoValue = null;
 		}
 		$( this ).attr( 'hidden', 'hidden' );

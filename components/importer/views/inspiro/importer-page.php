@@ -165,6 +165,9 @@ $platform_labels = array(
 		var $side = $( '.wpz-onboard_content-side.plugins' ).first();
 		if ( $side.length ) {
 			$hero.prependTo( $side );
+			// The "you have an AI demo" notice belongs with the hero, on the
+			// page background — not inside the theme's white card below.
+			$( '.inspiro-ai-import-notice' ).first().insertAfter( $hero );
 			// The theme's intro card is replaced by the premium button in the
 			// Free Starter Sites header below — hide it to reclaim the space.
 			$side.children( '.wpz-onboard_content-side-section' ).first().hide();
