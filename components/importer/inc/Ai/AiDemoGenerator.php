@@ -3844,6 +3844,10 @@ class AiDemoGenerator {
 		$squash = static function ( $text ) {
 			return mb_strtolower( preg_replace( '/[^\p{L}\p{N}@.]+/u', '', (string) $text ) );
 		};
+		// Social icons would link to accounts nobody gave us.
+		if ( 'real' === $this->requested_content_mode() ) {
+			$plan['footer']['social'] = array();
+		}
 		foreach ( array( 'phone', 'email', 'address' ) as $key ) {
 			if ( ! empty( $details[ $key ] ) ) {
 				$plan['footer'][ $key ] = $details[ $key ];
@@ -4318,6 +4322,8 @@ class AiDemoGenerator {
 				},
 				'fallback_query' => $plan['site_title'] . ' ' . $page['title'],
 				'form_id'        => $this->first_form_id(),
+				// A real business has no demo social accounts.
+				'social'         => isset( $state['content_mode'] ) && 'real' === $state['content_mode'] ? array() : null,
 			)
 		);
 
