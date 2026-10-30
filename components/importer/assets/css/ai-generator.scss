@@ -989,7 +989,72 @@ body.iss-ai-open {
 }
 
 .inspiro-starter-sites-ai-hero__prompt:focus-within {
-  border-color: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+/* A thin gradient ring around the prompt: faint at rest, and while the
+   textarea is focused it brightens and the light travels around the box.
+   The angle is a registered custom property so the conic gradient can
+   animate; browsers without @property get a static ring. */
+@property --iss-ai-ring {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.inspiro-starter-sites-ai-hero__prompt::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: 17px;
+  padding: 1px;
+  background: conic-gradient(from var(--iss-ai-ring),
+    rgba(255, 255, 255, 0) 0deg,
+    rgba(167, 243, 208, 0.9) 40deg,
+    rgba(255, 255, 255, 1) 70deg,
+    rgba(11, 180, 170, 0.9) 100deg,
+    rgba(255, 255, 255, 0) 150deg,
+    rgba(255, 255, 255, 0) 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0.35;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  animation: iss-ai-hero-ring 6s linear infinite;
+}
+
+.inspiro-starter-sites-ai-hero__prompt:focus-within::before {
+  opacity: 1;
+  animation-duration: 3.5s;
+}
+
+/* The soft halo the ring casts, only while focused. */
+.inspiro-starter-sites-ai-hero__prompt::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -2;
+  border-radius: 17px;
+  box-shadow: 0 0 0 0 rgba(11, 180, 170, 0);
+  pointer-events: none;
+  transition: box-shadow 0.3s ease;
+}
+
+.inspiro-starter-sites-ai-hero__prompt:focus-within::after {
+  box-shadow: 0 0 36px 2px rgba(11, 180, 170, 0.22);
+}
+
+@keyframes iss-ai-hero-ring {
+  to { --iss-ai-ring: 360deg; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inspiro-starter-sites-ai-hero__prompt::before {
+    animation: none;
+  }
 }
 
 .inspiro-starter-sites-ai-hero__input {
