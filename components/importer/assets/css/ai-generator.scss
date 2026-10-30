@@ -745,45 +745,42 @@ body.iss-ai-open {
 .inspiro-starter-sites-ai-hero__ribbons {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: flex-end;
+  overflow: hidden;
   pointer-events: none;
 }
 
-/* Each ribbon: a metallic highlight that drifts across it (the gradient is
-   twice the ribbon's width and slides), while the ribbon itself breathes
-   and fades. Offsets per ribbon keep them out of step. */
-.inspiro-starter-sites-ai-hero__ribbons i {
-  flex: 1;
-  height: 62%;
-  background: linear-gradient(90deg, #1b1e1d 0%, #343c39 15%, #66746d 30%, #343c39 45%, #1b1e1d 55%, #2c3330 70%, #556158 85%, #1b1e1d 100%);
-  background-size: 220% 100%;
-  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 60%);
-  mask-image: linear-gradient(180deg, transparent 0%, #000 60%);
-  opacity: 0.9;
+/* One seamless band of light and shadow across the whole width (no
+   per-ribbon edges): a wide repeating gradient that drifts sideways and
+   breathes. Rises from the bottom, fading out upward. */
+.inspiro-starter-sites-ai-hero__ribbons::before,
+.inspiro-starter-sites-ai-hero__ribbons::after {
+  content: "";
+  position: absolute;
+  left: -50%;
+  right: -50%;
+  bottom: 0;
+  height: 64%;
+  background: repeating-linear-gradient(90deg,
+    #141716 0px,
+    #2a302d 90px,
+    #5e6a64 180px,
+    #2a302d 270px,
+    #141716 360px);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 65%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 65%);
   transform-origin: bottom;
-  animation:
-    iss-ai-hero-breathe 10s ease-in-out infinite,
-    iss-ai-hero-sheen 14s linear infinite,
-    iss-ai-hero-fade 9s ease-in-out infinite;
+  animation: iss-ai-hero-drift 36s linear infinite, iss-ai-hero-breathe 10s ease-in-out infinite;
 }
 
-.inspiro-starter-sites-ai-hero__ribbons i:nth-child(2n) {
-  height: 56%;
-  animation-delay: -3.5s, -5s, -2s;
-}
-
-.inspiro-starter-sites-ai-hero__ribbons i:nth-child(3n) {
-  height: 66%;
-  animation-delay: -7s, -9s, -5s;
-}
-
-.inspiro-starter-sites-ai-hero__ribbons i:nth-child(5n) {
-  animation-duration: 10s, 19s, 11s;
-}
-
-.inspiro-starter-sites-ai-hero__ribbons i:nth-child(7n) {
-  animation-delay: -1.5s, -12s, -7s;
+/* A second, wider band moving the other way, blended in for depth. */
+.inspiro-starter-sites-ai-hero__ribbons::after {
+  height: 54%;
+  background: repeating-linear-gradient(90deg,
+    rgba(20, 23, 22, 0) 0px,
+    rgba(94, 106, 100, 0.5) 260px,
+    rgba(20, 23, 22, 0) 520px);
+  mix-blend-mode: screen;
+  animation: iss-ai-hero-drift-back 48s linear infinite, iss-ai-hero-fade 9s ease-in-out infinite;
 }
 
 /* Darkens the middle so the headline and prompt sit on near-black. */
@@ -800,9 +797,15 @@ body.iss-ai-open {
   50% { transform: scaleY(1.06); }
 }
 
-@keyframes iss-ai-hero-sheen {
-  0% { background-position: 0% 0; }
-  100% { background-position: -120% 0; }
+@keyframes iss-ai-hero-drift {
+  0% { transform: translateX(0) scaleY(1); }
+  50% { transform: translateX(-180px) scaleY(1.05); }
+  100% { transform: translateX(-360px) scaleY(1); }
+}
+
+@keyframes iss-ai-hero-drift-back {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(520px); }
 }
 
 @keyframes iss-ai-hero-fade {
@@ -811,7 +814,8 @@ body.iss-ai-open {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .inspiro-starter-sites-ai-hero__ribbons i {
+  .inspiro-starter-sites-ai-hero__ribbons::before,
+  .inspiro-starter-sites-ai-hero__ribbons::after {
     animation: none;
   }
 }

@@ -176,9 +176,7 @@ class AiDemoGenerator {
 				<?php esc_html_e( 'AI demo:', 'inspiro-starter-sites' ); ?>
 				<strong class="js-iss-ai-hero-existing-title"><?php echo esc_html( $previous && '' !== $previous['site_title'] ? $previous['site_title'] : __( 'active', 'inspiro-starter-sites' ) ); ?></strong>
 			</button>
-			<div class="inspiro-starter-sites-ai-hero__ribbons" aria-hidden="true">
-				<?php for ( $i = 0; $i < 16; $i++ ) : ?><i></i><?php endfor; ?>
-			</div>
+			<div class="inspiro-starter-sites-ai-hero__ribbons" aria-hidden="true"></div>
 
 			<div class="inspiro-starter-sites-ai-hero__inner">
 				<p class="inspiro-starter-sites-ai-hero__kicker">
