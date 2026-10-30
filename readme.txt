@@ -145,11 +145,7 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 * New: "What should the text be?" in the AI demo generator: sample demo content, or your real business, where nothing is made up and missing details appear as [placeholders] for you to fill in
 * New: For your real business, optional details (name, phone, email, address, opening hours and people) that the demo uses exactly as you type them
 * New: When your site already has its own content, the AI demo generator can keep your homepage, menu and design and add the new pages as drafts; nothing on your live site is changed or deleted
-* New: A redesigned AI generator on the Import Demo page: dark, with a single prompt and a slow animated background
-* Improved: The "Add a page with AI" step now points to the visual page builder in the editor
-* Improved: The notice about an existing AI demo is a cleaner card, placed above the starter sites
 * Improved: Every action that deletes or replaces content now asks for confirmation first
-* Improved: Premium sections become available again within an hour after renewing your license
 * Fixed: Building a demo no longer deletes the default "Hello world!" post or "Sample Page" once you have edited them
 
 = 1.3.0 =
