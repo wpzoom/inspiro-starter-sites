@@ -328,6 +328,35 @@ export default function PageBuilderModal( { onClose } ) {
 	} ), [] );
 
 	const busy = ai.status === 'working' || building > 0 || inserting;
+
+	// Close on the button, a click outside or Esc — never mid-build, and
+	// never silently over a page the AI wrote but nobody inserted yet (it
+	// used a generation).
+	const requestClose = useCallback( () => {
+		if ( busy ) {
+			return;
+		}
+		if ( Object.keys( generated ).length && ! window.confirm( __( 'Close and discard the page the AI wrote? It is not in your page yet.', 'inspiro-starter-sites' ) ) ) {
+			return;
+		}
+		onClose();
+	}, [ busy, generated, onClose ] );
+
+	// The modal handles Esc while focus is inside it; this catches Esc once
+	// focus has left it (an open section menu handles its own Esc).
+	useEffect( () => {
+		const onKey = ( event ) => {
+			if ( 'Escape' !== event.key || event.defaultPrevented || document.querySelector( '.iss-pb-rolepop' ) ) {
+				return;
+			}
+			if ( event.target && event.target.closest && event.target.closest( '.components-modal__frame' ) ) {
+				return;
+			}
+			requestClose();
+		};
+		window.addEventListener( 'keydown', onKey );
+		return () => window.removeEventListener( 'keydown', onKey );
+	}, [ requestClose ] );
 	const pageType = preset ? preset.pageType : 'auto';
 	const allRoles = useMemo( () => availableRoles( index ), [ index ] );
 	window.issPbRoles = allRoles;
@@ -646,14 +675,13 @@ export default function PageBuilderModal( { onClose } ) {
 	return (
 		<Modal
 			title={ __( 'Generate a page with AI', 'inspiro-starter-sites' ) }
-			onRequestClose={ busy ? () => {} : onClose }
+			onRequestClose={ requestClose }
 			className="iss-pb-modal"
 			isFullScreen
 			__experimentalHideHeader
-			shouldCloseOnClickOutside={ false }
 		>
 			<div className="iss-pb-shell">
-			<button type="button" className="iss-pb-close" onClick={ onClose } disabled={ busy } aria-label={ __( 'Close', 'inspiro-starter-sites' ) }>
+			<button type="button" className="iss-pb-close" onClick={ requestClose } disabled={ busy } aria-label={ __( 'Close', 'inspiro-starter-sites' ) }>
 				<Icon name="close" size={ 18 } />
 			</button>
 			{ ! connected ? (
