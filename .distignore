@@ -42,6 +42,8 @@ CLAUDE.md
 .claude
 tests
 webpack.config.js
+webpack.editor.config.cjs
+components/importer/assets/editor-src
 .wordpress-org
 wp-cli.local.yml
 yarn.lock
