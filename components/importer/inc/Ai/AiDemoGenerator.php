@@ -316,6 +316,8 @@ class AiDemoGenerator {
 				'code_editor' => $code_editor ? $code_editor : null,
 				'pages_url'   => admin_url( 'edit.php?post_type=page' ),
 				'site_url'    => home_url( '/' ),
+				// The page builder in the block editor ("New page with AI").
+				'page_builder_url' => admin_url( 'post-new.php?post_type=page&iss_ai=1' ),
 				// "My real business" starts from the site's own name (not WordPress' default).
 				'site_name'   => 'My WordPress Website' === get_bloginfo( 'name' ) ? '' : get_bloginfo( 'name' ),
 				'upgrade_url' => 'https://www.wpzoom.com/themes/inspiro-lite/upgrade/?utm_source=wpadmin&utm_medium=ai-demo&utm_campaign=ai-quota-upsell',
@@ -535,6 +537,10 @@ class AiDemoGenerator {
 					'regen_page_link'  => __( 'Regenerate a page', 'inspiro-starter-sites' ),
 					'add_page_title'   => __( 'Add a page with AI', 'inspiro-starter-sites' ),
 					'add_page_intro'   => __( 'The new page is designed with your demo\'s existing style and added to the menu.', 'inspiro-starter-sites' ),
+					'pb_promo_title'   => __( 'New: build pages visually', 'inspiro-starter-sites' ),
+					'pb_promo_text'    => __( 'Pick sections from Inspiro\'s demos, see them before you add them, and let AI fill them in — right in the page editor.', 'inspiro-starter-sites' ),
+					'pb_promo_go'      => __( 'Open the page builder', 'inspiro-starter-sites' ),
+					'pb_alt'           => __( 'Or build a page with AI in the editor', 'inspiro-starter-sites' ),
 					'add_page_label'   => __( 'Page title', 'inspiro-starter-sites' ),
 					'add_page_ph'      => __( 'e.g. Pricing', 'inspiro-starter-sites' ),
 					'add_page_details' => __( 'What should be on it? (optional)', 'inspiro-starter-sites' ),

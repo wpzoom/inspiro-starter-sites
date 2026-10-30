@@ -489,6 +489,7 @@ jQuery( function ( $ ) {
 								'<p class="iss-ai-premium-upsell js-iss-ai-page-upsell" hidden>' +
 									'<span class="js-iss-ai-page-upsell-text"></span> ' +
 									'<a class="js-iss-ai-page-upsell-link" href="#" target="_blank" rel="noopener"></a>' +
+									'<a class="iss-ai-page-upsell-alt js-iss-ai-page-upsell-alt" href="' + esc( config.page_builder_url || '#' ) + '" hidden>' + esc( t.pb_alt || '' ) + '</a>' +
 								'</p>' +
 							'</div>' +
 							'<p class="iss-ai-delete-result js-iss-ai-delete-result" hidden></p>' +
@@ -658,6 +659,12 @@ jQuery( function ( $ ) {
 						'<div class="iss-ai-step iss-ai-step-pagetools" data-step="pagetools">' +
 							'<h3 class="js-iss-ai-pt-title"></h3>' +
 							'<p class="iss-ai-css-intro js-iss-ai-pt-intro"></p>' +
+							// The editor's page builder: sections to pick and preview first.
+							'<div class="iss-ai-pb-promo js-iss-ai-pt-promo" hidden>' +
+								'<span class="iss-ai-pb-promo__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 20 20"><path d="M10 2.5l1.6 4.4 4.4 1.6-4.4 1.6L10 14.5l-1.6-4.4L4 8.5l4.4-1.6zM15.5 13l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" fill="currentColor"/></svg></span>' +
+								'<span class="iss-ai-pb-promo__text"><strong>' + esc( t.pb_promo_title || '' ) + '</strong> ' + esc( t.pb_promo_text || '' ) + '</span>' +
+								'<a class="iss-ai-mini-btn" href="' + esc( config.page_builder_url || '#' ) + '">' + esc( t.pb_promo_go || '' ) + '</a>' +
+							'</div>' +
 							'<div class="js-iss-ai-pt-form">' +
 								'<div class="js-iss-ai-pt-add">' +
 									'<p class="iss-ai-field-label">' + esc( t.add_page_label || '' ) + '</p>' +
@@ -2115,6 +2122,8 @@ jQuery( function ( $ ) {
 				$upsell.find( '.js-iss-ai-page-upsell-link' ).attr( 'href', config.license_url || '#' ).text( t.license_cta || '' );
 			}
 
+			// Adding a page doesn't need Premium in the editor's page builder.
+			$upsell.find( '.js-iss-ai-page-upsell-alt' ).attr( 'hidden', 'add' === mode ? null : 'hidden' );
 			$upsell.removeAttr( 'hidden' );
 			return;
 		}
@@ -2132,6 +2141,7 @@ jQuery( function ( $ ) {
 		$root.find( '.js-iss-ai-pt-intro' ).text( 'add' === mode ? ( t.add_page_intro || '' ) : ( t.regen_intro || '' ) );
 		$root.find( '.js-iss-ai-pt-add' ).toggle( 'add' === mode );
 		$root.find( '.js-iss-ai-pt-regen' ).toggle( 'regen' === mode );
+		$root.find( '.js-iss-ai-pt-promo' ).attr( 'hidden', 'add' === mode ? null : 'hidden' );
 		$root.find( '.js-iss-ai-pt-form' ).show();
 		$root.find( '.js-iss-ai-pt-working' ).attr( 'hidden', 'hidden' );
 		$root.find( '.js-iss-ai-pt-result' ).attr( 'hidden', 'hidden' ).removeClass( 'is-error' );
