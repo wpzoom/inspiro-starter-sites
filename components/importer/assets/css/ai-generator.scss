@@ -750,25 +750,40 @@ body.iss-ai-open {
   pointer-events: none;
 }
 
+/* Each ribbon: a metallic highlight that drifts across it (the gradient is
+   twice the ribbon's width and slides), while the ribbon itself breathes
+   and fades. Offsets per ribbon keep them out of step. */
 .inspiro-starter-sites-ai-hero__ribbons i {
   flex: 1;
   height: 62%;
-  background: linear-gradient(90deg, #1b1e1d 0%, #343c39 18%, #66746d 50%, #343c39 82%, #1b1e1d 100%);
+  background: linear-gradient(90deg, #1b1e1d 0%, #343c39 15%, #66746d 30%, #343c39 45%, #1b1e1d 55%, #2c3330 70%, #556158 85%, #1b1e1d 100%);
+  background-size: 220% 100%;
   -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 60%);
   mask-image: linear-gradient(180deg, transparent 0%, #000 60%);
   opacity: 0.9;
   transform-origin: bottom;
-  animation: iss-ai-hero-breathe 10s ease-in-out infinite;
+  animation:
+    iss-ai-hero-breathe 10s ease-in-out infinite,
+    iss-ai-hero-sheen 14s linear infinite,
+    iss-ai-hero-fade 9s ease-in-out infinite;
 }
 
 .inspiro-starter-sites-ai-hero__ribbons i:nth-child(2n) {
   height: 56%;
-  animation-delay: -3.5s;
+  animation-delay: -3.5s, -5s, -2s;
 }
 
 .inspiro-starter-sites-ai-hero__ribbons i:nth-child(3n) {
   height: 66%;
-  animation-delay: -7s;
+  animation-delay: -7s, -9s, -5s;
+}
+
+.inspiro-starter-sites-ai-hero__ribbons i:nth-child(5n) {
+  animation-duration: 10s, 19s, 11s;
+}
+
+.inspiro-starter-sites-ai-hero__ribbons i:nth-child(7n) {
+  animation-delay: -1.5s, -12s, -7s;
 }
 
 /* Darkens the middle so the headline and prompt sit on near-black. */
@@ -783,6 +798,16 @@ body.iss-ai-open {
 @keyframes iss-ai-hero-breathe {
   0%, 100% { transform: scaleY(1); }
   50% { transform: scaleY(1.06); }
+}
+
+@keyframes iss-ai-hero-sheen {
+  0% { background-position: 0% 0; }
+  100% { background-position: -120% 0; }
+}
+
+@keyframes iss-ai-hero-fade {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 0.55; }
 }
 
 @media (prefers-reduced-motion: reduce) {
