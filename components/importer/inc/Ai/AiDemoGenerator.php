@@ -746,27 +746,35 @@ class AiDemoGenerator {
 			? sprintf( __( 'You have an AI-generated demo: “%s”', 'inspiro-starter-sites' ), $previous['site_title'] )
 			: __( 'You have an AI-generated demo', 'inspiro-starter-sites' );
 		?>
-		<div class="notice notice-warning inspiro-ai-import-notice" style="margin: 20px 0; padding: 15px; border-left: 4px solid #ffba00;">
-			<h3 style="margin-top: 0;"><?php echo esc_html( $title ); ?></h3>
-			<p>
-				<?php
-				printf(
-					/* translators: %d: number of AI-generated pages */
-					esc_html__( 'Importing a starter site below will NOT remove your AI-generated demo — its %d page(s), menu and homepage setting would remain and collide with the imported demo. We recommend deleting the AI demo first.', 'inspiro-starter-sites' ),
-					(int) $previous['page_count']
-				);
-				?>
-			</p>
-			<p>
-				<button type="button" class="button button-primary js-inspiro-ai-import-notice-delete">
-					<?php esc_html_e( 'Delete AI Demo', 'inspiro-starter-sites' ); ?>
-				</button>
-				<button type="button" class="button js-inspiro-ai-import-notice-keep" style="margin-left: 8px;">
-					<?php esc_html_e( 'Keep It & Continue', 'inspiro-starter-sites' ); ?>
-				</button>
-				<span class="spinner" style="float: none; margin: 0 10px;"></span>
-				<span class="js-inspiro-ai-import-notice-result"></span>
-			</p>
+		<div class="iss-ai-import-notice inspiro-ai-import-notice" role="region" aria-label="<?php echo esc_attr( $title ); ?>">
+			<span class="iss-ai-import-notice__icon" aria-hidden="true">
+				<svg width="20" height="20" viewBox="0 0 20 20"><path d="M10 2.5l1.6 4.4 4.4 1.6-4.4 1.6L10 14.5l-1.6-4.4L4 8.5l4.4-1.6zM15.5 13l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" fill="currentColor"/></svg>
+			</span>
+			<div class="iss-ai-import-notice__body">
+				<h3 class="iss-ai-import-notice__title">
+					<?php echo esc_html( $title ); ?>
+					<span class="iss-ai-import-notice__chip">
+						<?php
+						/* translators: %d: number of AI-generated pages */
+						echo esc_html( sprintf( _n( '%d page', '%d pages', (int) $previous['page_count'], 'inspiro-starter-sites' ), (int) $previous['page_count'] ) );
+						?>
+					</span>
+				</h3>
+				<p class="iss-ai-import-notice__text">
+					<?php esc_html_e( 'Importing a starter site keeps its pages, menu and homepage setting, so the two demos would get mixed up. For a clean start, delete the AI demo first.', 'inspiro-starter-sites' ); ?>
+				</p>
+				<div class="iss-ai-import-notice__actions">
+					<button type="button" class="iss-ai-import-notice__btn is-primary js-inspiro-ai-import-notice-delete">
+						<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6m-9 4h12m-1 0-.7 11.2A2 2 0 0 1 14.3 20H9.7a2 2 0 0 1-2-1.8L7 7m3 4v5m4-5v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+						<?php esc_html_e( 'Delete AI demo', 'inspiro-starter-sites' ); ?>
+					</button>
+					<button type="button" class="iss-ai-import-notice__btn js-inspiro-ai-import-notice-keep">
+						<?php esc_html_e( 'Keep it and continue', 'inspiro-starter-sites' ); ?>
+					</button>
+					<span class="spinner"></span>
+					<span class="iss-ai-import-notice__result js-inspiro-ai-import-notice-result"></span>
+				</div>
+			</div>
 		</div>
 		<script>
 		jQuery( function ( $ ) {

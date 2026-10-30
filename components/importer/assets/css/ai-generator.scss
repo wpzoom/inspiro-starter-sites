@@ -2983,3 +2983,121 @@ select.iss-ai-input {
     grid-template-columns: 1fr;
   }
 }
+
+/* "You have an AI-generated demo" above the starter sites. */
+.iss-ai-import-notice {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin: 20px 0 24px;
+  padding: 20px 22px;
+  border: 1px solid #e4e4e7;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 6px 18px rgba(16, 24, 40, 0.05);
+  color: #1d1d1f;
+}
+
+.iss-ai-import-notice__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.iss-ai-import-notice__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.iss-ai-import-notice__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #1d1d1f;
+}
+
+.iss-ai-import-notice__chip {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: #f4f4f5;
+  color: #52525b;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.iss-ai-import-notice__text {
+  max-width: 720px;
+  margin: 0 0 14px;
+  color: #52525b;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.iss-ai-import-notice__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.iss-ai-import-notice__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 16px;
+  border: 1.5px solid #e4e4e7;
+  border-radius: 8px;
+  background: #fff;
+  color: #1d1d1f;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.iss-ai-import-notice__btn:hover:not(:disabled) {
+  border-color: #1d1d1f;
+}
+
+.iss-ai-import-notice__btn.is-primary {
+  border-color: #1d1d1f;
+  background: #1d1d1f;
+  color: #fff;
+}
+
+.iss-ai-import-notice__btn.is-primary:hover:not(:disabled) {
+  background: #000;
+}
+
+.iss-ai-import-notice__btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.iss-ai-import-notice .spinner {
+  float: none;
+  margin: 0;
+}
+
+.iss-ai-import-notice__result {
+  color: #b32d2e;
+  font-size: 13px;
+}
+
+@media (max-width: 600px) {
+  .iss-ai-import-notice {
+    flex-direction: column;
+  }
+}
