@@ -5,7 +5,7 @@ Author URI:			https://www.wpzoom.com/
 Requires at least: 	6.5
 Tested up to: 		7.1
 Requires PHP: 		7.4  
-Stable tag: 		1.4.0
+Stable tag: 		1.4.1
 License: 			GPLv2 or later  
 License URI: 		https://www.gnu.org/licenses/gpl-2.0.html
 Tags: 				starter sites, templates, demo importer, elementor, gutenberg
@@ -139,6 +139,10 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 4. Demo Imported message
 
 == Changelog ==
+
+= 1.4.1 =
+* Fixed: The page builder in the editor asked for your email again when reopened right after connecting
+* Improved: The page builder shows the Inspiro Premium upgrade option to free users, like the demo generator does
 
 = 1.4.0 =
 * New: Generate a page with AI in the block editor: the "Generate with AI" button in the editor toolbar, or "New page with AI" on the Pages screen. Pick a page type, preview sections from Inspiro's demos, insert them right away with sample text and photos, or let AI write the text from your description
