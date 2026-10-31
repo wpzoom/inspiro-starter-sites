@@ -685,7 +685,12 @@ export default function PageBuilderModal( { onClose } ) {
 				<Icon name="close" size={ 18 } />
 			</button>
 			{ ! connected ? (
-				<ConnectPanel onDone={ () => { setConnected( true ); } } />
+				<ConnectPanel onDone={ () => {
+					// The next open mounts a fresh modal that reads config: keep it
+					// in step, or it would ask for the email again until a reload.
+					config.connected = true;
+					setConnected( true );
+				} } />
 			) : (
 				<div className="iss-pb-layout">
 					<aside className="iss-pb-side">
