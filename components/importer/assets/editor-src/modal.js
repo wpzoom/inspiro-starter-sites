@@ -233,40 +233,44 @@ function ConnectPanel( { onDone } ) {
 	);
 }
 
+/* The quota card above the build button. A free user always sees the
+   Premium upsell (as the demo generator shows it), not only once the last
+   generation is spent; a licensed user sees a line only when out. */
 function QuotaLine( { quota } ) {
 	if ( ! quota || ! quota.connected ) {
 		return null;
 	}
 	const exhausted = quota.limit > 0 && quota.remaining <= 0;
-	if ( ! exhausted ) {
-		return null;
-	}
-	return (
-		<div className="iss-pb-quotaline is-exhausted">
-			<Upsell quota={ quota } />
-		</div>
-	);
-}
 
-function Upsell( { quota } ) {
-	if ( quota && quota.licensed ) {
-		return <span>{ __( 'You have used all the page generations included with your license.', 'inspiro-starter-sites' ) }</span>;
+	if ( quota.licensed ) {
+		return exhausted ? (
+			<p className="iss-pb-quotaline is-exhausted">
+				{ __( 'You have used all the page generations included with your license.', 'inspiro-starter-sites' ) }
+			</p>
+		) : null;
 	}
-	if ( config.premiumTheme && ! config.hasLicense ) {
-		return (
-			<span>
-				{ __( 'Out of free generations.', 'inspiro-starter-sites' ) }{ ' ' }
-				<a href={ config.licenseUrl }>{ __( 'Activate your Inspiro Premium license', 'inspiro-starter-sites' ) }</a>{ ' ' }
-				{ __( 'for more.', 'inspiro-starter-sites' ) }
-			</span>
-		);
-	}
+
+	const activate = config.premiumTheme && ! config.hasLicense;
 	return (
-		<span>
-			{ __( 'Out of free generations.', 'inspiro-starter-sites' ) }{ ' ' }
-			<a href={ config.upgradeUrl } target="_blank" rel="noreferrer">{ __( 'Upgrade to Inspiro Premium', 'inspiro-starter-sites' ) }</a>{ ' ' }
-			{ __( 'for more generations and the full section library.', 'inspiro-starter-sites' ) }
-		</span>
+		<>
+			{ exhausted && (
+				<p className="iss-pb-quotaline is-exhausted">
+					{ __( 'You have used all your free AI page generations for this site.', 'inspiro-starter-sites' ) }
+				</p>
+			) }
+			<div className="iss-pb-upsell">
+				<p>
+					{ activate
+						? __( 'Activate your Inspiro Premium license to unlock extra AI generations.', 'inspiro-starter-sites' )
+						: __( 'Want to generate more? Inspiro Premium includes extra AI generations — plus all premium features, starter sites and priority support.', 'inspiro-starter-sites' ) }
+				</p>
+				{ activate ? (
+					<a className="iss-pb-upsell__btn" href={ config.licenseUrl }>{ __( 'Activate your license', 'inspiro-starter-sites' ) }</a>
+				) : (
+					<a className="iss-pb-upsell__btn" href={ config.upgradeUrl } target="_blank" rel="noreferrer">{ __( 'Upgrade to Inspiro Premium', 'inspiro-starter-sites' ) }</a>
+				) }
+			</div>
+		</>
 	);
 }
 

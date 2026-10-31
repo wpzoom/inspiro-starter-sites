@@ -281,14 +281,12 @@ $chip-bg: #f4f4f5;
 	}
 }
 
+/* "Out of generations" line, red like the demo generator's. */
 .iss-pb-quotaline {
-	margin: 0 0 12px;
-	padding: 14px;
-	border: 1.5px solid $line;
-	border-radius: 10px;
-	font-size: 12px;
+	margin: 0 0 10px;
+	font-size: 12.5px;
 	line-height: 1.5;
-	color: #50575e;
+	color: #d63638;
 
 	a {
 		color: $ink;
@@ -696,4 +694,39 @@ $chip-bg: #f4f4f5;
 @keyframes iss-pb-shimmer {
 	from { background-position: 200% 0; }
 	to { background-position: -200% 0; }
+}
+
+/* The Premium upsell card above the build button, same card as the demo
+   generator's. */
+.iss-pb-upsell {
+	margin: 0 0 12px;
+	padding: 14px;
+	background: #fff;
+	border: 1.5px solid $line;
+	border-radius: 10px;
+
+	p {
+		margin: 0 0 10px;
+		font-size: 12px;
+		line-height: 1.5;
+		color: #50575e;
+	}
+}
+
+.iss-pb-upsell__btn {
+	display: block;
+	padding: 9px 12px;
+	border-radius: 8px;
+	background: $ink;
+	color: #fff;
+	font-size: 12.5px;
+	font-weight: 600;
+	text-align: center;
+	text-decoration: none;
+
+	&:hover,
+	&:focus {
+		background: #000;
+		color: #fff;
+	}
 }
