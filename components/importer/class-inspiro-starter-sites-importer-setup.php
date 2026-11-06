@@ -206,6 +206,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
             'inspiro-lite-agency'                => [ 'icon-block', 'slider-block', 'wpzoom-portfolio' ],
 			'inspiro-lite-photographer'          => [ 'wpzoom-portfolio' ],
 			'inspiro-lite-landscape'             => [ 'wpzoom-portfolio' ],
+			'inspiro-lite-boutique'              => [ 'woocommerce' ],
 			'inspiro-lite-advisory'		   	 	 => [ 'icon-block' ]
 		];
 	}
@@ -257,6 +258,18 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'preview_url'                => 'https://inspiro.wpzoom.com/landscape/',
 				'is_new'                     => true,
 				'categories'                 => [ 'photography', 'portfolio', 'travel' ],
+			],
+			[
+				'import_id'                  => 'inspiro-lite-boutique',
+				'import_file_name'           => 'Boutique Store (Lite)',
+				'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-boutique.xml',
+				'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-boutique.wie',
+				'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-boutique.dat',
+				'import_preview_image_url'   => $demos_preview_url . 'boutique.png',
+				'preview_url'                => 'https://inspiro.wpzoom.com/boutique/',
+				'platform'                   => 'woocommerce',
+				'is_new'                     => true,
+				'categories'                 => [ 'woocommerce', 'creative' ],
 			],
 			[
 				'import_id'                  => 'inspiro-lite-blocks',
@@ -971,6 +984,12 @@ class Inspiro_Starter_Sites_Importer_Setup {
 					self::localize_demo_links( $selected_import );
 					self::deactivate_sidebar_widgets( 'sidebar' );
 					break;
+				case 'inspiro-lite-boutique':
+					$demo_layout = 'boutique';
+					self::localize_demo_links( $selected_import );
+					self::deactivate_sidebar_widgets( 'sidebar' );
+					self::setup_woocommerce_demo();
+					break;
 				// Add more demo mappings as needed
 			}
 			
@@ -1022,6 +1041,71 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				$wpdb->update( $wpdb->posts, array( 'post_content' => $new ), array( 'ID' => $id ) );
 				clean_post_cache( $id );
 			}
+		}
+	}
+
+	/**
+	 * Finish a WooCommerce demo built on a subsite.
+	 *
+	 * The demo's XML leaves out WooCommerce's own pages: WooCommerce creates Shop, Cart, Checkout and
+	 * My account when it is activated, before the content import. This puts Shop first and Cart last
+	 * in the "Main" menu, relinks product gallery images (the WXR importer remaps featured images but
+	 * not _product_image_gallery; the demo stores the photos' Pexels ids in _bq_gallery_px and each
+	 * photo's id in _bq_px), and builds the product lookup table that sorting (bestsellers, price) and
+	 * lookups by SKU read, since imported products only have the values in post meta.
+	 */
+	public static function setup_woocommerce_demo() {
+		if ( ! class_exists( 'WooCommerce' ) || ! function_exists( 'wc_get_page_id' ) ) {
+			return;
+		}
+		if ( wc_get_page_id( 'shop' ) < 1 || ! get_post( wc_get_page_id( 'shop' ) ) ) {
+			\WC_Install::create_pages();
+		}
+
+		$menu = get_term_by( 'name', 'Main', 'nav_menu' );
+		if ( $menu ) {
+			$items  = wp_get_nav_menu_items( $menu->term_id );
+			$items  = $items ? $items : array();
+			$linked = array_map( 'intval', wp_list_pluck( $items, 'object_id' ) );
+			$shop   = wc_get_page_id( 'shop' );
+			$cart   = wc_get_page_id( 'cart' );
+			if ( $shop > 0 && ! in_array( $shop, $linked, true ) ) {
+				foreach ( $items as $item ) {
+					wp_update_post( array( 'ID' => $item->ID, 'menu_order' => (int) $item->menu_order + 1 ) );
+				}
+				wp_update_nav_menu_item( $menu->term_id, 0, array( 'menu-item-object-id' => $shop, 'menu-item-object' => 'page', 'menu-item-type' => 'post_type', 'menu-item-status' => 'publish', 'menu-item-position' => 1 ) );
+			}
+			if ( $cart > 0 && ! in_array( $cart, $linked, true ) ) {
+				wp_update_nav_menu_item( $menu->term_id, 0, array( 'menu-item-object-id' => $cart, 'menu-item-object' => 'page', 'menu-item-type' => 'post_type', 'menu-item-status' => 'publish', 'menu-item-position' => 0 ) );
+			}
+		}
+
+		$products = get_posts( array( 'post_type' => 'product', 'post_status' => 'any', 'numberposts' => -1, 'fields' => 'ids', 'meta_key' => '_bq_gallery_px' ) );
+		foreach ( $products as $product_id ) {
+			$ids = array();
+			foreach ( explode( ',', (string) get_post_meta( $product_id, '_bq_gallery_px', true ) ) as $pexels_id ) {
+				$found = get_posts( array( 'post_type' => 'attachment', 'post_status' => 'inherit', 'numberposts' => 1, 'fields' => 'ids', 'meta_key' => '_bq_px', 'meta_value' => trim( $pexels_id ) ) );
+				if ( $found ) {
+					$ids[] = (int) $found[0];
+				}
+			}
+			if ( $ids ) {
+				update_post_meta( $product_id, '_product_image_gallery', implode( ',', $ids ) );
+			}
+		}
+
+		// Imported products have no lookup rows yet. Do what WooCommerce's "Regenerate the product lookup
+		// tables" tool does, but now rather than through the background queue: one row per product,
+		// then each column filled from post meta.
+		global $wpdb;
+		if ( function_exists( 'wc_update_product_lookup_tables_column' ) && ! empty( $wpdb->wc_product_meta_lookup ) ) {
+			$wpdb->query( "INSERT IGNORE INTO {$wpdb->wc_product_meta_lookup} (`product_id`) SELECT ID FROM {$wpdb->posts} WHERE post_type IN ('product', 'product_variation')" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			foreach ( array( 'min_max_price', 'stock_quantity', 'sku', 'stock_status', 'total_sales', 'downloadable', 'virtual', 'onsale', 'tax_class', 'tax_status' ) as $column ) {
+				wc_update_product_lookup_tables_column( $column );
+			}
+		}
+		if ( function_exists( 'wc_delete_product_transients' ) ) {
+			wc_delete_product_transients();
 		}
 	}
 
