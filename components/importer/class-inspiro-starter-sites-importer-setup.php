@@ -146,6 +146,10 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'name' => 'WooCommerce',
 				'desc' => 'The leading e-commerce plugin for WordPress, enabling users to build and manage online stores effortlessly.',
 			],
+			'secondary-product-image-for-woocommerce' => [
+				'name' => 'Secondary Product Image for WooCommerce',
+				'desc' => 'Shows a second product photo when shoppers hover a product in the shop grid.',
+			],
             'carousel-block' => [
                 'name' => 'Carousel Slider Block',
                 'desc' => 'A responsive modern carousel slider for the Gutenberg block editor that lets you add any blocks to your slides.',
@@ -206,7 +210,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
             'inspiro-lite-agency'                => [ 'icon-block', 'slider-block', 'wpzoom-portfolio' ],
 			'inspiro-lite-photographer'          => [ 'wpzoom-portfolio' ],
 			'inspiro-lite-landscape'             => [ 'wpzoom-portfolio' ],
-			'inspiro-lite-boutique'              => [ 'woocommerce' ],
+			'inspiro-lite-boutique'              => [ 'woocommerce', 'secondary-product-image-for-woocommerce' ],
 			'inspiro-lite-advisory'		   	 	 => [ 'icon-block' ]
 		];
 	}
