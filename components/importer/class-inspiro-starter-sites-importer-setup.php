@@ -205,6 +205,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			'inspiro-lite-insurance'		   	 => [ 'social-icons-widget-by-wpzoom', 'icon-block' ],
             'inspiro-lite-agency'                => [ 'icon-block', 'slider-block', 'wpzoom-portfolio' ],
 			'inspiro-lite-photographer'          => [ 'wpzoom-portfolio' ],
+			'inspiro-lite-landscape'             => [ 'wpzoom-portfolio' ],
 			'inspiro-lite-advisory'		   	 	 => [ 'icon-block' ]
 		];
 	}
@@ -245,6 +246,17 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'preview_url'                => 'https://inspiro.wpzoom.com/photographer/',
 				'is_new'                     => true,
 				'categories'                 => [ 'photography', 'portfolio', 'creative' ],
+			],
+			[
+				'import_id'                  => 'inspiro-lite-landscape',
+				'import_file_name'           => 'Landscape (Lite)',
+				'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-landscape.xml',
+				'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-landscape.wie',
+				'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-landscape.dat',
+				'import_preview_image_url'   => $demos_preview_url . 'landscape.png',
+				'preview_url'                => 'https://inspiro.wpzoom.com/landscape/',
+				'is_new'                     => true,
+				'categories'                 => [ 'photography', 'portfolio', 'travel' ],
 			],
 			[
 				'import_id'                  => 'inspiro-lite-blocks',
@@ -520,6 +532,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			'woocommerce'     => __( 'WooCommerce', 'inspiro-starter-sites' ),
 			'video'           => __( 'Video', 'inspiro-starter-sites' ),
 			'photography'     => __( 'Photography', 'inspiro-starter-sites' ),
+			'travel'          => __( 'Travel', 'inspiro-starter-sites' ),
 			'food-restaurant' => __( 'Food & Restaurant', 'inspiro-starter-sites' ),
 			'health'          => __( 'Health', 'inspiro-starter-sites' ),
 			'sport'           => __( 'Sport', 'inspiro-starter-sites' ),
@@ -950,6 +963,10 @@ class Inspiro_Starter_Sites_Importer_Setup {
 					$demo_layout = 'photographer';
 					// The demo has no sidebar, so the header shows no menu-panel button.
 					// Park the default widgets of a fresh install in Inactive Widgets.
+					self::deactivate_sidebar_widgets( 'sidebar' );
+					break;
+				case 'inspiro-lite-landscape':
+					$demo_layout = 'landscape';
 					self::deactivate_sidebar_widgets( 'sidebar' );
 					break;
 				// Add more demo mappings as needed
