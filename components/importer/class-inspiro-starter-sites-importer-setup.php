@@ -961,12 +961,14 @@ class Inspiro_Starter_Sites_Importer_Setup {
                     break;
 				case 'inspiro-lite-photographer':
 					$demo_layout = 'photographer';
+					self::localize_demo_links( $selected_import );
 					// The demo has no sidebar, so the header shows no menu-panel button.
 					// Park the default widgets of a fresh install in Inactive Widgets.
 					self::deactivate_sidebar_widgets( 'sidebar' );
 					break;
 				case 'inspiro-lite-landscape':
 					$demo_layout = 'landscape';
+					self::localize_demo_links( $selected_import );
 					self::deactivate_sidebar_widgets( 'sidebar' );
 					break;
 				// Add more demo mappings as needed
@@ -988,6 +990,41 @@ class Inspiro_Starter_Sites_Importer_Setup {
 	 *
 	 * @param string $sidebar_id Sidebar ID.
 	 */
+	/**
+	 * Point links that still target the live demo at the importing site.
+	 *
+	 * Block demos are built on a subsite (e.g. https://inspiro.wpzoom.com/landscape/), so their
+	 * content links either to that full URL or to its path ("/landscape/contact/"). The WXR
+	 * importer only remaps attachment URLs, so rewrite both forms of href to home_url().
+	 *
+	 * @param array $selected_import The imported demo's registry entry (needs preview_url).
+	 */
+	public static function localize_demo_links( $selected_import ) {
+		global $wpdb;
+		if ( empty( $selected_import['preview_url'] ) ) {
+			return;
+		}
+		$demo_url  = trailingslashit( $selected_import['preview_url'] );
+		$demo_path = wp_parse_url( $demo_url, PHP_URL_PATH );
+		$home      = trailingslashit( home_url() );
+		if ( $demo_url === $home ) {
+			return;
+		}
+		$pairs = array( 'href="' . $demo_url => 'href="' . $home );
+		if ( $demo_path && '/' !== $demo_path ) {
+			$pairs[ 'href="' . $demo_path ] = 'href="' . $home;
+		}
+		$ids = $wpdb->get_col( "SELECT ID FROM {$wpdb->posts} WHERE post_type IN ( 'page', 'post', 'portfolio_item', 'wp_block' ) AND post_status = 'publish'" );
+		foreach ( $ids as $id ) {
+			$content = get_post_field( 'post_content', $id, 'raw' );
+			$new     = strtr( $content, $pairs );
+			if ( $new !== $content ) {
+				$wpdb->update( $wpdb->posts, array( 'post_content' => $new ), array( 'ID' => $id ) );
+				clean_post_cache( $id );
+			}
+		}
+	}
+
 	public static function deactivate_sidebar_widgets( $sidebar_id ) {
 		$sidebars = get_option( 'sidebars_widgets', array() );
 		if ( empty( $sidebars[ $sidebar_id ] ) || ! is_array( $sidebars[ $sidebar_id ] ) ) {
