@@ -5,7 +5,7 @@ Author URI:			https://www.wpzoom.com/
 Requires at least: 	6.5
 Tested up to: 		7.1
 Requires PHP: 		7.4  
-Stable tag: 		1.4.1
+Stable tag: 		1.5.0
 License: 			GPLv2 or later  
 License URI: 		https://www.gnu.org/licenses/gpl-2.0.html
 Tags: 				starter sites, templates, demo importer, elementor, gutenberg
@@ -139,6 +139,13 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 4. Demo Imported message
 
 == Changelog ==
+
+= 1.5.0 =
+* New: Photographer demo: a portrait and wedding photographer's site with series pages, a journal and a contact form (Block Editor)
+* New: Landscape demo: a landscape and travel photographer's site organised by place, with bold minimal typography (Block Editor)
+* New: Travel category in the demo library
+* Improved: Free demos are listed in the order people import them most, with the newest designs first
+* Fixed: After importing the Photographer or Landscape demo, links inside the content point to your site instead of the demo site
 
 = 1.4.1 =
 * Fixed: The page builder in the editor asked for your email again when reopened right after connecting
