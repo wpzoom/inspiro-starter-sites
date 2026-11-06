@@ -204,6 +204,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			'inspiro-lite-fitness'		   		 => [ 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-insurance'		   	 => [ 'social-icons-widget-by-wpzoom', 'icon-block' ],
             'inspiro-lite-agency'                => [ 'icon-block', 'slider-block', 'wpzoom-portfolio' ],
+			'inspiro-lite-photographer'          => [ 'wpzoom-portfolio' ],
 			'inspiro-lite-advisory'		   	 	 => [ 'icon-block' ]
 		];
 	}
@@ -233,6 +234,17 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'import_preview_image_url'   => $demos_preview_url .  'video.png',
 				'preview_url'                => 'https://inspiro.wpzoom.com/video/',
 				'categories'                 => [ 'video', 'creative', 'portfolio' ],
+			],
+			[
+				'import_id'                  => 'inspiro-lite-photographer',
+				'import_file_name'           => 'Photographer (Lite)',
+				'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-photographer.xml',
+				'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-photographer.wie',
+				'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-photographer.dat',
+				'import_preview_image_url'   => $demos_preview_url . 'photographer.png',
+				'preview_url'                => 'https://inspiro.wpzoom.com/photographer/',
+				'is_new'                     => true,
+				'categories'                 => [ 'photography', 'portfolio', 'creative' ],
 			],
 			[
 				'import_id'                  => 'inspiro-lite-blocks',
@@ -934,6 +946,12 @@ class Inspiro_Starter_Sites_Importer_Setup {
                 case 'inspiro-lite-energy':
                     $demo_layout = 'energy-blocks';
                     break;
+				case 'inspiro-lite-photographer':
+					$demo_layout = 'photographer';
+					// The demo has no sidebar, so the header shows no menu-panel button.
+					// Park the default widgets of a fresh install in Inactive Widgets.
+					self::deactivate_sidebar_widgets( 'sidebar' );
+					break;
 				// Add more demo mappings as needed
 			}
 			
@@ -946,6 +964,22 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			\Elementor\Plugin::$instance->files_manager->clear_cache();
 		}
 
+	}
+
+	/**
+	 * Move every widget in a sidebar to Inactive Widgets, so nothing is deleted.
+	 *
+	 * @param string $sidebar_id Sidebar ID.
+	 */
+	public static function deactivate_sidebar_widgets( $sidebar_id ) {
+		$sidebars = get_option( 'sidebars_widgets', array() );
+		if ( empty( $sidebars[ $sidebar_id ] ) || ! is_array( $sidebars[ $sidebar_id ] ) ) {
+			return;
+		}
+		$inactive                        = isset( $sidebars['wp_inactive_widgets'] ) && is_array( $sidebars['wp_inactive_widgets'] ) ? $sidebars['wp_inactive_widgets'] : array();
+		$sidebars['wp_inactive_widgets'] = array_merge( $inactive, $sidebars[ $sidebar_id ] );
+		$sidebars[ $sidebar_id ]         = array();
+		update_option( 'sidebars_widgets', $sidebars );
 	}
 
 	public static function get_page_by_title( $page_title ) {
