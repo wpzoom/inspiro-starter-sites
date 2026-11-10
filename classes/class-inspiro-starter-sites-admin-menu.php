@@ -163,9 +163,10 @@ class Inspiro_Starter_Sites_Admin_Menu {
 		//Add Go Pro link if the plugin is not active
 		if( ! defined( 'INSPIRO_STARTER_SITES_PRO_VERSION' ) ) {
 			$links['go_pro'] = sprintf( 
-				'<a href="%1$s" target="_blank" class="inspiro-starter-sites-gopro" style="color:#0BB4AA;font-weight:bold;">UPGRADE &rarr; <span class="rcb-premium-badge" style="background-color: #0BB4AA; color: #fff; margin-left: 5px; font-size: 11px; min-height: 16px;  border-radius: 8px; display: inline-block; font-weight: 600; line-height: 1.6; padding: 0 8px">%2$s</span></a>',
+				'<a href="%1$s" target="_blank" class="inspiro-starter-sites-gopro" style="color:#0BB4AA;font-weight:bold;">%3$s <span class="rcb-premium-badge" style="background-color: #0BB4AA; color: #fff; margin-left: 5px; font-size: 11px; min-height: 16px;  border-radius: 8px; display: inline-block; font-weight: 600; line-height: 1.6; padding: 0 8px">%2$s</span></a>',
 				self::$goProLink, 
-				esc_html__( 'PRO', 'inspiro-starter-sites' )
+				esc_html__( 'PRO', 'inspiro-starter-sites' ),
+				esc_html__( 'UPGRADE &rarr;', 'inspiro-starter-sites' )
 			);
 		}
 

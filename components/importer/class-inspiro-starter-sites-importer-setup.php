@@ -81,13 +81,13 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			[
 				'name'     => 'Instagram Widget by WPZOOM',
 				'slug'     => 'instagram-widget-by-wpzoom',
-				'desc'     => 'Displays your Instagram feed beautifully on your WordPress site with ease.',
+				'desc'     => __( 'Displays your Instagram feed beautifully on your WordPress site with ease.', 'inspiro-starter-sites' ),
 				'required' => false,
 		  	],
 			[
 				'name'     => 'WPZOOM Forms',
 				'slug'     => 'wpzoom-forms',
-				'desc'     => 'Helps you create customizable contact forms and integrate them seamlessly into your WordPress site.',
+				'desc'     => __( 'Helps you create customizable contact forms and integrate them seamlessly into your WordPress site.', 'inspiro-starter-sites' ),
 				'required' => true,
 			],
 		];
@@ -128,51 +128,51 @@ class Inspiro_Starter_Sites_Importer_Setup {
 		return [
 			'wpzoom-video-popup-block' => [
 				'name' => 'Video Popup Block by WPZOOM',
-				'desc' => 'Enables you to embed engaging video popups on your WordPress site effortlessly.',
+				'desc' => __( 'Enables you to embed engaging video popups on your WordPress site effortlessly.', 'inspiro-starter-sites' ),
 			],
 			'wpzoom-portfolio' => [
 				'name' => 'WPZOOM Portfolio',
-				'desc' => 'Showcases your projects in a professional and visually appealing portfolio layout.',
+				'desc' => __( 'Showcases your projects in a professional and visually appealing portfolio layout.', 'inspiro-starter-sites' ),
 			],
 			'elementor' => [
 				'name' => 'Elementor',
-				'desc' => 'The most popular page builder for WordPress that allows users to design custom layouts with a drag-and-drop interface.',
+				'desc' => __( 'The most popular page builder for WordPress that allows users to design custom layouts with a drag-and-drop interface.', 'inspiro-starter-sites' ),
 			],
 			'wpzoom-elementor-addons' => [
 				'name' => 'Elementor Addons by WPZOOM',
-				'desc' => 'Enhances Elementor with additional widgets and features for expanded design functionality.',
+				'desc' => __( 'Enhances Elementor with additional widgets and features for expanded design functionality.', 'inspiro-starter-sites' ),
 			],
 			'woocommerce' => [
 				'name' => 'WooCommerce',
-				'desc' => 'The leading e-commerce plugin for WordPress, enabling users to build and manage online stores effortlessly.',
+				'desc' => __( 'The leading e-commerce plugin for WordPress, enabling users to build and manage online stores effortlessly.', 'inspiro-starter-sites' ),
 			],
 			'secondary-product-image-for-woocommerce' => [
 				'name' => 'Secondary Product Image for WooCommerce',
-				'desc' => 'Shows a second product photo when shoppers hover a product in the shop grid.',
+				'desc' => __( 'Shows a second product photo when shoppers hover a product in the shop grid.', 'inspiro-starter-sites' ),
 			],
             'carousel-block' => [
                 'name' => 'Carousel Slider Block',
-                'desc' => 'A responsive modern carousel slider for the Gutenberg block editor that lets you add any blocks to your slides.',
+                'desc' => __( 'A responsive modern carousel slider for the Gutenberg block editor that lets you add any blocks to your slides.', 'inspiro-starter-sites' ),
             ],
 			'icon-block' => [
 				'name' => 'The Icon Block',
-				'desc' => 'Easily add SVG icons and graphics to the WordPress block editor.',
+				'desc' => __( 'Easily add SVG icons and graphics to the WordPress block editor.', 'inspiro-starter-sites' ),
 			],
 			'recipe-card-blocks-by-wpzoom' => [
 				'name' => 'Recipe Card Blocks',
-				'desc' => 'Beautiful Recipe Card Blocks for Food Bloggers with Schema Markup (JSON-LD) for the new WordPress editor (Gutenberg).',
+				'desc' => __( 'Beautiful Recipe Card Blocks for Food Bloggers with Schema Markup (JSON-LD) for the new WordPress editor (Gutenberg).', 'inspiro-starter-sites' ),
 			],
 			'makeiteasy-slider' => [
 				'name' => 'Makeiteasy Slider',
-				'desc' => 'Block based slider, leverages the speed and versatility of the Swiper slider.',
+				'desc' => __( 'Block based slider, leverages the speed and versatility of the Swiper slider.', 'inspiro-starter-sites' ),
 			],
 			'slider-block' => [
 				'name' => 'Image Slider Block',
-				'desc' => 'Display Multiple Images In Beautiful Slider & Reduce Page Scroll.',
+				'desc' => __( 'Display Multiple Images In Beautiful Slider & Reduce Page Scroll.', 'inspiro-starter-sites' ),
 			],
 			'social-icons-widget-by-wpzoom' => [
 				'name' => 'Social Icons Widget & Block by WPZOOM',
-				'desc' => 'Displays social media icon links in a clean, customizable widget or block.',
+				'desc' => __( 'Displays social media icon links in a clean, customizable widget or block.', 'inspiro-starter-sites' ),
 			],
 		];
 	}
@@ -576,7 +576,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 		return array(
 			'inspiro-premium' => array(
 				'name'     => 'Inspiro Premium',
-				'desc'     => 'Below you can view demos available in the Inspiro Premium theme. You can get access to all of them by purchasing the Premium version of the theme.',
+				'desc'     => __( 'Below you can view demos available in the Inspiro Premium theme. You can get access to all of them by purchasing the Premium version of the theme.', 'inspiro-starter-sites' ),
 				'purchase' => 'https://www.wpzoom.com/themes/inspiro-lite/upgrade/',
 				'demos'    => $demos,
 			),
