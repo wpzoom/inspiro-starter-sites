@@ -211,6 +211,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			'inspiro-lite-photographer'          => [ 'wpzoom-portfolio' ],
 			'inspiro-lite-landscape'             => [ 'wpzoom-portfolio' ],
 			'inspiro-lite-boutique'              => [ 'woocommerce', 'secondary-product-image-for-woocommerce' ],
+			'inspiro-lite-travel'                => [ 'elementor', 'wpzoom-elementor-addons', 'social-icons-widget-by-wpzoom', 'wpzoom-forms' ],
 			'inspiro-lite-advisory'		   	 	 => [ 'icon-block' ]
 		];
 	}
@@ -274,6 +275,18 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'platform'                   => 'woocommerce',
 				'is_new'                     => true,
 				'categories'                 => [ 'woocommerce', 'creative' ],
+			],
+			[
+				'import_id'                  => 'inspiro-lite-travel',
+				'import_file_name'           => 'Travel Agency (Lite)',
+				'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-travel.xml',
+				'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-travel.wie',
+				'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-travel.dat',
+				'import_preview_image_url'   => $demos_preview_url . 'travel.png',
+				'preview_url'                => 'https://inspiro.wpzoom.com/travel/',
+				'type'                       => 'elementor',
+				'is_new'                     => true,
+				'categories'                 => [ 'travel', 'business', 'creative' ],
 			],
 			[
 				'import_id'                  => 'inspiro-lite-blocks',
@@ -994,6 +1007,12 @@ class Inspiro_Starter_Sites_Importer_Setup {
 					self::deactivate_sidebar_widgets( 'sidebar' );
 					self::setup_woocommerce_demo();
 					break;
+				case 'inspiro-lite-travel':
+					$demo_layout = 'travel';
+					self::localize_demo_links( $selected_import );
+					self::localize_elementor_links( $selected_import );
+					self::deactivate_sidebar_widgets( 'sidebar' );
+					break;
 				// Add more demo mappings as needed
 			}
 			
@@ -1044,6 +1063,35 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			if ( $new !== $content ) {
 				$wpdb->update( $wpdb->posts, array( 'post_content' => $new ), array( 'ID' => $id ) );
 				clean_post_cache( $id );
+			}
+		}
+	}
+
+	/**
+	 * Same as localize_demo_links() for pages built with Elementor: the links live in the
+	 * _elementor_data meta (JSON, slashes escaped). Media URLs are left alone, so images and
+	 * videos keep loading from the demo site, like the other Elementor demos.
+	 *
+	 * @param array $selected_import The demo entry (needs preview_url).
+	 */
+	public static function localize_elementor_links( $selected_import ) {
+		global $wpdb;
+		if ( empty( $selected_import['preview_url'] ) ) {
+			return;
+		}
+		$demo_url = trailingslashit( $selected_import['preview_url'] );
+		$home     = trailingslashit( home_url() );
+		if ( $demo_url === $home ) {
+			return;
+		}
+		$escaped_demo = str_replace( '/', '\\/', $demo_url );
+		$escaped_home = str_replace( '/', '\\/', $home );
+		$rows = $wpdb->get_results( "SELECT post_id, meta_value FROM {$wpdb->postmeta} WHERE meta_key = '_elementor_data'" );
+		foreach ( $rows as $row ) {
+			$new = preg_replace( '#' . preg_quote( $escaped_demo, '#' ) . '(?!wp-content\\\\/)#', $escaped_home, $row->meta_value );
+			if ( null !== $new && $new !== $row->meta_value ) {
+				$wpdb->update( $wpdb->postmeta, array( 'meta_value' => $new ), array( 'post_id' => $row->post_id, 'meta_key' => '_elementor_data' ) );
+				clean_post_cache( $row->post_id );
 			}
 		}
 	}
