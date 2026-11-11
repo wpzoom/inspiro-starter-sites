@@ -1012,6 +1012,14 @@ class Inspiro_Starter_Sites_Importer_Setup {
 					self::localize_demo_links( $selected_import );
 					self::localize_elementor_links( $selected_import );
 					self::deactivate_sidebar_widgets( 'sidebar' );
+					// The posts page is called Journal, not Blog.
+					$journal = self::get_page_by_title( 'Journal' );
+					if ( $journal ) {
+						update_option( 'show_on_front', 'page' );
+						update_option( 'page_for_posts', $journal->ID );
+					}
+					// The booking and contact forms are embedded with [wpzf_form id="…"] in the Elementor data.
+					self::remap_form_shortcodes( array( 61 => 'booking-request', 62 => 'contact-form' ) );
 					break;
 				// Add more demo mappings as needed
 			}
@@ -1063,6 +1071,44 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			if ( $new !== $content ) {
 				$wpdb->update( $wpdb->posts, array( 'post_content' => $new ), array( 'ID' => $id ) );
 				clean_post_cache( $id );
+			}
+		}
+		// Footer text widgets link to the demo too.
+		$widgets = get_option( 'widget_text', array() );
+		$changed = false;
+		foreach ( $widgets as $k => $w ) {
+			if ( is_array( $w ) && ! empty( $w['text'] ) ) {
+				$new = strtr( $w['text'], $pairs );
+				if ( $new !== $w['text'] ) { $widgets[ $k ]['text'] = $new; $changed = true; }
+			}
+		}
+		if ( $changed ) { update_option( 'widget_text', $widgets ); }
+	}
+
+	/**
+	 * Point [wpzf_form id="…"] shortcodes in Elementor page data at the imported forms.
+	 *
+	 * The WXR importer gives the forms new IDs, so the shortcodes written on the demo site
+	 * would point at whatever post has that ID here. $map is demo form ID => form slug.
+	 *
+	 * @param array $map Demo form ID => post_name of the form.
+	 */
+	public static function remap_form_shortcodes( $map ) {
+		global $wpdb;
+		$pairs = array();
+		foreach ( $map as $old_id => $slug ) {
+			$form = get_posts( array( 'post_type' => 'wpzf-form', 'name' => $slug, 'post_status' => 'any', 'numberposts' => 1 ) );
+			if ( $form && (int) $form[0]->ID !== (int) $old_id ) {
+				$pairs[ '[wpzf_form id=\\"' . (int) $old_id . '\\"]' ] = '[wpzf_form id=\\"' . (int) $form[0]->ID . '\\"]';
+			}
+		}
+		if ( ! $pairs ) { return; }
+		$rows = $wpdb->get_results( "SELECT post_id, meta_value FROM {$wpdb->postmeta} WHERE meta_key = '_elementor_data' AND meta_value LIKE '%wpzf_form%'" );
+		foreach ( $rows as $row ) {
+			$new = strtr( $row->meta_value, $pairs );
+			if ( $new !== $row->meta_value ) {
+				$wpdb->update( $wpdb->postmeta, array( 'meta_value' => $new ), array( 'post_id' => $row->post_id, 'meta_key' => '_elementor_data' ) );
+				clean_post_cache( $row->post_id );
 			}
 		}
 	}
