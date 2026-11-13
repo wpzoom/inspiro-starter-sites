@@ -212,6 +212,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			'inspiro-lite-landscape'             => [ 'wpzoom-portfolio' ],
 			'inspiro-lite-boutique'              => [ 'woocommerce', 'secondary-product-image-for-woocommerce' ],
 			'inspiro-lite-travel'                => [ 'elementor', 'wpzoom-elementor-addons', 'social-icons-widget-by-wpzoom', 'wpzoom-forms' ],
+			'inspiro-lite-personal-blog'         => [ 'wpzoom-forms', 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-advisory'		   	 	 => [ 'icon-block' ]
 		];
 	}
@@ -287,6 +288,18 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'type'                       => 'elementor',
 				'is_new'                     => true,
 				'categories'                 => [ 'travel', 'business', 'creative' ],
+			],
+			[
+				'import_id'                  => 'inspiro-lite-personal-blog',
+				'import_file_name'           => 'Personal Blog (Lite)',
+				'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-personal-blog.xml',
+				'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-personal-blog.wie',
+				'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-personal-blog.dat',
+				'import_preview_image_url'   => $demos_preview_url . 'personal-blog.png',
+				'preview_url'                => 'https://inspiro.wpzoom.com/personal-blog/',
+				'type'                       => 'blocks',
+				'is_new'                     => true,
+				'categories'                 => [ 'blog', 'magazine' ],
 			],
 			[
 				'import_id'                  => 'inspiro-lite-blocks',
@@ -570,6 +583,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			'education'       => __( 'Education', 'inspiro-starter-sites' ),
 			'construction'    => __( 'Construction', 'inspiro-starter-sites' ),
 			'real-estate'     => __( 'Real Estate & Architecture', 'inspiro-starter-sites' ),
+			'blog'            => __( 'Blog', 'inspiro-starter-sites' ),
 			'magazine'        => __( 'Magazine', 'inspiro-starter-sites' ),
             'architecture'    => __( 'Architecture', 'inspiro-starter-sites' ),
 			'automotive'      => __( 'Automotive', 'inspiro-starter-sites' ),
@@ -1021,6 +1035,15 @@ class Inspiro_Starter_Sites_Importer_Setup {
 					// The booking and contact forms are embedded with [wpzf_form id="…"] in the Elementor data.
 					self::remap_form_shortcodes( array( 61 => 'booking-request', 62 => 'contact-form' ) );
 					break;
+				case 'inspiro-lite-personal-blog':
+					$demo_layout = 'personal-blog';
+					self::localize_demo_links( $selected_import );
+					self::deactivate_sidebar_widgets( 'sidebar' );
+					// A fresh install puts WordPress's default Archives and Categories widgets in the blog sidebar.
+					self::keep_imported_widgets_only( 'blog-sidebar' );
+					// The Contact and Newsletter pages embed the forms with the Form block (formId = demo post ID).
+					self::remap_form_blocks( array( 20 => 'contact-form', 21 => 'newsletter-form' ) );
+					break;
 				// Add more demo mappings as needed
 			}
 			
@@ -1083,6 +1106,72 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			}
 		}
 		if ( $changed ) { update_option( 'widget_text', $widgets ); }
+		// Block widgets (e.g. a sidebar "About" box with a link).
+		$blocks  = get_option( 'widget_block', array() );
+		$changed = false;
+		foreach ( $blocks as $k => $w ) {
+			if ( is_array( $w ) && ! empty( $w['content'] ) ) {
+				$new = strtr( $w['content'], $pairs );
+				if ( $new !== $w['content'] ) { $blocks[ $k ]['content'] = $new; $changed = true; }
+			}
+		}
+		if ( $changed ) { update_option( 'widget_block', $blocks ); }
+		// Theme mods (topbar text, pre-footer button URL) and custom menu links hold plain demo URLs.
+		$url_pairs = array( $demo_url => $home );
+		foreach ( (array) get_theme_mods() as $mod => $value ) {
+			if ( is_string( $value ) && false !== strpos( $value, $demo_url ) ) {
+				set_theme_mod( $mod, strtr( $value, $url_pairs ) );
+			}
+		}
+		$items = $wpdb->get_results( $wpdb->prepare( "SELECT post_id, meta_value FROM {$wpdb->postmeta} WHERE meta_key = '_menu_item_url' AND meta_value LIKE %s", $wpdb->esc_like( $demo_url ) . '%' ) );
+		foreach ( $items as $item ) {
+			update_post_meta( $item->post_id, '_menu_item_url', strtr( $item->meta_value, $url_pairs ) );
+		}
+	}
+
+	/**
+	 * Move every widget in a sidebar that this import did not add to Inactive Widgets (nothing is deleted).
+	 *
+	 * @param string $sidebar_id Sidebar ID.
+	 */
+	public static function keep_imported_widgets_only( $sidebar_id ) {
+		$imported = (array) get_option( 'inspiro_starter_sites_imported_widgets', array() );
+		$sidebars = get_option( 'sidebars_widgets', array() );
+		if ( empty( $imported ) || empty( $sidebars[ $sidebar_id ] ) || ! is_array( $sidebars[ $sidebar_id ] ) ) {
+			return;
+		}
+		$other = array_values( array_diff( $sidebars[ $sidebar_id ], $imported ) );
+		if ( ! $other ) {
+			return;
+		}
+		$sidebars[ $sidebar_id ]            = array_values( array_intersect( $sidebars[ $sidebar_id ], $imported ) );
+		$sidebars['wp_inactive_widgets'] = array_merge( (array) ( $sidebars['wp_inactive_widgets'] ?? array() ), $other );
+		update_option( 'sidebars_widgets', $sidebars );
+	}
+
+	/**
+	 * Point WPZOOM Forms "Form" blocks ({"formId":"…"}) in post content at the imported forms.
+	 *
+	 * @param array $map Demo form ID => post_name of the form.
+	 */
+	public static function remap_form_blocks( $map ) {
+		global $wpdb;
+		$pairs = array();
+		foreach ( $map as $old_id => $slug ) {
+			$form = get_posts( array( 'post_type' => 'wpzf-form', 'name' => $slug, 'post_status' => 'any', 'numberposts' => 1 ) );
+			if ( $form && (int) $form[0]->ID !== (int) $old_id ) {
+				$pairs[ '"formId":"' . (int) $old_id . '"' ] = '"formId":"' . (int) $form[0]->ID . '"';
+			}
+		}
+		if ( ! $pairs ) { return; }
+		$rows = $wpdb->get_results( "SELECT ID, post_content FROM {$wpdb->posts} WHERE post_type = 'page' AND post_content LIKE '%wpzoom-forms/form-block%'" );
+		foreach ( $rows as $row ) {
+			$new = strtr( $row->post_content, $pairs );
+			if ( $new !== $row->post_content ) {
+				$wpdb->update( $wpdb->posts, array( 'post_content' => $new ), array( 'ID' => $row->ID ) );
+				clean_post_cache( $row->ID );
+			}
+		}
 	}
 
 	/**
