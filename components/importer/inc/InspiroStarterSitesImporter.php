@@ -541,6 +541,7 @@ class InspiroStarterSitesImporter {
 		delete_transient( 'inspiro_starter_sites_importer_data_failed_attachment_imports' );
 		delete_transient( 'inspiro_starter_sites_import_menu_mapping' );
 		delete_transient( 'inspiro_starter_sites_import_menu_item_map' );
+		delete_transient( 'inspiro_starter_sites_import_attachment_map' );
 		delete_transient( 'inspiro_starter_sites_import_posts_with_nav_block' );
 
 		// Display final messages (success or warning messages).
@@ -861,6 +862,14 @@ class InspiroStarterSitesImporter {
 				update_option( 'inspiro_starter_sites_importer_elementor_pages', $this->elementor_pages, 'no' );
 			}
 		} elseif ( isset( $data['post_type'] ) && 'attachment' === $data['post_type'] ) {
+			// Elementor stores the demo's attachment IDs in _elementor_data and renders images by ID, so on a
+			// new site they point at other attachments (or none). Keep original ID => new ID; the media are
+			// relinked after the import (Inspiro_Starter_Sites_Importer_Setup::fix_elementor_media()).
+			if ( isset( $data['post_id'] ) ) {
+				$attachments                          = (array) get_transient( 'inspiro_starter_sites_import_attachment_map' );
+				$attachments[ (int) $data['post_id'] ] = (int) $post_id;
+				set_transient( 'inspiro_starter_sites_import_attachment_map', array_filter( $attachments ), HOUR_IN_SECONDS );
+			}
 			$remote_url          = isset( $data['guid'] ) ? $data['guid'] : '';
 			$attachment_hash_url = self::get_hash_image( $remote_url );
 			if ( ! empty( $attachment_hash_url ) ) {

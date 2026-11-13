@@ -214,6 +214,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			'inspiro-lite-travel'                => [ 'elementor', 'wpzoom-elementor-addons', 'social-icons-widget-by-wpzoom', 'wpzoom-forms' ],
 			'inspiro-lite-personal-blog'         => [ 'wpzoom-forms', 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-travel-blog'           => [ 'wpzoom-forms', 'social-icons-widget-by-wpzoom' ],
+			'inspiro-lite-education'             => [ 'elementor', 'wpzoom-elementor-addons', 'wpzoom-forms', 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-advisory'		   	 	 => [ 'icon-block' ]
 		];
 	}
@@ -289,6 +290,18 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'type'                       => 'elementor',
 				'is_new'                     => true,
 				'categories'                 => [ 'travel', 'business', 'creative' ],
+			],
+			[
+				'import_id'                  => 'inspiro-lite-education',
+				'import_file_name'           => 'Online Courses (Lite)',
+				'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-education.xml',
+				'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-education.wie',
+				'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-education.dat',
+				'import_preview_image_url'   => $demos_preview_url . 'education.png',
+				'preview_url'                => 'https://inspiro.wpzoom.com/education/',
+				'type'                       => 'elementor',
+				'is_new'                     => true,
+				'categories'                 => [ 'education', 'creative', 'video' ],
 			],
 			[
 				'import_id'                  => 'inspiro-lite-personal-blog',
@@ -953,6 +966,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 
 	public function after_import_setup( $selected_import ) {
 		self::fix_menu_item_parents();
+		self::fix_elementor_media();
 
 		// Assign menus to their locations.
 		$main_menu = get_term_by( 'name', 'Main', 'nav_menu' );
@@ -1049,6 +1063,23 @@ class Inspiro_Starter_Sites_Importer_Setup {
 					}
 					// The booking and contact forms are embedded with [wpzf_form id="…"] in the Elementor data.
 					self::remap_form_shortcodes( array( 61 => 'booking-request', 62 => 'contact-form' ) );
+					break;
+				case 'inspiro-lite-education':
+					$demo_layout = 'education';
+					self::localize_demo_links( $selected_import );
+					self::localize_elementor_links( $selected_import );
+					self::deactivate_sidebar_widgets( 'sidebar' );
+					foreach ( array( 'blog-sidebar', 'footer_1', 'footer_2', 'footer_3', 'footer_4' ) as $sidebar_id ) {
+						self::keep_imported_widgets_only( $sidebar_id );
+					}
+					// The posts page is called Journal, not Blog.
+					$journal = self::get_page_by_title( 'Journal' );
+					if ( $journal ) {
+						update_option( 'show_on_front', 'page' );
+						update_option( 'page_for_posts', $journal->ID );
+					}
+					// The Contact page embeds the enrol form with [wpzf_form id="…"] in the Elementor data.
+					self::remap_form_shortcodes( array( 24 => 'enrol-form' ) );
 					break;
 				case 'inspiro-lite-personal-blog':
 					$demo_layout = 'personal-blog';
@@ -1199,6 +1230,57 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			}
 		}
 		delete_transient( 'inspiro_starter_sites_import_menu_item_map' );
+	}
+
+	/**
+	 * Point images in Elementor pages at the imported attachments.
+	 *
+	 * Elementor keeps each image as {id, url} and renders it by ID, but the WXR importer leaves
+	 * _elementor_data untouched, so on a new site the demo's IDs show other attachments or nothing.
+	 * The importer records original => new attachment IDs while it runs (track_post()); every media
+	 * value (an array with id and an uploads url) gets the new ID and its URL. Images whose attachment
+	 * was not imported keep loading from the demo.
+	 */
+	public static function fix_elementor_media() {
+		global $wpdb;
+		$map = get_transient( 'inspiro_starter_sites_import_attachment_map' );
+		if ( empty( $map ) || ! is_array( $map ) ) {
+			return;
+		}
+		$relink = function ( $node ) use ( &$relink, $map ) {
+			if ( ! is_array( $node ) ) {
+				return $node;
+			}
+			if ( isset( $node['id'], $node['url'] ) && is_scalar( $node['id'] ) && is_string( $node['url'] ) && false !== strpos( $node['url'], '/wp-content/uploads/' ) && isset( $map[ (int) $node['id'] ] ) ) {
+				$url = wp_get_attachment_url( $map[ (int) $node['id'] ] );
+				if ( $url ) {
+					$node['id']  = $map[ (int) $node['id'] ];
+					$node['url'] = $url;
+				}
+				return $node;
+			}
+			foreach ( $node as $key => $value ) {
+				$node[ $key ] = $relink( $value );
+			}
+			return $node;
+		};
+		$rows = $wpdb->get_results( "SELECT post_id, meta_value FROM {$wpdb->postmeta} WHERE meta_key = '_elementor_data'" );
+		foreach ( $rows as $row ) {
+			if ( ! get_post_meta( $row->post_id, '_inspiro_starter_sites_importer_imported_post', true ) ) {
+				continue;
+			}
+			$data = json_decode( $row->meta_value, true );
+			if ( ! is_array( $data ) ) {
+				continue;
+			}
+			$new = $relink( $data );
+			if ( $new !== $data ) {
+				update_post_meta( $row->post_id, '_elementor_data', wp_slash( wp_json_encode( $new ) ) );
+			}
+		}
+		if ( class_exists( '\\Elementor\\Plugin' ) ) {
+			\Elementor\Plugin::$instance->files_manager->clear_cache();
+		}
 	}
 
 	/**
