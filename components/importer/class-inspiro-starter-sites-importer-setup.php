@@ -213,6 +213,7 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			'inspiro-lite-boutique'              => [ 'woocommerce', 'secondary-product-image-for-woocommerce' ],
 			'inspiro-lite-travel'                => [ 'elementor', 'wpzoom-elementor-addons', 'social-icons-widget-by-wpzoom', 'wpzoom-forms' ],
 			'inspiro-lite-personal-blog'         => [ 'wpzoom-forms', 'social-icons-widget-by-wpzoom' ],
+			'inspiro-lite-travel-blog'           => [ 'wpzoom-forms', 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-advisory'		   	 	 => [ 'icon-block' ]
 		];
 	}
@@ -300,6 +301,18 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'type'                       => 'blocks',
 				'is_new'                     => true,
 				'categories'                 => [ 'blog', 'magazine' ],
+			],
+			[
+				'import_id'                  => 'inspiro-lite-travel-blog',
+				'import_file_name'           => 'Travel Blog (Lite)',
+				'import_file_url'            => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-travel-blog.xml',
+				'import_widget_file_url'     => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-travel-blog.wie',
+				'import_customizer_file_url' => 'https://www.wpzoom.com/downloads/xml/inspiro-lite-travel-blog.dat',
+				'import_preview_image_url'   => $demos_preview_url . 'travel-blog.png',
+				'preview_url'                => 'https://inspiro.wpzoom.com/travel-blog/',
+				'type'                       => 'blocks',
+				'is_new'                     => true,
+				'categories'                 => [ 'blog', 'travel' ],
 			],
 			[
 				'import_id'                  => 'inspiro-lite-blocks',
@@ -939,6 +952,8 @@ class Inspiro_Starter_Sites_Importer_Setup {
 
 
 	public function after_import_setup( $selected_import ) {
+		self::fix_menu_item_parents();
+
 		// Assign menus to their locations.
 		$main_menu = get_term_by( 'name', 'Main', 'nav_menu' );
 
@@ -1044,6 +1059,19 @@ class Inspiro_Starter_Sites_Importer_Setup {
 					// The Contact and Newsletter pages embed the forms with the Form block (formId = demo post ID).
 					self::remap_form_blocks( array( 20 => 'contact-form', 21 => 'newsletter-form' ) );
 					break;
+				case 'inspiro-lite-travel-blog':
+					$demo_layout = 'travel-blog';
+					self::localize_demo_links( $selected_import );
+					self::deactivate_sidebar_widgets( 'sidebar' );
+					foreach ( array( 'blog-sidebar', 'footer_1', 'footer_2', 'footer_3', 'footer_4' ) as $sidebar_id ) {
+						self::keep_imported_widgets_only( $sidebar_id );
+					}
+					self::remap_form_blocks( array( 26 => 'contact-form' ) );
+					// The blog is the home page: the demo has no "Homepage" page.
+					update_option( 'show_on_front', 'posts' );
+					update_option( 'page_on_front', 0 );
+					update_option( 'page_for_posts', 0 );
+					break;
 				// Add more demo mappings as needed
 			}
 			
@@ -1116,6 +1144,29 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			}
 		}
 		if ( $changed ) { update_option( 'widget_block', $blocks ); }
+		// Images in block widgets (e.g. a sidebar "About me" photo) still point at the demo's uploads folder.
+		// The importer may rename the file (photo-scaled.jpg becomes photo-scaled-1.jpg), so each image is
+		// matched to the imported attachment by its base file name.
+		$uploads_re = '#' . preg_quote( $demo_url, '#' ) . 'wp-content/uploads/(?:sites/\\d+/)?[^"\'\\s)]+#';
+		$blocks     = get_option( 'widget_block', array() );
+		$changed    = false;
+		foreach ( $blocks as $k => $w ) {
+			if ( ! is_array( $w ) || empty( $w['content'] ) || ! preg_match( $uploads_re, $w['content'] ) ) {
+				continue;
+			}
+			$blocks[ $k ]['content'] = preg_replace_callback(
+				$uploads_re,
+				function ( $m ) use ( $wpdb ) {
+					$base = pathinfo( wp_parse_url( $m[0], PHP_URL_PATH ), PATHINFO_FILENAME );
+					$base = preg_replace( '/(-\\d+x\\d+|-scaled)+$/', '', $base );
+					$id   = (int) $wpdb->get_var( $wpdb->prepare( "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_wp_attached_file' AND meta_value LIKE %s ORDER BY post_id DESC LIMIT 1", '%' . $wpdb->esc_like( '/' . $base ) . '%' ) );
+					return $id ? wp_get_attachment_url( $id ) : $m[0];
+				},
+				$w['content']
+			);
+			$changed = true;
+		}
+		if ( $changed ) { update_option( 'widget_block', $blocks ); }
 		// Theme mods (topbar text, pre-footer button URL) and custom menu links hold plain demo URLs.
 		$url_pairs = array( $demo_url => $home );
 		foreach ( (array) get_theme_mods() as $mod => $value ) {
@@ -1127,6 +1178,27 @@ class Inspiro_Starter_Sites_Importer_Setup {
 		foreach ( $items as $item ) {
 			update_post_meta( $item->post_id, '_menu_item_url', strtr( $item->meta_value, $url_pairs ) );
 		}
+	}
+
+	/**
+	 * Point imported menu items at their imported parents.
+	 *
+	 * The WXR importer copies _menu_item_menu_item_parent unchanged (the demo's IDs), so a nested
+	 * menu only survived when the IDs happened to line up. The importer records original => new IDs
+	 * of the menu items in a transient while it runs (InspiroStarterSitesImporter::track_post()).
+	 */
+	public static function fix_menu_item_parents() {
+		$map = get_transient( 'inspiro_starter_sites_import_menu_item_map' );
+		if ( empty( $map ) || ! is_array( $map ) ) {
+			return;
+		}
+		foreach ( $map as $new_id ) {
+			$parent = (int) get_post_meta( $new_id, '_menu_item_menu_item_parent', true );
+			if ( $parent && isset( $map[ $parent ] ) ) {
+				update_post_meta( $new_id, '_menu_item_menu_item_parent', (string) $map[ $parent ] );
+			}
+		}
+		delete_transient( 'inspiro_starter_sites_import_menu_item_map' );
 	}
 
 	/**
