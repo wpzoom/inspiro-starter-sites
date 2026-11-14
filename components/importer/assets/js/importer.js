@@ -545,6 +545,12 @@ jQuery( function ( $ ) {
 				$( '.js-inspiro-starter-sites-importing' ).hide();
 				$( '.js-inspiro-starter-sites-imported' ).show();
 
+				// Offer the next step with WPZOOM AI Connect when it is active now.
+				var $aiNext = $( '.js-inspiro-starter-sites-ai-next' );
+				if ( $aiNext.length && ( '1' === String( $aiNext.data( 'active' ) ) || $( '.plugin-item-wpzoom-ai-connect.plugin-item--active' ).length ) ) {
+					$aiNext.prop( 'hidden', false );
+				}
+
 				// Trigger custom event, when inspiro_starter_sites import is complete.
 				$( document ).trigger( 'issImportComplete' );
 			}

@@ -544,6 +544,36 @@ class Helpers {
 
 
 	/**
+	 * Whether to offer WPZOOM AI Connect, which lets Claude or ChatGPT edit the imported site.
+	 *
+	 * @return bool
+	 */
+	public static function ai_connect_supported() {
+		$home   = wp_parse_url( home_url() );
+		$scheme = isset( $home['scheme'] ) ? $home['scheme'] : '';
+		$host   = isset( $home['host'] ) ? $home['host'] : '';
+		// Same rule as the connector: the app password travels in headers, so https, or http on this computer only.
+		$reachable = 'https' === $scheme || in_array( $host, array( 'localhost', '127.0.0.1', '[::1]' ), true );
+
+		/**
+		 * Filters whether the importer offers WPZOOM AI Connect (a pre-ticked plugin row and the "Make it yours
+		 * with AI" card after the import). By default: WordPress 6.9+ (the Abilities API) and a reachable site.
+		 *
+		 * @param bool $supported Whether to offer it.
+		 */
+		return (bool) apply_filters( 'inspiro_starter_sites/offer_ai_connect', function_exists( 'wp_register_ability' ) && $reachable );
+	}
+
+	/**
+	 * The WPZOOM AI Connect screen, tagged so its connect link reports that the user came from the importer.
+	 *
+	 * @return string
+	 */
+	public static function ai_connect_url() {
+		return add_query_arg( array( 'page' => 'wpzoom-ai-connect', 'ref' => 'inspiro-starter-sites' ), admin_url( 'admin.php' ) );
+	}
+
+	/**
 	 * Backwards compatible apply_filters helper.
 	 * With 3.0 we changed the filter prefix from 'pt-inspiro_starter_sites/' to just 'inspiro_starter_sites/',
 	 * but we needed to make sure backwards compatibility is in place.

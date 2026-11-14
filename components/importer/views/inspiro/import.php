@@ -201,6 +201,13 @@ if( isset( $plugin_import_page['parent_slug'] ) && 'inspiro' == $plugin_import_p
 			<div class="inspiro-starter-sites-imported-content">
 				<div class="inspiro-starter-sites__response  js-inspiro-starter-sites-ajax-complete-response"></div>
 			</div>
+			<?php if ( Helpers::ai_connect_supported() ) : ?>
+				<div class="inspiro-starter-sites-ai-next js-inspiro-starter-sites-ai-next" data-active="<?php echo is_plugin_active( 'wpzoom-ai-connect/wpzoom-ai-connect.php' ) ? '1' : '0'; ?>" hidden>
+					<h3><?php esc_html_e( 'Make it yours with AI', 'inspiro-starter-sites' ); ?></h3>
+					<p><?php esc_html_e( 'Your site now has the demo\'s text and photos. Connect Claude or ChatGPT, tell it about your business, and it rewrites the pages for you in this design.', 'inspiro-starter-sites' ); ?></p>
+					<a class="button button-primary button-hero" href="<?php echo esc_url( Helpers::ai_connect_url() ); ?>"><?php esc_html_e( 'Connect your AI', 'inspiro-starter-sites' ); ?></a>
+				</div>
+			<?php endif; ?>
 			<div class="inspiro-starter-sites-imported-footer">
 				<?php echo wp_kses(
 					$this->get_import_successful_buttons_html(),

@@ -142,6 +142,11 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 
 = 1.5.2 =
 * New: Travel Agency demo: a small-group tour operator site built with Elementor, with tour pages, departures and a booking form
+* New: Online Courses demo ("Fieldwork"): an education site built with Elementor
+* New: Personal Blog demo for the Block Editor
+* New: Travel Blog demo for the Block Editor
+* New: the plugin step offers WPZOOM AI Connect (ticked, optional, on WordPress 6.9 and newer), and after an import a "Make it yours with AI" card links to it, so Claude or ChatGPT can replace the demo content with your own
+* Fixed: nested menus import correctly, widget images resolve, and Elementor demos point their images to the imported media files
 
 = 1.5.1 =
 * New: Boutique Store demo: a small home-goods shop for WooCommerce and the Block Editor; the import also places the Shop and Cart pages in the menu and sets up the product galleries

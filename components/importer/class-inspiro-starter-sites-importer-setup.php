@@ -92,6 +92,17 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			],
 		];
 
+		// WPZOOM AI Connect: ticked, not required. After the import, the user's AI can turn the demo into their own site.
+		if ( class_exists( '\Inspiro\Starter_Sites\Helpers' ) && \Inspiro\Starter_Sites\Helpers::ai_connect_supported() ) {
+			$theme_plugins[] = [
+				'name'        => 'WPZOOM AI Connect',
+				'slug'        => 'wpzoom-ai-connect',
+				'desc'        => __( 'Edit this site by chatting with Claude or ChatGPT: replace the demo content with yours, change colors and layouts, add pages.', 'inspiro-starter-sites' ),
+				'required'    => false,
+				'preselected' => true,
+			];
+		}
+
 		// Check if user is on the theme recommended plugins step and a demo was selected.
 		if ( isset( $_GET['step'] ) && $_GET['step'] === 'import' && isset( $_GET['import'] ) ) {
 
