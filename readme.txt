@@ -5,7 +5,7 @@ Author URI:			https://www.wpzoom.com/
 Requires at least: 	6.5
 Tested up to: 		7.1
 Requires PHP: 		7.4  
-Stable tag: 		1.5.2
+Stable tag: 		1.6.0
 License: 			GPLv2 or later  
 License URI: 		https://www.gnu.org/licenses/gpl-2.0.html
 Tags: 				starter sites, templates, demo importer, elementor, gutenberg
@@ -17,6 +17,8 @@ Import free starter sites & demo templates for Gutenberg, Elementor and WooComme
 **Inspiro Starter Sites** is a free library of **starter sites and demo templates** for WordPress. Import a complete, professionally designed website — built for the **Gutenberg block editor**, **Elementor**, and **WooCommerce** — in just a few clicks, then customize it to match your brand.
 
 **✨ NEW: AI Demo Generator (Beta)** — don't see a demo that fits? Describe your website and let AI design and build a custom demo just for you: real pages, photos, menu and colors, ready in about two minutes and 100% editable with native blocks.
+
+**✨ NEW: Design Library** — a button in the block editor with ready-made patterns you insert in one click (the ones built into your theme, plus a larger library with Inspiro Premium) and an AI page builder that writes a page from your description.
 
 No page-building from scratch and no coding required: pick a demo, run the one-click importer, and get a ready-made site with pages, images, menus, widgets and customizer settings already set up.
 
@@ -87,10 +89,14 @@ This plugin incorporates code from the [One Click Demo Import](https://wordpress
 
 == External services ==
 
-This plugin connects to the following external services. No data is sent to any of them without an explicit action by the site administrator (importing a starter site, or using the AI Demo Generator).
+This plugin connects to the following external services. No data is sent to any of them without an explicit action by the site administrator (importing a starter site, using the AI Demo Generator, or opening the Design Library).
 
 **WPZOOM demo servers (wpzoom.com, ai.wpzoom.com)**
 When you import a starter site, the demo package (content, images, widgets and customizer settings) is downloaded from WPZOOM's servers to your site. If you submit the optional "Suggest a demo" feedback form, the text you enter is sent to wpzoom.com.
+Terms of service: https://www.wpzoom.com/terms-and-conditions/ — Privacy policy: https://www.wpzoom.com/privacy-policy/
+
+**WPZOOM pattern library (ai.wpzoom.com, wpzoom.s3.amazonaws.com)**
+When you open the Patterns tab of the Design Library in the block editor, the list of patterns is requested from ai.wpzoom.com and their preview images are loaded from WPZOOM's file storage on Amazon S3. Inserting a pattern downloads its content, and the images it ships with, to your site.
 Terms of service: https://www.wpzoom.com/terms-and-conditions/ — Privacy policy: https://www.wpzoom.com/privacy-policy/
 
 **Google Fonts (fonts.googleapis.com)**
@@ -139,6 +145,11 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 4. Demo Imported message
 
 == Changelog ==
+
+= 1.6.0 =
+* New: Design Library in the block editor. The "Generate with AI" button is now "Design Library" and opens a window with two tabs: the AI page builder and a pattern library
+* New: Pattern library: browse ready-made sections by category, search them, filter by light or dark background, look at one up close and insert it with one click. No AI involved, nothing counted against your generations
+* New: the patterns built into your theme are listed first and are free to use; more than 80 extra patterns are included with Inspiro Premium
 
 = 1.5.2 =
 * New: Travel Agency demo: a small-group tour operator site built with Elementor, with tour pages, departures and a booking form
