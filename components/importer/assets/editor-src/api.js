@@ -62,6 +62,8 @@ export const api = {
 	instant: ( ids, headlines, postId ) => ajax( 'inspiro_starter_sites_ai_page_instant', { ids, headlines, post_id: postId } ),
 	plan: ( input ) => ajax( 'inspiro_starter_sites_ai_page_plan', input ),
 	build: ( plan, postId ) => ajax( 'inspiro_starter_sites_ai_page_build', { plan, post_id: postId } ),
+	patterns: () => ajax( 'inspiro_starter_sites_ai_page_patterns' ),
+	pattern: ( ids, postId ) => ajax( 'inspiro_starter_sites_ai_page_pattern', { ids, post_id: postId } ),
 	connect: ( email, consent ) => ajax( 'inspiro_starter_sites_ai_connect', { email, consent: consent ? 1 : 0 } ),
 	verify: ( code ) => ajax( 'inspiro_starter_sites_ai_verify', { code } ),
 };

@@ -88,6 +88,8 @@ class AiPageBuilder {
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_page_instant', array( $this, 'ajax_instant' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_page_plan', array( $this, 'ajax_plan' ) );
 		add_action( 'wp_ajax_inspiro_starter_sites_ai_page_build', array( $this, 'ajax_build' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_page_patterns', array( $this, 'ajax_patterns' ) );
+		add_action( 'wp_ajax_inspiro_starter_sites_ai_page_pattern', array( $this, 'ajax_pattern' ) );
 
 		// The editor modal and its entry points.
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_editor_assets' ) );
@@ -211,6 +213,81 @@ class AiPageBuilder {
 				'css'   => $this->css(),
 			)
 		);
+	}
+
+	/**
+	 * The pattern library for the editor's Patterns tab: every pattern with
+	 * its thumbnail, the Premium ones this site cannot insert marked locked,
+	 * and what a pattern needs that this site lacks.
+	 */
+	public function ajax_patterns() {
+		Helpers::verify_ajax_call();
+
+		$meta = Catalog\PatternLibrary::meta();
+		if ( ! $meta['patterns'] ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'The pattern library is unavailable. Please try again later.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$has      = $this->site_has();
+		$patterns = array();
+		foreach ( $meta['patterns'] as $id => $pattern ) {
+			$needs      = isset( $pattern['needs'] ) ? (array) $pattern['needs'] : array();
+			$patterns[] = array(
+				'id'         => sanitize_key( (string) $id ),
+				'title'      => isset( $pattern['title'] ) ? sanitize_text_field( (string) $pattern['title'] ) : '',
+				'categories' => array_map( 'sanitize_key', isset( $pattern['categories'] ) ? (array) $pattern['categories'] : array() ),
+				'tone'       => isset( $pattern['tone'] ) && 'dark' === $pattern['tone'] ? 'dark' : 'light',
+				'thumb'      => isset( $pattern['thumb'] ) ? esc_url_raw( (string) $pattern['thumb'] ) : '',
+				'locked'     => ! $meta['licensed'] && isset( $pattern['tier'] ) && 'premium' === $pattern['tier'],
+				'missing'    => array_values( array_diff( $needs, $has ) ),
+			);
+		}
+
+		wp_send_json_success(
+			array(
+				'patterns' => $patterns,
+				'licensed' => (bool) $meta['licensed'],
+			)
+		);
+	}
+
+	/**
+	 * Insert patterns from the library: their own sample text, the site's
+	 * placeholder photos, local copies of their images. No AI, nothing
+	 * metered.
+	 */
+	public function ajax_pattern() {
+		Helpers::verify_ajax_call();
+
+		$ids = isset( $_POST['ids'] ) ? $this->clean_ids( (array) wp_unslash( $_POST['ids'] ), 12 ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- sanitized by clean_ids().
+		if ( ! $ids ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'Pick a pattern first.', 'inspiro-starter-sites' ) ) );
+		}
+
+		$patterns = Catalog\PatternLibrary::get( $ids );
+		$has      = $this->site_has();
+		$this->placeholder_pool( true );
+		$args  = array(
+			'resolve_image' => $this->pool_resolver(),
+			'resolve_asset' => array( $this, 'catalog_asset' ),
+			'form_id'       => $this->first_form_id(),
+			'icon_block'    => in_array( 'icon-block', $has, true ),
+		);
+		$parts = array();
+		foreach ( $ids as $id ) {
+			if ( ! isset( $patterns[ $id ] ) || array_diff( isset( $patterns[ $id ]['needs'] ) ? (array) $patterns[ $id ]['needs'] : array(), $has ) ) {
+				continue;
+			}
+			$markup = Catalog\PatternLibrary::render( $patterns[ $id ], $args );
+			if ( '' !== trim( $markup ) ) {
+				$parts[] = $markup;
+			}
+		}
+		if ( ! $parts ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'This pattern is not available on this site.', 'inspiro-starter-sites' ) ) );
+		}
+
+		wp_send_json_success( array( 'markup' => implode( "\n\n", $parts ) ) );
 	}
 
 	/**
@@ -710,6 +787,9 @@ class AiPageBuilder {
 		}
 		if ( \WP_Block_Type_Registry::get_instance()->is_registered( 'outermost/icon-block' ) ) {
 			$has[] = 'icon-block';
+		}
+		if ( \WP_Block_Type_Registry::get_instance()->is_registered( 'wpzoom-video-popup-block/block' ) ) {
+			$has[] = 'video-popup';
 		}
 		$this->has = $has;
 		return $has;
@@ -1382,6 +1462,9 @@ class AiPageBuilder {
 				'connected'    => $this->proxy->is_connected() || '' !== AiProxyClient::premium_license(),
 				'email'        => $this->proxy->connected_email(),
 				'siteName'     => get_bloginfo( 'name' ),
+				// The active theme's own block patterns: listed first in the pattern library.
+				'themePatterns' => $this->theme_pattern_names(),
+				'themeName'    => wp_get_theme()->get( 'Name' ),
 				'tagline'      => get_bloginfo( 'description' ),
 				'accent'       => $this->accent(),
 				'upgradeUrl'   => 'https://www.wpzoom.com/themes/inspiro-lite/upgrade/?utm_source=wpadmin&utm_medium=ai-page&utm_campaign=ai-quota-upsell',
@@ -1394,6 +1477,30 @@ class AiPageBuilder {
 				),
 			)
 		);
+	}
+
+	/**
+	 * Names of the block patterns the active theme ships in its patterns
+	 * folder (parent and child). The editor already has their content; the
+	 * pattern library only needs to tell them from core's and plugins'.
+	 *
+	 * @return string[]
+	 */
+	private function theme_pattern_names() {
+		$dirs  = array_unique( array( trailingslashit( get_stylesheet_directory() ), trailingslashit( get_template_directory() ) ) );
+		$names = array();
+		foreach ( \WP_Block_Patterns_Registry::get_instance()->get_all_registered() as $pattern ) {
+			if ( empty( $pattern['filePath'] ) || empty( $pattern['name'] ) || ( isset( $pattern['inserter'] ) && false === $pattern['inserter'] ) ) {
+				continue;
+			}
+			foreach ( $dirs as $dir ) {
+				if ( 0 === strpos( wp_normalize_path( (string) $pattern['filePath'] ), wp_normalize_path( $dir ) ) ) {
+					$names[] = (string) $pattern['name'];
+					break;
+				}
+			}
+		}
+		return $names;
 	}
 
 	/**

@@ -165,6 +165,49 @@ class AiProxyClient {
 	}
 
 	/**
+	 * The pattern library from the same endpoint: ready-made block patterns
+	 * with their own sample content, inserted as they are (no AI). Without
+	 * ids the metadata of every pattern comes back, Premium ones included,
+	 * so they can be shown locked; with ids, those patterns in full.
+	 *
+	 * @param string[] $ids Pattern ids ([] = metadata only).
+	 * @return array|WP_Error { version, patterns, licensed }
+	 */
+	public function patterns( array $ids ) {
+		$response = wp_remote_post(
+			$this->endpoint( 'ai-catalog' ),
+			array(
+				'headers' => array( 'Content-Type' => 'application/json' ),
+				'body'    => wp_json_encode(
+					array(
+						'site_key'    => (string) get_option( self::SITE_KEY_OPTION, '' ),
+						'license_key' => self::premium_license(),
+						'patterns'    => 1,
+						'ids'         => array_values( $ids ),
+					)
+				),
+				'timeout' => 20,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return new WP_Error( 'ai_catalog_unreachable', $response->get_error_message() );
+		}
+
+		$data = json_decode( wp_remote_retrieve_body( $response ), true );
+		if ( 200 !== (int) wp_remote_retrieve_response_code( $response ) || ! is_array( $data ) || empty( $data['success'] ) || ! isset( $data['patterns'] ) || ! is_array( $data['patterns'] ) ) {
+			$msg = is_array( $data ) && isset( $data['message'] ) ? (string) $data['message'] : __( 'The pattern library is unavailable. Please try again later.', 'inspiro-starter-sites' );
+			return new WP_Error( 'ai_catalog_error', $msg );
+		}
+
+		return array(
+			'version'  => isset( $data['version'] ) ? (string) $data['version'] : '',
+			'patterns' => $data['patterns'],
+			'licensed' => ! empty( $data['licensed'] ),
+		);
+	}
+
+	/**
 	 * DEVELOPMENT ONLY. With INSPIRO_STARTER_SITES_AI_LOCAL_PROMPTS set to the
 	 * path of a local wpzoom-api-key-provider checkout (in wp-config.php),
 	 * task prompts are built from that checkout and sent as a plain request,

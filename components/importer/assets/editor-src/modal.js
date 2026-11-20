@@ -18,6 +18,7 @@ import { Modal, Button, TextareaControl, TextControl, CheckboxControl, Spinner, 
 import { api, config } from './api';
 import { PRESETS, ROLE_META, STYLES, composeRows, pickSection, toRow, availableRoles } from './presets';
 import { rolesFor } from './matcher';
+import PatternLibrary from './patterns';
 
 const BUILD_STEPS = [
 	{ at: 0, label: __( 'Reading your description', 'inspiro-starter-sites' ) },
@@ -321,6 +322,8 @@ export default function PageBuilderModal( { onClose } ) {
 	const [ generated, setGenerated ] = useState( {} ); // section id => markup written by the AI
 	const [ genBrief, setGenBrief ] = useState( null ); // the description that markup was written from
 	const [ error, setError ] = useState( '' );
+	const [ mode, setMode ] = useState( 'page' ); // 'page' = the AI page builder, 'patterns' = the pattern library
+	const [ patternBusy, setPatternBusy ] = useState( false );
 	const canvasRef = useRef();
 
 	const { insertBlocks, replaceBlocks } = useDispatch( 'core/block-editor' );
@@ -331,7 +334,7 @@ export default function PageBuilderModal( { onClose } ) {
 		title: select( 'core/editor' ).getEditedPostAttribute( 'title' ),
 	} ), [] );
 
-	const busy = ai.status === 'working' || building > 0 || inserting;
+	const busy = ai.status === 'working' || building > 0 || inserting || patternBusy;
 
 	// Close on the button, a click outside or Esc — never mid-build, and
 	// never silently over a page the AI wrote but nobody inserted yet (it
@@ -671,6 +674,34 @@ export default function PageBuilderModal( { onClose } ) {
 		}
 	};
 
+	// A pattern from the library: its blocks go in where the cursor is,
+	// and a page title that is already there stays.
+	const insertPattern = ( result, pattern ) => {
+		try {
+			insertResult( { markup: result.markup } );
+			createSuccessNotice(
+				sprintf( /* translators: pattern name */ __( '"%s" inserted. Edit any text or photo right in the editor.', 'inspiro-starter-sites' ), pattern.title ),
+				{ type: 'snackbar' }
+			);
+			onClose();
+		} catch ( e ) {
+			setPatternBusy( false );
+			setError( e.message );
+			setMode( 'page' );
+		}
+	};
+
+	const tabs = (
+		<div className="iss-pb-tabs" role="tablist" aria-label={ __( 'What to add', 'inspiro-starter-sites' ) }>
+			<button type="button" role="tab" aria-selected={ mode === 'page' } className={ mode === 'page' ? 'is-active' : '' } onClick={ () => setMode( 'page' ) } disabled={ busy }>
+				{ __( 'Page with AI', 'inspiro-starter-sites' ) }
+			</button>
+			<button type="button" role="tab" aria-selected={ mode === 'patterns' } className={ mode === 'patterns' ? 'is-active' : '' } onClick={ () => setMode( 'patterns' ) } disabled={ busy }>
+				{ __( 'Patterns', 'inspiro-starter-sites' ) }
+			</button>
+		</div>
+	);
+
 	/* Render ----------------------------------------------------------- */
 
 	const exhausted = quota && quota.connected && quota.limit > 0 && quota.remaining <= 0;
@@ -678,7 +709,7 @@ export default function PageBuilderModal( { onClose } ) {
 
 	return (
 		<Modal
-			title={ __( 'Generate a page with AI', 'inspiro-starter-sites' ) }
+			title={ __( 'Design Library', 'inspiro-starter-sites' ) }
 			onRequestClose={ requestClose }
 			className="iss-pb-modal"
 			isFullScreen
@@ -695,6 +726,10 @@ export default function PageBuilderModal( { onClose } ) {
 					config.connected = true;
 					setConnected( true );
 				} } />
+			) : mode === 'patterns' ? (
+				<div className="iss-pb-layout">
+					<PatternLibrary tabs={ tabs } onInsert={ insertPattern } onBusy={ setPatternBusy } />
+				</div>
 			) : (
 				<div className="iss-pb-layout">
 					<aside className="iss-pb-side">
@@ -705,6 +740,7 @@ export default function PageBuilderModal( { onClose } ) {
 								</h2>
 								<p>{ __( 'Pick a page type and the sections you want. Describe your business and AI writes the copy and finds photos.', 'inspiro-starter-sites' ) }</p>
 							</header>
+						{ tabs }
 						<section className="iss-pb-block">
 							<h3 className="iss-pb-h">{ __( 'Page type', 'inspiro-starter-sites' ) }</h3>
 							<PresetGrid value={ preset ? preset.key : '' } onPick={ pickPreset } />
