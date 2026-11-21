@@ -5,7 +5,7 @@ Author URI:			https://www.wpzoom.com/
 Requires at least: 	6.5
 Tested up to: 		7.1
 Requires PHP: 		7.4  
-Stable tag: 		1.6.0
+Stable tag: 		1.7.0
 License: 			GPLv2 or later  
 License URI: 		https://www.gnu.org/licenses/gpl-2.0.html
 Tags: 				starter sites, templates, demo importer, elementor, gutenberg
@@ -145,6 +145,13 @@ Yes, all templates can be customized using either Gutenberg or Elementor, depend
 4. Demo Imported message
 
 == Changelog ==
+
+= 1.7.0 =
+* New: Foodica support. With the free Foodica theme active, Import Demo lists the "Food Blog (Foodica Lite)" demo: posts, pages, recipes, menus, widgets and the contact form, set up like the Foodica Lite demo
+* New: the four Foodica PRO demos (Modern Blocks, Minimal, Classic and Blocks) are shown below it, marked PRO, with a View Demo button
+* New: Foodica 1.3.5 shows the importer under its own Foodica menu
+* Improved: the plugin step ticks Jetpack for the Foodica demo (it powers the homepage slider); you can untick it
+* Fixed: links to the importer page work when a theme places it under its own admin menu
 
 = 1.6.0 =
 * New: Design Library in the block editor. The "Generate with AI" button is now "Design Library" and opens a window with two tabs: the AI page builder and a pattern library
