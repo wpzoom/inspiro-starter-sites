@@ -56,7 +56,16 @@ class Inspiro_Starter_Sites_Importer_Setup {
 		if ( ( 'Inspiro' == $theme_name || 'inspiro' == $theme_template ) && ! class_exists( 'WPZOOM' ) ) {
 			add_filter( 'inspiro_starter_sites/plugin_page_setup', array( $this, 'new_menu' ) );
 		}
-		
+
+		// Foodica (free): its own demo, an "Import Demo" page under Appearance
+		// (the theme can move it under its own menu with the same filter at a later priority),
+		// and no Inspiro-only extras.
+		if ( \Inspiro\Starter_Sites\Helpers::is_foodica_lite() ) {
+			add_filter( 'inspiro_starter_sites/plugin_page_setup', array( $this, 'foodica_menu' ) );
+			// The AI demo generator builds Inspiro sites only.
+			add_filter( 'inspiro_starter_sites/ai_enabled', '__return_false' );
+		}
+
 	}
 
 	public function allow_svg_during_import( $mimes ) {
@@ -98,6 +107,19 @@ class Inspiro_Starter_Sites_Importer_Setup {
 				'name'        => 'WPZOOM AI Connect',
 				'slug'        => 'wpzoom-ai-connect',
 				'desc'        => __( 'Edit this site by chatting with Claude or ChatGPT: replace the demo content with yours, change colors and layouts, add pages.', 'inspiro-starter-sites' ),
+				'required'    => false,
+				'preselected' => true,
+			];
+		}
+
+		// Foodica's homepage slider shows posts tagged "featured" through Jetpack's Featured Content.
+		// Ticked by default so the imported demo looks like the preview, but not required:
+		// without Jetpack the demo works, only without the slider.
+		if ( \Inspiro\Starter_Sites\Helpers::is_foodica_lite() ) {
+			$theme_plugins[] = [
+				'name'        => 'Jetpack',
+				'slug'        => 'jetpack',
+				'desc'        => __( 'Shows the homepage slider: Foodica uses its Featured Content feature for the posts tagged "featured".', 'inspiro-starter-sites' ),
 				'required'    => false,
 				'preselected' => true,
 			];
@@ -226,13 +248,18 @@ class Inspiro_Starter_Sites_Importer_Setup {
 			'inspiro-lite-personal-blog'         => [ 'wpzoom-forms', 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-travel-blog'           => [ 'wpzoom-forms', 'social-icons-widget-by-wpzoom' ],
 			'inspiro-lite-education'             => [ 'elementor', 'wpzoom-elementor-addons', 'wpzoom-forms', 'social-icons-widget-by-wpzoom' ],
-			'inspiro-lite-advisory'		   	 	 => [ 'icon-block' ]
+			'inspiro-lite-advisory'		   	 	 => [ 'icon-block' ],
+			'foodica-lite'                       => [ 'recipe-card-blocks-by-wpzoom', 'social-icons-widget-by-wpzoom' ],
 		];
 	}
 
 	public function import_files() {
 
 		$demos_preview_url = INSPIRO_STARTER_SITES_URL .'assets/images/preview-demos/';
+
+		if ( \Inspiro\Starter_Sites\Helpers::is_foodica_lite() ) {
+			return $this->foodica_import_files( $demos_preview_url );
+		}
 
 		return [
 			[
@@ -629,6 +656,11 @@ class Inspiro_Starter_Sites_Importer_Setup {
 
 	public function premium_demos() {
 
+		// Foodica (free) shows the Foodica PRO demos instead of Inspiro's.
+		if ( \Inspiro\Starter_Sites\Helpers::is_foodica_lite() ) {
+			return array( 'inspiro-premium' => $this->foodica_pro_demos() );
+		}
+
 		// Pull the list from the remote endpoint so new premium demos appear
 		// automatically, without requiring a plugin update. Falls back to the
 		// bundled list when the remote list can't be fetched.
@@ -978,6 +1010,11 @@ class Inspiro_Starter_Sites_Importer_Setup {
 	public function after_import_setup( $selected_import ) {
 		self::fix_menu_item_parents();
 		self::fix_elementor_media();
+
+		if ( isset( $selected_import['import_id'] ) && 'foodica-lite' === $selected_import['import_id'] ) {
+			self::foodica_after_import( $selected_import );
+			return;
+		}
 
 		// Assign menus to their locations.
 		$main_menu = get_term_by( 'name', 'Main', 'nav_menu' );
@@ -1499,6 +1536,162 @@ class Inspiro_Starter_Sites_Importer_Setup {
 		return ! empty( $posts ) ? $posts[0] : null;
 	}
 
+
+	/**
+	 * Foodica (free) demos.
+	 *
+	 * @param string $demos_preview_url URL of the bundled preview images.
+	 * @return array
+	 */
+	public function foodica_import_files( $demos_preview_url ) {
+		return [
+			[
+				'import_id'                => 'foodica-lite',
+				'import_file_name'         => 'Food Blog (Foodica Lite)',
+				'import_file_url'          => 'https://www.wpzoom.com/downloads/xml/foodica-lite.xml',
+				'import_widget_file_url'   => 'https://www.wpzoom.com/downloads/xml/foodica-lite.wie',
+				'import_preview_image_url' => $demos_preview_url . 'foodica-lite.png',
+				'preview_url'              => 'https://demo.wpzoom.com/foodica-lite/',
+				'categories'               => [ 'food-restaurant', 'blog' ],
+			],
+		];
+	}
+
+	/**
+	 * Foodica PRO demos, shown below the free demo with a PRO badge, a View Demo
+	 * button and a link to Foodica PRO.
+	 *
+	 * @return array
+	 */
+	public function foodica_pro_demos() {
+		$thumbs = 'https://wpzoom.s3.us-east-1.amazonaws.com/elementor/templates/assets/thumbs/foodica/';
+
+		return array(
+			'name'          => 'Foodica PRO',
+			'title'         => __( 'Foodica PRO Demos', 'inspiro-starter-sites' ),
+			'desc'          => __( 'More homepage layouts, available in Foodica PRO, with a one-click demo importer, Elementor support and more theme options.', 'inspiro-starter-sites' ),
+			'purchase'      => 'https://www.wpzoom.com/themes/foodica/',
+			'utm_medium'    => 'foodica-lite',
+			'badge'         => __( 'PRO', 'inspiro-starter-sites' ),
+			'unlock_label'  => __( 'Get Foodica PRO', 'inspiro-starter-sites' ),
+			'preview_label' => __( 'View Demo', 'inspiro-starter-sites' ),
+			'demos'         => array(
+				array(
+					'import_file_name'         => 'Modern Blocks',
+					'desc'                     => __( 'Modern block-based layout with ready-to-use patterns for a rich, structured homepage.', 'inspiro-starter-sites' ),
+					'import_preview_image_url' => $thumbs . 'modern/home-thumb.png',
+					'preview_url'              => 'https://demo.wpzoom.com/foodica-modern/',
+					'types'                    => array( 'blocks' ),
+				),
+				array(
+					'import_file_name'         => 'Minimal',
+					'desc'                     => __( 'Clean, editorial-style design with a fully customizable homepage built with the Block Editor.', 'inspiro-starter-sites' ),
+					'import_preview_image_url' => $thumbs . 'minimal/thumbs/home-thumb.png',
+					'preview_url'              => 'https://demo.wpzoom.com/foodica-minimal/',
+					'types'                    => array( 'blocks' ),
+				),
+				array(
+					'import_file_name'         => 'Classic',
+					'desc'                     => __( 'Classic widget-based layout with a Featured Slider, Featured Categories and Recent Posts.', 'inspiro-starter-sites' ),
+					'import_preview_image_url' => $thumbs . 'home-thumb.png',
+					'preview_url'              => 'https://demo.wpzoom.com/foodica/',
+					'types'                    => array( 'elementor', 'blocks' ),
+				),
+				array(
+					'import_file_name'         => 'Blocks',
+					'desc'                     => __( 'Block-based homepage made with ready-to-use patterns.', 'inspiro-starter-sites' ),
+					'import_preview_image_url' => $thumbs . 'blocks/blocks-home-thumb.png',
+					'preview_url'              => 'https://demo.wpzoom.com/foodica-blocks/',
+					'types'                    => array( 'blocks' ),
+				),
+			),
+		);
+	}
+
+	/**
+	 * Settings after a Foodica (free) demo import: menus, homepage, slider, links, forms, widgets.
+	 *
+	 * @param array $selected_import The imported demo.
+	 */
+	public static function foodica_after_import( $selected_import ) {
+		// Menus to theme locations (Foodica registers secondary/primary/mobile/tertiary).
+		$locations = array();
+		foreach ( array( 'primary' => 'Main', 'mobile' => 'Main', 'secondary' => 'top', 'tertiary' => 'footer' ) as $location => $menu_name ) {
+			$menu = get_term_by( 'name', $menu_name, 'nav_menu' );
+			if ( $menu ) {
+				$locations[ $location ] = $menu->term_id;
+			}
+		}
+		if ( $locations ) {
+			set_theme_mod( 'nav_menu_locations', array_merge( (array) get_theme_mod( 'nav_menu_locations', array() ), $locations ) );
+
+			// The "Home" custom links point at the demo site.
+			foreach ( array_unique( $locations ) as $menu_id ) {
+				foreach ( (array) wp_get_nav_menu_items( $menu_id ) as $item ) {
+					if ( 'custom' === $item->type && 0 === strpos( (string) $item->url, 'https://demo.wpzoom.com/' ) ) {
+						update_post_meta( $item->ID, '_menu_item_url', esc_url_raw( home_url( '/' ) ) );
+					}
+				}
+			}
+		}
+
+		// The homepage shows the latest posts, with the slider on top.
+		update_option( 'show_on_front', 'posts' );
+		update_option( 'page_on_front', 0 );
+		update_option( 'page_for_posts', 0 );
+
+		// Jetpack Featured Content: the slider shows the posts tagged "featured" (used once Jetpack is active).
+		$tag = get_term_by( 'slug', 'featured', 'post_tag' );
+		update_option( 'featured-content', array(
+			'tag-id'    => $tag ? (int) $tag->term_id : 0,
+			'tag-name'  => 'featured',
+			'hide-tag'  => 1,
+			'show-all'  => 0,
+		) );
+
+		self::localize_demo_links( $selected_import );
+
+		// A fresh install puts WordPress's default widgets in the sidebar; keep only the demo's.
+		foreach ( array( 'sidebar-1', 'footer_1', 'footer_2', 'footer_3', 'footer_4', 'header_social' ) as $sidebar_id ) {
+			self::keep_imported_widgets_only( $sidebar_id );
+		}
+
+		// The Contact page embeds the form with the Form block (formId = demo post ID).
+		self::remap_form_blocks( array( 6151 => 'example-form' ) );
+
+		// The demo's Additional CSS is imported as the "foodica" custom_css post. WordPress remembers
+		// "no custom CSS" (-1) once any page has been viewed, so point the theme at it, unless the
+		// site already has its own Additional CSS.
+		$css_id  = (int) get_theme_mod( 'custom_css_post_id' );
+		$own_css = $css_id > 0 && get_post( $css_id ) && '' !== trim( (string) get_post_field( 'post_content', $css_id ) );
+		if ( ! $own_css ) {
+			$css_posts = get_posts( array(
+				'post_type'   => 'custom_css',
+				'name'        => get_stylesheet(),
+				'post_status' => 'publish',
+				'numberposts' => 1,
+			) );
+			if ( $css_posts ) {
+				set_theme_mod( 'custom_css_post_id', $css_posts[0]->ID );
+			}
+		}
+	}
+
+	/**
+	 * Import page for Foodica (free): under Appearance, called "Import Demo".
+	 *
+	 * @param array $setup Default page setup.
+	 * @return array
+	 */
+	public function foodica_menu( $setup ) {
+		return array_merge( (array) $setup, array(
+			'parent_slug' => 'themes.php',
+			'page_title'  => esc_html__( 'Import Demo', 'inspiro-starter-sites' ),
+			'menu_title'  => esc_html__( 'Import Demo', 'inspiro-starter-sites' ),
+			'capability'  => 'manage_options',
+			'menu_slug'   => 'inspiro-starter-sites',
+		) );
+	}
 
 	/*
 	 * Register new menu for the demo importer

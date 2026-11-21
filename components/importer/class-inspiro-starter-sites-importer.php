@@ -43,7 +43,8 @@ class Inspiro_Starter_Sites_Importer {
 
 	public function enqueue_scripts( $hook ) {
 
-		if ( 'inspiro_page_inspiro-demo' !== $hook && 'appearance_page_inspiro-starter-sites' !== $hook ) {
+		// Foodica (free) shows the importer under its own "Foodica" menu.
+		if ( 'inspiro_page_inspiro-demo' !== $hook && 'appearance_page_inspiro-starter-sites' !== $hook && 'foodica_page_foodica-demo' !== $hook ) {
 			return;
 		}
 

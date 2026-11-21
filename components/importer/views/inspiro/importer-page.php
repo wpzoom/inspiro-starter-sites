@@ -180,11 +180,19 @@ $platform_labels = array(
 <div class="inspiro-starter-sites-demo-section">
 	<div class="inspiro-starter-sites-demo-section-header">
 		<h3 class="inspiro-starter-sites-demo-section-title"><?php esc_html_e( 'Free Starter Sites', 'inspiro-starter-sites' ); ?></h3>
+		<?php if ( Helpers::is_foodica_lite() ) : // Foodica's premium demos are listed below the free one. ?>
+		<a href="#inspiro-starter-sites-premium" class="inspiro-starter-sites-premium-link">
+			<?php esc_html_e( 'View Foodica PRO Demos &darr;', 'inspiro-starter-sites' ); ?>
+		</a>
+		<?php else : ?>
 		<a href="<?php echo esc_url( 'https://www.wpzoom.com/themes/inspiro/starter-sites/?utm_source=wpadmin&utm_medium=demos-starter-sites&utm_campaign=starter-sites-inspiro' ); ?>" target="_blank" rel="noopener" class="inspiro-starter-sites-premium-link">
 			<?php esc_html_e( 'View Premium Starter Sites &rarr;', 'inspiro-starter-sites' ); ?>
 		</a>
+		<?php endif; ?>
 	</div>
 
+	<?php // With a single demo (e.g. Foodica) there is nothing to filter. ?>
+	<?php if ( $total_demos > 1 ) : ?>
 	<div class="inspiro-starter-sites-demo-filter" role="tablist" aria-label="<?php esc_attr_e( 'Filter starter sites by editor', 'inspiro-starter-sites' ); ?>">
 		<button type="button" class="inspiro-starter-sites-demo-filter-btn is-active" data-filter="all" aria-pressed="true">
 			<span class="inspiro-starter-sites-demo-filter-btn__label"><?php esc_html_e( 'All Themes', 'inspiro-starter-sites' ); ?></span>
@@ -202,8 +210,9 @@ $platform_labels = array(
 		</button>
 		 
 	</div>
+	<?php endif; ?>
 
-	<?php if ( ! empty( $category_counts ) ) : ?>
+	<?php if ( ! empty( $category_counts ) && $total_demos > 1 ) : ?>
 		<ul class="inspiro-starter-sites-demo-categories" role="tablist" aria-label="<?php esc_attr_e( 'Filter starter sites by category', 'inspiro-starter-sites' ); ?>">
 			<li>
 				<button type="button" class="inspiro-starter-sites-demo-category is-active" data-category="all" aria-pressed="true">
@@ -438,14 +447,32 @@ $platform_labels = array(
 
 <?php if ( ! empty( $premium_section['demos'] ) ) : ?>
     <hr />
-	<div class="inspiro-starter-sites-demo-section inspiro-starter-sites-demo-section-premium">
+	<?php
+	// Labels can be set per theme (Foodica PRO uses "PRO", "View Demo", "Get Foodica PRO").
+	$premium_badge   = ! empty( $premium_section['badge'] ) ? $premium_section['badge'] : __( 'Premium', 'inspiro-starter-sites' );
+	$premium_unlock  = ! empty( $premium_section['unlock_label'] ) ? $premium_section['unlock_label'] : __( 'Unlock in Premium', 'inspiro-starter-sites' );
+	$premium_preview = ! empty( $premium_section['preview_label'] ) ? $premium_section['preview_label'] : __( 'Preview', 'inspiro-starter-sites' );
+	$premium_url     = add_query_arg(
+		array(
+			'utm_source'   => 'wpadmin',
+			'utm_medium'   => ! empty( $premium_section['utm_medium'] ) ? $premium_section['utm_medium'] : 'demos-starter-sites',
+			'utm_campaign' => 'starter-sites-premium',
+		),
+		$premium_section['purchase']
+	);
+	?>
+	<div class="inspiro-starter-sites-demo-section inspiro-starter-sites-demo-section-premium" id="inspiro-starter-sites-premium">
 		<h3 class="inspiro-starter-sites-demo-section-title">
 			<?php
-			printf(
-				/* translators: %d: number of premium demos */
-				esc_html__( 'Premium Starter Sites (%d)', 'inspiro-starter-sites' ),
-				count( $premium_section['demos'] )
-			);
+			if ( ! empty( $premium_section['title'] ) ) {
+				echo esc_html( $premium_section['title'] . ' (' . count( $premium_section['demos'] ) . ')' );
+			} else {
+				printf(
+					/* translators: %d: number of premium demos */
+					esc_html__( 'Premium Starter Sites (%d)', 'inspiro-starter-sites' ),
+					count( $premium_section['demos'] )
+				);
+			}
 			?>
 		</h3>
 		<p class="inspiro-starter-sites-demo-section-description"><?php echo esc_html( $premium_section['desc'] ); ?></p>
@@ -465,10 +492,23 @@ $platform_labels = array(
 								<figcaption>
 									<div class="inspiro-starter-sites-demo-name">
 										<h5><?php echo esc_html( $demo['import_file_name'] ); ?></h5>
-										<span class="inspiro-starter-sites-demo-badge inspiro-starter-sites-demo-badge-premium"><?php esc_html_e( 'Premium', 'inspiro-starter-sites' ); ?></span>
+										<span class="inspiro-starter-sites-demo-badge inspiro-starter-sites-demo-badge-premium"><?php echo esc_html( $premium_badge ); ?></span>
 									</div>
-									<a href="<?php echo esc_url( $premium_section['purchase'] ); ?>?utm_source=wpadmin&utm_medium=demos-starter-sites&utm_campaign=starter-sites-premium" target="_blank" rel="noopener" class="button button-primary"><?php esc_html_e( 'Unlock in Premium', 'inspiro-starter-sites' ); ?></a>
-									<a href="<?php echo esc_url( $demo['preview_url'] ); ?>" target="_blank" rel="noopener" class="button button-secondary-gray"><?php esc_html_e( 'Preview', 'inspiro-starter-sites' ); ?></a>
+									<?php if ( ! empty( $demo['desc'] ) ) : ?>
+										<p class="inspiro-starter-sites-demo-description"><?php echo esc_html( $demo['desc'] ); ?></p>
+									<?php endif; ?>
+									<?php if ( ! empty( $demo['types'] ) ) : ?>
+										<p class="inspiro-starter-sites-demo-availability">
+											<span class="inspiro-starter-sites-demo-availability__label"><?php esc_html_e( 'Available for', 'inspiro-starter-sites' ); ?></span>
+											<?php foreach ( $demo['types'] as $type ) : ?>
+												<?php if ( isset( $editor_icons[ $type ] ) ) : ?>
+													<span class="inspiro-starter-sites-demo-availability__icon inspiro-starter-sites-demo-availability__icon--<?php echo esc_attr( $type ); ?>" title="<?php echo esc_attr( $editor_labels[ $type ] ); ?>" aria-hidden="true"><?php echo $editor_icons[ $type ]; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static inline SVG defined above. ?></span>
+												<?php endif; ?>
+											<?php endforeach; ?>
+										</p>
+									<?php endif; ?>
+									<a href="<?php echo esc_url( $premium_url ); ?>" target="_blank" rel="noopener" class="button button-primary"><?php echo esc_html( $premium_unlock ); ?></a>
+									<a href="<?php echo esc_url( $demo['preview_url'] ); ?>" target="_blank" rel="noopener" class="button button-secondary-gray"><?php echo esc_html( $premium_preview ); ?></a>
 								</figcaption>
 							</figure>
 						</li>

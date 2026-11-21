@@ -18,14 +18,15 @@ $is_theme_active = false;
 $is_theme_recommended = true;
 $theme_slug = 'inspiro';
 
-if ( get_template() === $theme_slug ) {
+// Foodica (free) has its own demo here, so it counts as a supported theme.
+if ( get_template() === $theme_slug || Helpers::is_foodica_lite() ) {
 	$is_theme_active = true;
 }
 
 $plugin_import_page = Helpers::get_plugin_page_setup_data();
 $import_page_url = admin_url( 'themes.php?page=' . $plugin_import_page['menu_slug'] );
 
-if( isset( $plugin_import_page['parent_slug'] ) && 'inspiro' == $plugin_import_page['parent_slug'] ) {
+if( isset( $plugin_import_page['parent_slug'] ) && 'themes.php' !== $plugin_import_page['parent_slug'] ) {
 	$import_page_url = admin_url( 'admin.php?page=' . $plugin_import_page['menu_slug'] );
 }
 

@@ -214,6 +214,11 @@ class InspiroStarterSitesImporter {
 		if( ( 'Inspiro' == $theme_name || 'inspiro' == $theme_template ) && ! class_exists( 'WPZOOM' ) ) {
 			$inspiro_view = 'inspiro';
 		}
+
+		// Foodica (free) uses the same screens, with its own demo list.
+		if ( Helpers::is_foodica_lite() ) {
+			$inspiro_view = 'inspiro';
+		}
 		
 		if ( isset( $_GET['step'] ) && 'import' === $_GET['step'] ) {
 			check_admin_referer( 'importer_step' );

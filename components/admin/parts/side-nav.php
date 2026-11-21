@@ -22,7 +22,7 @@ if ( get_template() === $theme_slug ) {
 $plugin_import_page = Helpers::get_plugin_page_setup_data();
 $import_page_url = admin_url( 'themes.php?page=' . $plugin_import_page['menu_slug'] );
 
-if( isset( $plugin_import_page['parent_slug'] ) && 'inspiro' == $plugin_import_page['parent_slug'] ) {
+if( isset( $plugin_import_page['parent_slug'] ) && 'themes.php' !== $plugin_import_page['parent_slug'] ) {
 	$import_page_url = admin_url( 'admin.php?page=' . $plugin_import_page['menu_slug'] );
 }
 

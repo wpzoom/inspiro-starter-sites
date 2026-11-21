@@ -634,6 +634,20 @@ class Helpers {
 	}
 
 	/**
+	 * Whether the active theme is the free Foodica (Foodica Lite) theme.
+	 *
+	 * Checked by name as well as by folder, because Foodica PRO also lives in a
+	 * "foodica" folder, and the WPZOOM framework class that marks premium themes
+	 * is not loaded yet when this plugin starts.
+	 *
+	 * @return bool
+	 */
+	public static function is_foodica_lite() {
+		$template = get_template();
+		return 'foodica' === $template && 'Foodica' === trim( (string) wp_get_theme( $template )->get( 'Name' ) );
+	}
+
+	/**
 	 * Get the plugin page setup data.
 	 *
 	 * @return array
